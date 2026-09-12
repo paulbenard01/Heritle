@@ -2,9 +2,14 @@ name: Check outbound links
 
 # The sandbox these changes are written in cannot reach the open web, so a link
 # in the menu is a guess until something fetches it. This does that: it reads
-# every address out of the LINKS table in heritle.html and requires each to
-# answer. Manual, not on push -- somebody else's outage should never fail a
-# deploy of this game.
+# every address out of the LINKS table in heritle.html and fetches each one.
+#
+# It fails only on an answer that means the address is wrong -- no connection,
+# 404, 5xx. A 403 or 429 from a runner is the site's bot filter turning away a
+# datacentre IP, which several of these do while serving the page perfectly
+# well in any browser, so that is reported and not treated as a verdict.
+#
+# Manual, not on push: somebody else's outage should never fail a deploy.
 on:
   workflow_dispatch:
 
@@ -24,17 +29,27 @@ jobs:
           [ -n "$urls" ] || { echo "no URLs found -- has LINKS moved?"; exit 1; }
           fail=0
           for u in $urls; do
-            # A HEAD is enough and some sites refuse it, so fall back to a
-            # ranged GET; a browser user-agent, because a few of these reject
-            # curl outright while serving the page perfectly well.
+            # A HEAD is enough and some sites refuse it, so a ranged GET; a
+            # browser user-agent, because several of these reject curl outright
+            # while serving the page perfectly well.
             code=$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 25 \
                    -A 'Mozilla/5.0 (compatible; Heritle link check)' \
                    -r 0-1023 "$u" || echo 000)
-            if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
-              echo "  ok   $code  $u"
-            else
-              echo "  FAIL $code  $u"
-              fail=1
-            fi
+            case "$code" in
+              2*|3*)
+                echo "  ok          $code  $u" ;;
+              401|403|429)
+                # A runner is a datacentre IP, and the big heritage and social
+                # sites turn those away at the CDN. That says nothing about
+                # whether the address is right, so it is reported and not
+                # counted as a failure -- otherwise this job fails forever on
+                # links that work in every browser.
+                echo "  blocked     $code  $u  (bot filter, not a verdict)" ;;
+              *)
+                # 000 is a connection or DNS failure; 404/410 a wrong address;
+                # 5xx the site being down. All three are worth knowing about.
+                echo "  FAIL        $code  $u"
+                fail=1 ;;
+            esac
           done
           exit $fail
