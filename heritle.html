@@ -315,6 +315,8 @@
   .btn{background:var(--gold);color:var(--navy);border:none;border-radius:6px;padding:10px 18px;
     font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;margin:3px;}
   .btn.secondary{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);}
+  /* The countdown's replacement when the day turns under an open tab. */
+  .btn.small{padding:7px 13px;font-size:0.75rem;}
   .share-grid{font-family:'JetBrains Mono',monospace;font-size:1rem;line-height:1.5;margin-bottom:10px;white-space:pre-line;}
 
   footer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--ink-dim);}
@@ -814,7 +816,8 @@ const UI = {
        statPlayed:'Days', statStreak:'Streak', statBest:'Best', statAvg:'Avg score',
        archiveTitle:'Archive', archiveSub:'Replay any past day. Practice runs are not scored.',
        archiveOpen:'Replay', archiveMissed:'not played', archiveDone:'catalogued', practiceBadge:'PRACTICE — not scored',
-       nextIn:'Next inscription in', backToToday:'Back to today',
+       nextIn:'Next inscription in', newDay:'A new day has begun — open it',
+       backToToday:'Back to today',
        achTitle:'Distinctions',
        ach:{ continents:['Circumnavigator','One entry catalogued on every continent'],
              perfect:['Full marks','A day scored the maximum'],
@@ -903,7 +906,8 @@ const UI = {
        statPlayed:'Jours', statStreak:'Série', statBest:'Record', statAvg:'Score moyen',
        archiveTitle:'Archives', archiveSub:'Rejouez n’importe quel jour passé. Les parties d’entraînement ne comptent pas.',
        archiveOpen:'Rejouer', archiveMissed:'non jouée', archiveDone:'catalogué', practiceBadge:'ENTRAÎNEMENT — non compté',
-       nextIn:'Prochaine inscription dans', backToToday:'Revenir à aujourd’hui',
+       nextIn:'Prochaine inscription dans', newDay:'Un nouveau jour a commencé — l’ouvrir',
+       backToToday:'Revenir à aujourd’hui',
        achTitle:'Distinctions',
        ach:{ continents:['Tour du monde','Une entrée cataloguée sur chaque continent'],
              perfect:['Note maximale','Une journée au score maximal'],
@@ -992,7 +996,8 @@ const UI = {
        statPlayed:'Días', statStreak:'Racha', statBest:'Récord', statAvg:'Puntuación media',
        archiveTitle:'Archivo', archiveSub:'Vuelve a jugar cualquier día pasado. Las prácticas no puntúan.',
        archiveOpen:'Rejugar', archiveMissed:'sin jugar', archiveDone:'catalogado', practiceBadge:'PRÁCTICA — sin puntuar',
-       nextIn:'Próxima inscripción en', backToToday:'Volver a hoy',
+       nextIn:'Próxima inscripción en', newDay:'Ha empezado un nuevo día — ábrelo',
+       backToToday:'Volver a hoy',
        achTitle:'Distinciones',
        ach:{ continents:['Vuelta al mundo','Una entrada catalogada en cada continente'],
              perfect:['Nota máxima','Un día con la puntuación máxima'],
@@ -3149,15 +3154,37 @@ function renderArchive(){
      <div class="arch-list">${rows.join('')}</div>`;
 }
 
-/* ---------- Countdown ---------- */
+/* ---------- Countdown ----------
+   It counted to the next UTC midnight while the puzzle turns over at the
+   player's own midnight, which are the same instant for almost nobody. In
+   Paris the clock hit zero at 02:00 and then showed nothing for the next
+   twenty-two hours; in New York it emptied at 19:00, five hours early. It
+   counts to local midnight now, which is when the day actually changes.
+
+   And when it gets there it says so. `now` is read once, at load, so a tab
+   left open overnight kept serving yesterday's puzzle to a board that looked
+   current -- a player who left it open would guess at a site that was no
+   longer the day's, and their save would be written under yesterday's key. */
+function nextLocalMidnight(){
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+}
 function renderCountdown(){
   const T = t();
   const el = document.getElementById('countdown');
   if(!el) return;
-  const nextUtcMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) + 86400000;
+  let target = nextLocalMidnight();
   const tick = ()=>{
-    const left = nextUtcMidnight - Date.now();
-    if(left <= 0){ el.innerHTML = ''; return; }
+    const left = target - Date.now();
+    if(left <= 0){
+      // The day turned under an open tab. Offer the new one rather than
+      // reloading from under a player who may be mid-round.
+      el.innerHTML = `<button class="btn small" id="newDayBtn">${T.newDay}</button>`;
+      const btn = document.getElementById('newDayBtn');
+      if(btn) btn.onclick = ()=> location.assign('.');
+      clearInterval(renderCountdown._t);
+      return;
+    }
     const h = String(Math.floor(left/3600000)).padStart(2,'0');
     const m = String(Math.floor(left/60000) % 60).padStart(2,'0');
     const sec = String(Math.floor(left/1000) % 60).padStart(2,'0');
@@ -3167,6 +3194,11 @@ function renderCountdown(){
   clearInterval(renderCountdown._t);
   renderCountdown._t = setInterval(tick, 1000);
 }
+// A phone does not run timers in a backgrounded tab, so the countdown can be
+// hours stale by the time it is looked at again.
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && typeof renderCountdown === 'function') renderCountdown();
+});
 
 /* ---------- Field Notes (first visit only) ---------- */
 function maybeFieldNotes(){

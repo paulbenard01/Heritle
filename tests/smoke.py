@@ -45,6 +45,34 @@ DEAL_PROBE = """
   }
 """
 
+# Minutes from now to the browser's own midnight, computed independently of
+# the page's own helper so the check is not the code under test.
+CLOCK_PROBE = """
+  () => {
+    const d = new Date();
+    const mid = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+    return Math.round((mid - Date.now()) / 60000);
+  }
+"""
+# Winds the page's clock to 25 seconds before local midnight -- far enough out
+# that the page finishes loading on the old day.
+NEAR_MIDNIGHT = """
+  (() => {
+    const RealDate = Date;
+    const d = new RealDate();
+    const target = new RealDate(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+                     .getTime() - 25000;
+    const skew = target - RealDate.now();
+    function FakeDate(...a){
+      return a.length ? new RealDate(...a) : new RealDate(RealDate.now() + skew);
+    }
+    FakeDate.prototype = RealDate.prototype;
+    FakeDate.now = () => RealDate.now() + skew;
+    FakeDate.UTC = RealDate.UTC; FakeDate.parse = RealDate.parse;
+    window.Date = FakeDate;
+  })();
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1269,6 +1297,52 @@ def main():
               "every entry in the pool is dealt within one full cycle",
               f"{len(seen)} of {deal['pool']} entries in {span} days")
         check(not errs, "and dealing throws nothing", "; ".join(errs[:2]))
+        ctx.close()
+
+        # ---- the clock ----
+        # The countdown ran to the next UTC midnight while the puzzle turns
+        # over at the player's own, so it was wrong for almost everyone: in
+        # Paris it hit zero at 02:00 and then showed nothing for 22 hours.
+        print("\n== the clock ==")
+        for tz, city in (("Europe/Paris", "Paris"), ("America/New_York", "New York"),
+                         ("Australia/Sydney", "Sydney")):
+            ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                      timezone_id=tz)
+            pg = ctx.new_page()
+            pg.goto(base)
+            pg.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                 timeout=20000)
+            pg.wait_for_timeout(250)
+            shown = pg.locator("#countdown").inner_text()
+            left = pg.evaluate(CLOCK_PROBE)
+            check(bool(shown.strip()), f"{city}: the countdown says something", shown)
+            hh, mm = (shown.split()[-1].split(":") + ["0", "0"])[:2]
+            claimed = int(hh) * 60 + int(mm)
+            check(abs(claimed - left) <= 2,
+                  f"{city}: and counts to that city's midnight, not UTC's",
+                  f"shows {claimed} min, {left} min to local midnight")
+            ctx.close()
+
+        # A tab left open across midnight kept serving yesterday's puzzle to a
+        # board that looked current. The clock is moved to just before local
+        # midnight and the page left to cross it.
+        ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                  timezone_id="Europe/Paris")
+        pg = ctx.new_page()
+        pg.add_init_script(NEAR_MIDNIGHT)
+        pg.goto(base)
+        pg.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                             timeout=20000)
+        before = pg.locator("#countdown").inner_text()
+        check(":" in before, "a tab open near midnight is still counting down", before)
+        pg.wait_for_timeout(27000)
+        check(pg.locator("#newDayBtn").count() == 1,
+              "and when the day turns it offers the new one rather than going blank",
+              pg.locator("#countdown").inner_text())
+        # It must not reload under a player who may be mid-round: the offer is
+        # a button, and the old board is still there until it is taken.
+        check(pg.evaluate("typeof targets !== 'undefined' && targets.length > 0"),
+              "without pulling the board out from under them")
         ctx.close()
 
         # ---- storage that fights back ----
