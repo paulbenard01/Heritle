@@ -1,0 +1,49 @@
+name: Photograph the live site
+
+# The sandbox these changes are written in cannot reach the open web, so the
+# only way to look at the deployed game is to have a runner look for us and
+# carry the pictures back. They are committed to a branch rather than left as
+# an artifact, because an artifact download needs the open web again.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Which address to photograph'
+        default: 'https://heritle.org/'
+
+permissions:
+  contents: write
+
+jobs:
+  shoot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright && python -m playwright install --with-deps chromium
+      - name: Take the photographs
+        run: python tools/shoot.py "${{ inputs.url || 'https://heritle.org/' }}" screens
+      - name: What the address itself answers
+        run: |
+          for u in "https://heritle.org/" "https://www.heritle.org/" \
+                   "http://heritle.org/" "https://paulbenard01.github.io/Heritle/"; do
+            printf '%s -> %s (final: %s)\n' "$u" \
+              "$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 20 "$u" || echo 000)" \
+              "$(curl -sS -o /dev/null -w '%{url_effective}' -L --max-time 20 "$u" || echo -)"
+          done
+          echo "--- what the live page weighs ---"
+          for f in "" "data/dataset.json" "data/land.json"; do
+            printf '%-20s %s bytes gzipped\n' "${f:-index.html}" \
+              "$(curl -sS --compressed -o /dev/null -w '%{size_download}' \
+                 --max-time 60 "https://heritle.org/$f" || echo '?')"
+          done
+      - name: Carry them back
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -B claude/screens
+          git add -f screens
+          git commit -m "Live site, $(date -u +%Y-%m-%d\ %H:%M) UTC" || echo "nothing changed"
+          git push -f origin claude/screens
