@@ -317,6 +317,16 @@
   .btn.secondary{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);}
   /* The countdown's replacement when the day turns under an open tab. */
   .btn.small{padding:7px 13px;font-size:0.75rem;}
+  /* Backup: a long code, so the box has to be a box rather than an input. */
+  .backup{margin-top:16px;border-top:1px dashed rgba(201,162,75,0.22);padding-top:12px;}
+  .backup summary{cursor:pointer;font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem;letter-spacing:0.04em;color:var(--gold);}
+  .backup textarea{width:100%;box-sizing:border-box;margin-top:8px;padding:8px 9px;
+    background:var(--navy-2);color:var(--ink-dim);border:1px solid var(--gold-dim);
+    border-radius:7px;font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+    line-height:1.4;resize:vertical;}
+  .backup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 10px;}
+  .backup-said{font-family:'JetBrains Mono',monospace;font-size:0.64rem;color:var(--gold-dim);}
   .share-grid{font-family:'JetBrains Mono',monospace;font-size:1rem;line-height:1.5;margin-bottom:10px;white-space:pre-line;}
 
   footer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--ink-dim);}
@@ -861,6 +871,13 @@ const UI = {
                    'Four guesses per site. Find the country and the round is yours — worth most on the first guess and a little less on each one after. Miss it and your closest guess still scores, by distance and by how near it came culturally. Every miss uncovers another photograph.',
                    'Every entry you meet is accessioned into your collection.'],
        cbLabel:'Colour-blind marks', settingsTitle:'Settings',
+       backupTitle:'Back up your collection', backupCopy:'Copy code',
+       backupCopied:'Copied.', backupSelect:'Selected — copy it now.',
+       backupNote:'Your collection lives in this browser and nowhere else. Clear your site data, change phone, or leave it a fortnight on Safari, and it is gone. Keep this code somewhere safe — send it to yourself.',
+       restoreTitle:'Restore', restorePlaceholder:'Paste a code here',
+       restoreNote:'Pasting a code adds to what is here. Nothing is deleted.',
+       restoreBad:'That code could not be read.',
+       restoreDone:(e,d)=>`Restored ${e} entr${e===1?'y':'ies'} and ${d} day${d===1?'':'s'}.`,
        cbNote:'How far off a guess was is shown by colour — blue is cold through to red, green is right. That is the one thing the game says only in colour, so this adds a shape to every mark as well: ○ ■ ◆ ▲ ●, coldest to warmest.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Northern',S:'Southern',E:'Eastern',W:'Western',C:'Central'},
@@ -951,6 +968,13 @@ const UI = {
                    'Quatre essais par site. Trouvez le pays et la manche est à vous — elle vaut le plus au premier essai et un peu moins à chacun des suivants. Sinon, votre proposition la plus proche compte quand même, selon la distance et la proximité culturelle. Chaque échec dévoile une photographie de plus.',
                    'Chaque entrée rencontrée est inventoriée dans votre collection.'],
        cbLabel:'Repères daltoniens', settingsTitle:'Réglages',
+       backupTitle:'Sauvegarder votre collection', backupCopy:'Copier le code',
+       backupCopied:'Copié.', backupSelect:'Sélectionné — copiez-le maintenant.',
+       backupNote:'Votre collection vit dans ce navigateur et nulle part ailleurs. Effacez les données du site, changez de téléphone, ou laissez passer quinze jours sur Safari, et elle disparaît. Gardez ce code en lieu sûr — envoyez-le-vous.',
+       restoreTitle:'Restaurer', restorePlaceholder:'Collez un code ici',
+       restoreNote:'Coller un code ajoute à ce qui est déjà là. Rien n’est supprimé.',
+       restoreBad:'Ce code n’a pas pu être lu.',
+       restoreDone:(e,d)=>`${e} entrée${e===1?'':'s'} et ${d} journée${d===1?'':'s'} restaurées.`,
        cbNote:'L’éloignement d’une proposition est indiqué par la couleur : du bleu (froid) au rouge, le vert étant juste. C’est la seule information donnée uniquement par la couleur ; cette option ajoute donc une forme à chaque repère : ○ ■ ◆ ▲ ●, du plus froid au plus chaud.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Nord',S:'Sud',E:'Est',W:'Ouest',C:'Centre'},
@@ -1041,6 +1065,13 @@ const UI = {
                    'Cuatro intentos por sitio. Acierta el país y la ronda es tuya: vale más al primer intento y algo menos en cada uno siguiente. Si no, tu propuesta más cercana puntúa igualmente, por distancia y por cercanía cultural. Cada fallo descubre otra fotografía.',
                    'Cada entrada que encuentras se registra en tu colección.'],
        cbLabel:'Marcas para daltonismo', settingsTitle:'Ajustes',
+       backupTitle:'Copia de seguridad de tu colección', backupCopy:'Copiar código',
+       backupCopied:'Copiado.', backupSelect:'Seleccionado: cópialo ahora.',
+       backupNote:'Tu colección vive en este navegador y en ningún otro sitio. Si borras los datos del sitio, cambias de teléfono o pasas quince días sin entrar en Safari, desaparece. Guarda este código en un lugar seguro: envíatelo.',
+       restoreTitle:'Restaurar', restorePlaceholder:'Pega aquí un código',
+       restoreNote:'Pegar un código añade a lo que ya hay. No se borra nada.',
+       restoreBad:'No se ha podido leer ese código.',
+       restoreDone:(e,d)=>`Restauradas ${e} entrada${e===1?'':'s'} y ${d} jornada${d===1?'':'s'}.`,
        cbNote:'Lo lejos que quedó una propuesta se indica con color: del azul (frío) al rojo, y verde si es correcta. Es lo único que el juego comunica solo con color, así que esta opción añade una forma a cada marca: ○ ■ ◆ ▲ ●, de más fría a más cálida.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Norte',S:'Sur',E:'Este',W:'Oeste',C:'Centro'},
@@ -1594,6 +1625,106 @@ let profile = loadProfile();
 function saveProfile(){
   // Private mode or a full quota: the game still plays, it just won't remember.
   lsSet(PROFILE_KEY, JSON.stringify(profile));
+}
+
+/* ---------- Backup ----------
+   The collection lives in one browser and nowhere else. That is the deal a
+   game with no accounts makes, and it is a fair one -- but the failure mode is
+   brutal: clear the site data, switch phones, or simply do not visit for a
+   week or two on Safari, whose storage eviction does not care how long it took
+   to collect, and a year of play is gone with nothing to show it ever existed.
+
+   So: a code the player can keep. Ids rather than records, because everything
+   else -- names, countries, photographs -- is in the dataset already and can
+   be rebuilt from an id. That is the difference between a 30 KB code and a
+   600 KB one, and 600 KB is not something anyone pastes into a message.
+
+   Restoring merges rather than replaces: a code from an old phone should add
+   to what is here, never quietly delete a week of play on the new one. */
+const BACKUP_VERSION = 1;
+
+function encodeBackup(obj){
+  // btoa is bytes, not characters; the ids are slugs but a future field may
+  // not be, and a mangled code is worse than a long one.
+  return btoa(unescape(encodeURIComponent(JSON.stringify(obj))))
+           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodeBackup(code){
+  const b64 = String(code).trim().replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(decodeURIComponent(escape(atob(b64))));
+}
+
+function exportProfile(){
+  return encodeBackup({
+    v: BACKUP_VERSION,
+    // [id, day first met, solved]
+    c: Object.values(profile.collection)
+             .map(r => [r.id, r.day | 0, r.solved ? 1 : 0]),
+    // day -> [score, statuses joined, the four ids that were played]
+    d: Object.keys(profile.days).reduce((acc, day) => {
+         const r = profile.days[day];
+         acc[day] = [Math.round(r.score || 0),
+                     (r.statuses || []).map(x => x === 'solved' ? 's'
+                                               : x === 'failed' ? 'f' : '-').join(''),
+                     (r.ids || []).join(',')];
+         return acc;
+       }, {}),
+    a: profile.achievements.slice(),
+    f: Object.keys(profile.favourites),
+    g: profile.gemFirstGuess ? 1 : 0,
+    z: profile.dizzy ? 1 : 0
+  });
+}
+
+/* Returns what it managed to restore, so the player is told rather than
+   reassured. */
+function importProfile(code){
+  let data;
+  try{ data = decodeBackup(code); }catch(e){ return null; }
+  if(!data || typeof data !== 'object' || !Array.isArray(data.c)) return null;
+  let entries = 0, days = 0, lost = 0;
+  for(const row of data.c){
+    if(!Array.isArray(row) || typeof row[0] !== 'string') continue;
+    const [id, day, solved] = row;
+    if(profile.collection[id]) continue;
+    const live = BY_ID && BY_ID.get(id);
+    if(!live){ lost++; continue; }      // no longer in the dataset: nothing to show
+    profile.collection[id] = {
+      id: live.id, day: day | 0, solved: !!solved,
+      names: live.names, country: live.country, category: live.category,
+      type: live.type, year: live.year,
+      image: live.image ? { url: live.image.url, path: live.image.path,
+                            credit: live.image.credit, license: live.image.license } : null,
+      continent: live.continentCode || contCodeOf(live),
+      qid: live.qid, siteId: live.siteId, officialUrl: live.officialUrl,
+      wiki: live.wiki
+    };
+    entries++;
+  }
+  const incoming = (data.d && typeof data.d === 'object') ? data.d : {};
+  for(const day of Object.keys(incoming)){
+    const row = incoming[day];
+    if(!Array.isArray(row) || profile.days[day]) continue;
+    profile.days[day] = {
+      score: Number(row[0]) || 0,
+      statuses: String(row[1] || '').split('').map(
+        c => c === 's' ? 'solved' : c === 'f' ? 'failed' : null),
+      ids: String(row[2] || '').split(',').filter(Boolean),
+      at: 0
+    };
+    days++;
+  }
+  (Array.isArray(data.f) ? data.f : []).forEach(id => {
+    if(!profile.favourites[id]) profile.favourites[id] = 1;
+  });
+  if(data.g) profile.gemFirstGuess = true;
+  if(data.z) profile.dizzy = true;
+  // Distinctions are re-earned from what the collection now holds rather than
+  // trusted from the code, so a hand-edited list cannot award anything.
+  saveProfile();
+  checkAchievements();
+  saveProfile();
+  return { entries, days, lost };
 }
 
 function isFavourite(id){ return !!profile.favourites[id]; }
@@ -3143,9 +3274,57 @@ function renderPassport(){
      ${ach}
      <label class="cb-row"><input type="checkbox" id="cbToggle"
        ${cbOn() ? 'checked' : ''}> ${T.cbLabel}</label>
-     <p class="cb-note">${T.cbNote}</p>`;
+     <p class="cb-note">${T.cbNote}</p>
+     <details class="backup">
+       <summary>${T.backupTitle}</summary>
+       <p class="cb-note">${T.backupNote}</p>
+       <textarea id="backupCode" readonly rows="3"
+                 aria-label="${T.backupTitle}"></textarea>
+       <div class="backup-row">
+         <button class="btn small" id="backupCopy">${T.backupCopy}</button>
+         <span class="backup-said" id="backupSaid"></span>
+       </div>
+       <p class="cb-note">${T.restoreNote}</p>
+       <textarea id="restoreCode" rows="3" placeholder="${T.restorePlaceholder}"
+                 aria-label="${T.restoreTitle}"></textarea>
+       <div class="backup-row">
+         <button class="btn small secondary" id="restoreGo">${T.restoreTitle}</button>
+         <span class="backup-said" id="restoreSaid"></span>
+       </div>
+     </details>`;
   document.getElementById('cbToggle').onchange = e=>{
     profile.colorblind = e.target.checked; saveProfile(); applyColorblind(); render();
+  };
+  // Filled after the markup is in place, because the code is long and putting
+  // it in the template would need escaping it twice.
+  const codeBox = document.getElementById('backupCode');
+  if(codeBox) codeBox.value = exportProfile();
+  const copyBtn = document.getElementById('backupCopy');
+  if(copyBtn) copyBtn.onclick = ()=>{
+    const said = document.getElementById('backupSaid');
+    const done = ()=> { if(said) said.textContent = T.backupCopied; };
+    // The clipboard API needs a secure context and permission; selecting the
+    // text is the fallback that works everywhere, including file://.
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(codeBox.value).then(done, ()=>{
+        codeBox.select(); if(said) said.textContent = T.backupSelect;
+      });
+    }else{
+      codeBox.select();
+      if(said) said.textContent = T.backupSelect;
+    }
+  };
+  const restoreBtn = document.getElementById('restoreGo');
+  if(restoreBtn) restoreBtn.onclick = ()=>{
+    const said = document.getElementById('restoreSaid');
+    const result = importProfile(document.getElementById('restoreCode').value);
+    if(!result){ if(said) said.textContent = T.restoreBad; return; }
+    if(said) said.textContent = T.restoreDone(result.entries, result.days);
+    renderPassport();
+    // The message is written into the freshly rendered panel, or it would
+    // vanish with the one it was written into.
+    const after = document.getElementById('restoreSaid');
+    if(after) after.textContent = T.restoreDone(result.entries, result.days);
   };
   document.querySelectorAll('#viewPassport [data-ach]').forEach(tile=>{
     tile.addEventListener('click', ()=>{

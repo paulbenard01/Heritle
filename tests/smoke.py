@@ -73,6 +73,32 @@ NEAR_MIDNIGHT = """
   })();
 """
 
+# Builds a real collection, then measures the code against what the same
+# collection would weigh if it carried records rather than ids.
+BACKUP_PROBE = """
+  () => {
+    POOL.slice(0, 400).forEach(e => catalogue(e, true));
+    checkAchievements(); saveProfile();
+    const code = exportProfile();
+    return { code, bytes: code.length,
+             entries: Object.keys(profile.collection).length,
+             ach: profile.achievements.length,
+             asRecords: JSON.stringify(profile.collection).length };
+  }
+"""
+# One entry this browser has and the code does not, then a second restore.
+MERGE_PROBE = """
+  (code) => {
+    const mine = POOL.find(e => !profile.collection[e.id]);
+    const before = Object.keys(profile.collection).length;
+    catalogue(mine, true);
+    const withMine = Object.keys(profile.collection).length;
+    importProfile(code);
+    return { before, after: Object.keys(profile.collection).length,
+             mineKept: !!profile.collection[mine.id], withMine };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1426,6 +1452,65 @@ def main():
         """)
         check(rebuilt == played,
               "so the day can be rebuilt from the passport alone", str(rebuilt))
+        ctx.close()
+
+        # ---- a collection that can leave this browser ----
+        # It lives in one browser and nowhere else: clear the site data, change
+        # phone, or leave it a fortnight on Safari, whose eviction does not care
+        # how long the collection took, and a year of play is gone.
+        print("\n== backup ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        play_day(page, base, None, 375, "backup")
+        made = page.evaluate(BACKUP_PROBE)
+        check(made["bytes"] > 0, "a collection produces a code", f"{made['bytes']} chars")
+        # Ids, not records: the dataset already holds the names, countries and
+        # photographs, and a 600 KB code is not something anyone pastes.
+        check(made["bytes"] < made["asRecords"] / 4,
+              "and the code is small enough to send to yourself",
+              f"{made['bytes']} chars vs {made['asRecords']} as records")
+        page.evaluate("showView('Passport')")
+        page.wait_for_timeout(300)
+        check(page.locator("#backupCode").count() == 1,
+              "the passport offers the code")
+        check(len(page.input_value("#backupCode")) == made["bytes"],
+              "with the code in it, ready to copy")
+        # The hard part is the other end: a browser that has never seen any of
+        # this.
+        ctx2 = browser.new_context(viewport={"width": 375, "height": 812})
+        fresh = ctx2.new_page()
+        fresh.on("pageerror", lambda e: errs.append(str(e)))
+        fresh.goto(base)
+        fresh.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                timeout=20000)
+        check(fresh.evaluate("Object.keys(profile.collection).length") == 0,
+              "a fresh browser starts with nothing")
+        out = fresh.evaluate("code => importProfile(code)", made["code"])
+        check(bool(out) and out["entries"] == made["entries"],
+              "and a pasted code brings the whole collection back",
+              f"{out} against {made['entries']} entries")
+        check(fresh.evaluate("profile.achievements.length") == made["ach"],
+              "with the distinctions re-earned from it, not taken on trust",
+              f"{fresh.evaluate('profile.achievements.length')} vs {made['ach']}")
+        fresh.reload()
+        fresh.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                timeout=20000)
+        check(fresh.evaluate("Object.keys(profile.collection).length") == made["entries"],
+              "and it is still there after a reload")
+        # Merging, not replacing: a code from an old phone must never delete a
+        # week of play on the new one.
+        kept = fresh.evaluate(MERGE_PROBE, made["code"])
+        check(kept["after"] == kept["before"] + 1,
+              "restoring again keeps what this browser already had",
+              f"{kept['before']} -> {kept['after']}")
+        check(fresh.evaluate("importProfile('not a code')") is None,
+              "a code that is not a code is refused")
+        check(fresh.evaluate("importProfile('')") is None, "and so is an empty one")
+        check(not errs, "and none of it throws", "; ".join(errs[:2]))
+        ctx2.close()
         ctx.close()
 
         # ---- storage that fights back ----
