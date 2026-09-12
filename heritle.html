@@ -65,6 +65,7 @@
   /* The menu the mark opens. Anchored under it, left-aligned with it, and
      above the dimmer so it stays lit while the page behind it goes quiet. */
   .mark-menu{position:absolute;top:54px;left:0;z-index:12;min-width:214px;
+    max-width:min(320px, calc(100vw - 32px));
     background:var(--navy-2);border:1px solid var(--gold-dim);border-radius:11px;
     padding:7px;text-align:left;
     box-shadow:0 18px 40px rgba(5,8,18,0.55);
@@ -83,6 +84,16 @@
     color:var(--ink);text-decoration:none;}
   .mark-menu a:hover, .mark-menu button:hover{background:rgba(201,162,75,0.12);
     color:var(--gold);}
+  /* Two halves: the registers to read, then the game itself. Without the
+     headings seven links read as one undifferentiated list, with the primary
+     sources sitting level with an Instagram handle. */
+  .mark-menu .menu-head{display:block;padding:9px 12px 3px;
+    font-family:'JetBrains Mono',monospace;font-size:0.57rem;letter-spacing:0.13em;
+    text-transform:uppercase;color:var(--gold-dim);}
+  /* A list this long has to be able to run out of room gracefully: on a short
+     screen it scrolls rather than disappearing off the bottom. */
+  .mark-menu{max-height:calc(100vh - 86px);overflow-y:auto;}
+  .mark-menu a, .mark-menu button{line-height:1.25;}
   .mark-menu a span, .mark-menu button span{color:var(--gold-dim);}
   /* The one item that stays inside the game gets a rule under it. */
   .mark-menu .menu-inside{border-bottom:1px dashed rgba(201,162,75,0.22);
@@ -657,11 +668,25 @@
    not rendered at all -- the game never shows a link that goes nowhere.
    Labels are translated below (T.links); these are only the addresses. */
 const LINKS = {
-  instagram: 'https://instagram.com/herit.le',
-  news:      'https://whc.unesco.org/en/news/',      // inscriptions, decisions, alerts
-  source:    'https://github.com/paulbenard01/Heritle',
-  contact:   ''                                      // e.g. mailto:you@example.com
+  // Where to go and read more. Official listings first, because they are the
+  // primary sources and they are free to everyone; nothing here needs an
+  // account, a subscription or an institution behind it.
+  list:       'https://whc.unesco.org/en/list/',      // the register itself
+  ich:        'https://ich.unesco.org/en/lists',      // living traditions
+  news:       'https://whc.unesco.org/en/news/',      // inscriptions, decisions, alerts
+  europeana:  'https://www.europeana.eu/en',          // millions of digitised items
+  instagram:  'https://instagram.com/herit.le',
+  source:     'https://github.com/paulbenard01/Heritle',
+  contact:    ''                                      // e.g. mailto:you@example.com
 };
+
+/* The menu in two halves: where to go and read more, then the game itself. An
+   undifferentiated list of seven made the official registers look like
+   footnotes next to an Instagram handle. */
+const LINK_GROUPS = [
+  { label: 'explore', keys: ['list', 'ich', 'news', 'europeana'] },
+  { label: 'project', keys: ['instagram', 'source', 'contact'] }
+];
 
 /* ---------- Fallback dataset ----------
    The 12-entry hand-picked demo. Used verbatim when data/dataset.json can't be
@@ -800,7 +825,11 @@ const UI = {
                     25:['The Grand Tour','Twenty-five entries catalogued'],
                     50:['Curator','Fifty entries catalogued'],
                     100:['Centenary','A hundred entries catalogued'],
-                    365:['Around the Year','Three hundred and sixty-five entries catalogued'] },
+                    250:['The Reading Room','Two hundred and fifty entries catalogued'],
+                    365:['Around the Year','Three hundred and sixty-five entries catalogued'],
+                    500:['The Great Register','Five hundred entries catalogued'],
+                    750:['Keeper of the Keys','Seven hundred and fifty entries catalogued'],
+                    1000:['A Thousand Places','A thousand entries catalogued'] },
              cont:(n,g)=>[`Discovering ${n}`, `${g} entries catalogued in ${n}`],
              trad10:['Living Memory','Ten living traditions catalogued'],
              trad50:['Keeper of Traditions','Fifty living traditions catalogued'],
@@ -816,7 +845,10 @@ const UI = {
            'Inscription brings protection, funding and expertise, and it brings crowds, speculation and pressure along with them: a place can be loved into difficulty. What helps over time is a public that knows what it has. People defend what they can name, and money follows attention. That is truer still of intangible heritage, where a craft, a song, a festival survives by being practised and known, and a tradition nobody has heard of is one bad decade from disappearing.',
            'Heritle is independent and free, with no account and no advertising, and is not affiliated with any heritage organisation. It reads public data and asks you to look closely at places worth knowing.'
          ] },
-       links:{ instagram:'Instagram', news:'Heritage news', source:'Source', contact:'Get in touch' },
+       links:{ list:'The World Heritage List', ich:'Living traditions',
+               news:'Heritage news', europeana:'Europeana collections',
+               instagram:'Instagram', source:'Source', contact:'Get in touch' },
+       linkGroups:{ explore:'Read further', project:'This project' },
        achEarned:'Earned', achLocked:'Still to find',
        achLockedNone:'Every distinction earned.',
        achEmpty:'Nothing stamped yet. Finish a day and the first one lands here.',
@@ -882,7 +914,11 @@ const UI = {
                     25:['Le grand tour','Vingt-cinq entrées cataloguées'],
                     50:['Conservateur','Cinquante entrées cataloguées'],
                     100:['Centenaire','Cent entrées cataloguées'],
-                    365:['Le tour de l’année','Trois cent soixante-cinq entrées cataloguées'] },
+                    250:['La salle de lecture','Deux cent cinquante entrées cataloguées'],
+                    365:['Le tour de l’année','Trois cent soixante-cinq entrées cataloguées'],
+                    500:['Le grand registre','Cinq cents entrées cataloguées'],
+                    750:['Le trousseau de clés','Sept cent cinquante entrées cataloguées'],
+                    1000:['Mille lieux','Mille entrées cataloguées'] },
              cont:(n,g)=>[`Découverte : ${n}`, `${g} entrées cataloguées : ${n}`],
              trad10:['Mémoire vivante','Dix traditions vivantes cataloguées'],
              trad50:['Gardien des traditions','Cinquante traditions vivantes cataloguées'],
@@ -898,7 +934,10 @@ const UI = {
            'L’inscription apporte protection, financements et expertise ; elle apporte aussi la foule, la spéculation et la pression : un lieu peut être aimé jusqu’à l’étouffement. Ce qui aide dans la durée, c’est un public qui sait ce qu’il possède. On défend ce que l’on sait nommer, et les moyens suivent l’attention. C’est plus vrai encore du patrimoine immatériel, où un savoir-faire, un chant, une fête ne survivent qu’en étant pratiqués et connus, et où une tradition dont personne n’a entendu parler est à une mauvaise décennie de disparaître.',
            'Heritle est indépendant et gratuit, sans compte ni publicité, et n’est affilié à aucune organisation patrimoniale. Le jeu lit des données publiques et vous demande de regarder de près des lieux qui méritent d’être connus.'
          ] },
-       links:{ instagram:'Instagram', news:'Actualité du patrimoine', source:'Code source', contact:'Nous écrire' },
+       links:{ list:'La Liste du patrimoine mondial', ich:'Traditions vivantes',
+               news:'Actualité du patrimoine', europeana:'Collections Europeana',
+               instagram:'Instagram', source:'Code source', contact:'Nous écrire' },
+       linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
        achEarned:'Obtenues', achLocked:'Encore à trouver',
        achLockedNone:'Toutes les distinctions ont été obtenues.',
        achEmpty:'Rien d’apposé pour l’instant. Terminez une journée et le premier tampon arrive ici.',
@@ -964,7 +1003,11 @@ const UI = {
                     25:['El gran tour','Veinticinco entradas catalogadas'],
                     50:['Conservador','Cincuenta entradas catalogadas'],
                     100:['Centenario','Cien entradas catalogadas'],
-                    365:['La vuelta al año','Trescientas sesenta y cinco entradas catalogadas'] },
+                    250:['La sala de lectura','Doscientas cincuenta entradas catalogadas'],
+                    365:['La vuelta al año','Trescientas sesenta y cinco entradas catalogadas'],
+                    500:['El gran registro','Quinientas entradas catalogadas'],
+                    750:['El manojo de llaves','Setecientas cincuenta entradas catalogadas'],
+                    1000:['Mil lugares','Mil entradas catalogadas'] },
              cont:(n,g)=>[`Descubriendo: ${n}`, `${g} entradas catalogadas: ${n}`],
              trad10:['Memoria viva','Diez tradiciones vivas catalogadas'],
              trad50:['Guardián de tradiciones','Cincuenta tradiciones vivas catalogadas'],
@@ -980,7 +1023,10 @@ const UI = {
            'La inscripción trae protección, financiación y experiencia, y trae consigo multitudes, especulación y presión: un lugar puede ser querido hasta la asfixia. Lo que ayuda con el tiempo es un público que sepa lo que tiene. Se defiende lo que se sabe nombrar, y los recursos siguen a la atención. Y más aún en el patrimonio inmaterial, donde un oficio, un canto, una fiesta sobreviven al practicarse y al conocerse, y donde una tradición de la que nadie ha oído hablar está a una mala década de desaparecer.',
            'Heritle es independiente y gratuito, sin cuenta ni publicidad, y no está afiliado a ninguna organización del patrimonio. Lee datos públicos y te pide mirar de cerca lugares que vale la pena conocer.'
          ] },
-       links:{ instagram:'Instagram', news:'Noticias del patrimonio', source:'Código fuente', contact:'Escríbenos' },
+       links:{ list:'La Lista del Patrimonio Mundial', ich:'Tradiciones vivas',
+               news:'Noticias del patrimonio', europeana:'Colecciones Europeana',
+               instagram:'Instagram', source:'Código fuente', contact:'Escríbenos' },
+       linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
        achLockedNone:'Todas las distinciones conseguidas.',
        achEmpty:'Nada sellado todavía. Termina un día y el primero aparecerá aquí.',
@@ -1448,7 +1494,7 @@ function streaks(){
 /* ---------- Achievements ----------
    Tied to what the player has actually seen of the world's heritage rather
    than to how often they open the page. Deliberately few. */
-const ARCHIVIST_TIERS = [5, 10, 25, 50, 100, 365];
+const ARCHIVIST_TIERS = [5, 10, 25, 50, 100, 250, 365, 500, 750, 1000];
 
 /* How many entries from a continent make "discovering" it true. Not one
    number: the pool holds 712 European entries and 31 from Oceania, so a flat
@@ -1477,7 +1523,8 @@ const ACHIEVEMENTS = [
   // nothing happened for six days and then never again; named rather than
   // numbered because "Archivist IV" is a row in a table, not a reward.
   ...ARCHIVIST_TIERS.map(n => ({
-    id: 'coll' + n, tier: n, mark: String(n),
+    // '1K' rather than '1000': four digits do not fit a stamp legibly.
+    id: 'coll' + n, tier: n, mark: n >= 1000 ? (n / 1000) + 'K' : String(n),
     test: () => collectionSize() >= n
   })),
   // A continent at a time, which is the shape the collection actually grows in.
@@ -2788,13 +2835,16 @@ function renderLinks(){
   if(!box) return;
   // Who am I first, and it stays inside the game -- hence the rule under it,
   // separating the one item that does not leave from the ones that do.
+  const item = (k) =>
+    `<a href="${LINKS[k]}" target="_blank" rel="noopener noreferrer">`
+    + `${T.links[k]}<span aria-hidden="true">\u2197</span></a>`;
   box.innerHTML =
     `<button class="menu-inside" id="aboutOpen">${T.about.label}</button>`
-    + ['instagram', 'news', 'source', 'contact']
-        .filter(k => LINKS[k])
-        .map(k => `<a href="${LINKS[k]}" target="_blank" rel="noopener noreferrer">`
-                 + `${T.links[k]}<span aria-hidden="true">\u2197</span></a>`)
-        .join('');
+    + LINK_GROUPS.map(g => {
+        const links = g.keys.filter(k => LINKS[k]).map(item).join('');
+        // A heading over nothing is worse than no heading.
+        return links ? `<span class="menu-head">${T.linkGroups[g.label]}</span>${links}` : '';
+      }).join('');
   document.getElementById('aboutOpen').onclick = openAbout;
 }
 

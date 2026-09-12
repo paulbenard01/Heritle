@@ -274,6 +274,21 @@ def play_day(page, base, day, width, label):
           f"{len(hrefs)} shown, {filled} configured")
     check(all(h.startswith("https://") or h.startswith("mailto:") for h in hrefs),
           f"{label}: and each goes somewhere real", str(hrefs))
+    # Grouped, because seven links in one run put the official registers level
+    # with an Instagram handle. Every group with links in it gets its heading,
+    # and a heading over nothing is worse than none.
+    heads = menu.locator(".menu-head").all_inner_texts()
+    groups_with_links = page.evaluate(
+        "() => LINK_GROUPS.filter(g => g.keys.some(k => LINKS[k])).length")
+    check(len(heads) == groups_with_links,
+          f"{label}: the menu is grouped under headings", str(heads))
+    check(all(h.strip() for h in heads),
+          f"{label}: and every heading is written in this language", str(heads))
+    # The registers come before the game's own links: they are the reason the
+    # menu exists rather than an afterthought under it.
+    first_group = page.evaluate("() => LINK_GROUPS[0].keys.filter(k => LINKS[k])[0]")
+    check(hrefs[0] == page.evaluate("k => LINKS[k]", first_group),
+          f"{label}: with somewhere to read further at the top", hrefs[0])
 
     # Who am I: the one item in the menu that stays inside the game.
     check(page.locator("#aboutOpen").count() == 1, f"{label}: the menu offers Who am I")
@@ -932,6 +947,34 @@ def main():
         # is the point of it being secret.
         expected_ach = page.evaluate("visibleAchievements().length")
         total_ach = page.evaluate("ACHIEVEMENTS.length")
+        tiers = page.evaluate("ARCHIVIST_TIERS")
+        for want in (100, 250, 500, 750, 1000):
+            check(want in tiers, f"the collection ladder reaches {want}", str(tiers))
+        check(tiers == sorted(tiers), "and it climbs in order", str(tiers))
+        pool = page.evaluate("POOL.length")
+        check(max(tiers) <= pool,
+              "the top of the ladder is inside the pool, so it can be reached",
+              f"top {max(tiers)} of {pool} entries")
+        # A tier with no name renders as an empty stamp, in one language only,
+        # which is exactly the kind of gap nobody notices until a player gets
+        # there months later.
+        missing = page.evaluate("""
+          () => {
+            const out = [];
+            for(const code of ['en','fr','es']){
+              for(const n of ARCHIVIST_TIERS){
+                const e = UI[code].ach.coll[n];
+                if(!e || !e[0] || !e[1]) out.push(code + ':' + n);
+              }
+            }
+            return out;
+          }
+        """)
+        check(not missing, "every tier is named in all three languages", str(missing))
+        marks = page.evaluate(
+            "() => ACHIEVEMENTS.filter(a => a.tier).map(a => a.mark)")
+        check(all(len(m) <= 3 for m in marks),
+              "and its stamp mark is short enough to read on a stamp", str(marks))
         check(expected_ach >= 20, "there are distinctions worth chasing",
               str(expected_ach))
         check(total_ach > expected_ach,

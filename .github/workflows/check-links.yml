@@ -1,0 +1,40 @@
+name: Check outbound links
+
+# The sandbox these changes are written in cannot reach the open web, so a link
+# in the menu is a guess until something fetches it. This does that: it reads
+# every address out of the LINKS table in heritle.html and requires each to
+# answer. Manual, not on push -- somebody else's outage should never fail a
+# deploy of this game.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch every address in LINKS
+        run: |
+          set -u
+          urls=$(sed -n '/^const LINKS = {/,/^};/p' heritle.html \
+                 | grep -o "https://[^']*" | sort -u)
+          [ -n "$urls" ] || { echo "no URLs found -- has LINKS moved?"; exit 1; }
+          fail=0
+          for u in $urls; do
+            # A HEAD is enough and some sites refuse it, so fall back to a
+            # ranged GET; a browser user-agent, because a few of these reject
+            # curl outright while serving the page perfectly well.
+            code=$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 25 \
+                   -A 'Mozilla/5.0 (compatible; Heritle link check)' \
+                   -r 0-1023 "$u" || echo 000)
+            if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
+              echo "  ok   $code  $u"
+            else
+              echo "  FAIL $code  $u"
+              fail=1
+            fi
+          done
+          exit $fail
