@@ -32,9 +32,17 @@ jobs:
             # A HEAD is enough and some sites refuse it, so a ranged GET; a
             # browser user-agent, because several of these reject curl outright
             # while serving the page perfectly well.
+            # --retry, because a reset connection is a bad second, not a bad
+            # address: ich.unesco.org answered 206 on one run and reset the
+            # next. `|| true` keeps `set -e` out of it, and an empty body
+            # means curl never got far enough to report a status at all --
+            # note that curl prints 000 for that itself, so appending another
+            # default here is how "000000" ends up in the log.
             code=$(curl -sS -o /dev/null -w '%{http_code}' -L --max-time 25 \
+                   --retry 2 --retry-all-errors --retry-delay 2 \
                    -A 'Mozilla/5.0 (compatible; Heritle link check)' \
-                   -r 0-1023 "$u" || echo 000)
+                   -r 0-1023 "$u" 2>/dev/null || true)
+            code=${code:-000}
             case "$code" in
               2*|3*)
                 echo "  ok          $code  $u" ;;
