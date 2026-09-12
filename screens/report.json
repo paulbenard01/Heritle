@@ -1,0 +1,42 @@
+{
+  "url": "https://heritle.org/",
+  "shots": [
+    {
+      "name": "phone",
+      "facts": {
+        "pool": 1871,
+        "day": 1,
+        "lang": "en",
+        "title": "Heritle \u2014 three heritage guesses a day",
+        "pitch": "Guess and Discover the world heritage!",
+        "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Cerro_Chachahuate_%28cropped%29.jpg/1280px-Cerro_Chachahuate_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "mark": true,
+        "timing": {
+          "loaded": 264,
+          "transferred": 2096813
+        }
+      },
+      "errors": [],
+      "bad": []
+    },
+    {
+      "name": "desktop",
+      "facts": {
+        "pool": 1871,
+        "day": 1,
+        "lang": "en",
+        "title": "Heritle \u2014 three heritage guesses a day",
+        "pitch": "Guess and Discover the world heritage!",
+        "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/Cerro_Chachahuate_%28cropped%29.jpg/1280px-Cerro_Chachahuate_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "mark": true,
+        "timing": {
+          "loaded": 117,
+          "transferred": 2096813
+        }
+      },
+      "errors": [],
+      "bad": []
+    }
+  ],
+  "problems": []
+}
