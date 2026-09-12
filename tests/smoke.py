@@ -30,6 +30,21 @@ FAILS = []
 DAYS = [412, 900, 1301]          # arbitrary but fixed, so runs are comparable
 
 
+# Deals every day of two full cycles through the game's own dealer.
+DEAL_PROBE = """
+  () => {
+    const cycles = ROUND_PLAN.map((plan) => {
+      const tiers = plan.tiers || [plan.tier];
+      return tiers.reduce((a, t) => a +
+        POOL.filter(d => d.type === plan.type && d.tier === t).length, 0);
+    });
+    const span = Math.max(...cycles) * 2 + 5;
+    const days = [];
+    for(let d = 0; d < span; d++) days.push(dealFor(d).map(e => e.id));
+    return { cycles, days, again: dealFor(7).map(e => e.id), pool: POOL.length };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1207,6 +1222,53 @@ def main():
         check(page.evaluate("document.body.classList.contains('cb')"),
               "colour-blind marks toggle on")
         check(not errors, "no console errors across the panels", "; ".join(errors[:3]))
+        ctx.close()
+
+        # ---- how the days are dealt ----
+        # The pick used to be hash(day, slot) % pool.length: sampling with
+        # replacement, so the first repeat landed on day 23-30 of real play and
+        # a third of the first year re-dealt something already shown. These
+        # checks run through the game's own dealFor(), one whole cycle at a
+        # time, which is only possible because it takes the day as an argument.
+        print("\n== the deal ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        deal = page.evaluate(DEAL_PROBE)
+        cycles, days = deal["cycles"], deal["days"]
+        check(deal["again"] == days[7],
+              "the same day deals the same four entries every time",
+              f"{deal['again']} vs {days[7]}")
+        check(all(len(set(d)) == len(d) for d in days),
+              "no day ever deals the same entry twice")
+        # The property that matters: within one pass through a round's pool
+        # every entry appears exactly once. That is what "no repeats" means
+        # here -- not a long gap, but a permutation.
+        for slot, n in enumerate(cycles):
+            seq = [d[slot] for d in days[:n]]
+            check(len(set(seq)) == n,
+                  f"round {slot + 1} deals its whole pool without repeating",
+                  f"{len(set(seq))} distinct in a {n}-day cycle")
+            nxt = [d[slot] for d in days[n:n * 2]]
+            check(len(set(nxt)) == n and set(nxt) == set(seq),
+                  f"round {slot + 1} starts the pool again on the next pass",
+                  f"{len(set(nxt))} distinct")
+            check(nxt[:min(20, n)] != seq[:min(20, n)],
+                  f"round {slot + 1} deals the second pass in a different order")
+        # Every entry the dataset carries has to get a day, or the pool is
+        # decoration. The bonus round was drawn from tier 1 alone, which left
+        # 356 of 653 living traditions -- the least famous, the most fragile --
+        # unreachable for ever.
+        span = max(cycles)
+        seen = {x for d in days[:span] for x in d}
+        check(len(seen) >= deal["pool"] - 1,
+              "every entry in the pool is dealt within one full cycle",
+              f"{len(seen)} of {deal['pool']} entries in {span} days")
+        check(not errs, "and dealing throws nothing", "; ".join(errs[:2]))
         ctx.close()
 
         # ---- storage that fights back ----

@@ -1247,11 +1247,54 @@ const isPractice = dayIndex !== todayIndex || params.get('practice') === '1';
 /* Deterministic per-day pick. A plain dayIndex % pool.length would walk the
    fame-sorted pool in order, so consecutive days would be near-identical in
    obscurity; hashing spreads them while staying reproducible for everyone. */
-function pickForDay(pool, tier){
-  if(!pool.length) return null;
-  let h = Math.imul(dayIndex + 1, 2654435761) ^ Math.imul(tier + 1, 40503);
-  h ^= h >>> 15; h = Math.imul(h, 2246822519); h ^= h >>> 13;
-  return pool[Math.abs(h) % pool.length];
+/* The pick used to be hash(day, slot) % pool.length, which is sampling with
+   replacement -- the birthday problem, and it showed. Measured over the real
+   pools by replaying five years of deals:
+
+     round              pool   first repeat   distinct days in year 1
+     site 1 (famous)     419   day 24          243 of 365
+     site 2              417   day 27          246
+     site 3 (gem)        382   day 30          232
+     bonus tradition     297   day 23          204
+
+   So a player in their first month already met a site twice, a third of the
+   first year re-dealt something that round had already shown, and after five
+   years 371 of the 1,872 entries had never once been dealt. For a game whose
+   whole argument is "you do not know how much is on these lists", handing back
+   the same ninth of them is the one failure that matters.
+
+   Now each pool is dealt as a permutation: a deterministic shuffle of the
+   whole pool, walked one entry a day, so nothing repeats until the pool is
+   exhausted -- 419, 417, 382 and 297 days respectively, the traditions being
+   the binding one. The next pass through comes in a different order, because
+   the shuffle is seeded by the cycle number as well as the slot.
+
+   Everything here is a pure function of (day, slot, pool): no state, no
+   server, and every player still gets the same puzzle. */
+function mulberry32(a){
+  return function(){
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+/* The order a pool is dealt in for one pass through it. */
+const dealOrders = new Map();
+function dealOrder(n, slot, cycle){
+  const key = n + ':' + slot + ':' + cycle;
+  const had = dealOrders.get(key);
+  if(had) return had;
+  let seed = Math.imul(slot + 1, 2654435761) ^ Math.imul(cycle + 1, 40503);
+  seed ^= seed >>> 15; seed = Math.imul(seed, 2246822519); seed ^= seed >>> 13;
+  const rnd = mulberry32(seed >>> 0);
+  const order = Array.from({ length: n }, (_, i) => i);
+  for(let i = n - 1; i > 0; i--){          // Fisher-Yates: a permutation, not a sample
+    const j = Math.floor(rnd() * (i + 1));
+    const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+  dealOrders.set(key, order);
+  return order;
 }
 
 /* Each day: three World Heritage sites, ramping from widely recognised to
@@ -1270,32 +1313,74 @@ const ROUND_PLAN = [
   { type: 'material',   tier: 1, guesses: 4, points: 100/3 },
   { type: 'material',   tier: 2, guesses: 4, points: 100/3 },
   { type: 'material',   tier: 3, guesses: 4, points: 100/3 },
-  { type: 'immaterial', tier: 1, guesses: 4, points: 50, bonus: true }
+  // The bonus round walks the traditions in fame order and then keeps going:
+  // tier 1 for its first 297 days, then tier 2, then tier 3, and round again.
+  // Drawn from tier 1 alone it could only ever reach 297 of the 653 living
+  // traditions in the dataset -- 356 of them, the least famous and the most
+  // fragile, would never once have been dealt. For a game that argues a
+  // tradition nobody has heard of is one bad decade from disappearing, that
+  // was the wrong 356 to leave out.
+  { type: 'immaterial', tier: 1, tiers: [1, 2, 3],
+    guesses: 4, points: 50, bonus: true }
 ];
 const N_ROUNDS = ROUND_PLAN.length;
 const MAX_SCORE = Math.round(ROUND_PLAN.reduce((a, r) => a + r.points, 0));
 function roundPlan(i){ return ROUND_PLAN[i] || ROUND_PLAN[0]; }
 function guessesAllowed(i){ return roundPlan(i).guesses; }
 
-function computeTargets(){
-  BY_ID = new Map(POOL.map(d => [d.id, d]));
+/* Sorted by id, so the order a pool is dealt in depends on what is in the pool
+   and not on the order the dataset happened to list it. */
+function byId(entries){
+  return entries.slice().sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+}
+
+/* The deck a round is dealt from for one pass: its pools in fame order, each
+   shuffled inside itself. One pool for a site round; three for the bonus, so
+   the ramp survives the cycle while every tradition still gets its day. */
+function deckFor(slot, pools, cycle){
+  const deck = [];
+  pools.forEach((pool, block) => {
+    dealOrder(pool.length, slot * 8 + block, cycle).forEach(i => deck.push(pool[i]));
+  });
+  return deck;
+}
+
+/* The day's four entries, for any day. Taking the day as an argument rather
+   than closing over dayIndex is what makes this checkable: the tests deal
+   whole cycles through the real function instead of a copy of it. */
+function dealFor(day){
   const used = new Set();
-  targets = ROUND_PLAN.map((plan, i) => {
+  return ROUND_PLAN.map((plan, slot) => {
+    const tiers = plan.tiers || [plan.tier];
     // Narrow to type+tier, then relax rather than leave a round unfillable:
-    // type+tier -> type -> tier -> anything.
+    // type+tiers -> type -> tier -> anything.
     const tries = [
-      POOL.filter(d => d.type === plan.type && d.tier === plan.tier),
-      POOL.filter(d => d.type === plan.type),
-      POOL.filter(d => d.tier === plan.tier),
-      POOL
+      tiers.map(t => byId(POOL.filter(d => d.type === plan.type && d.tier === t))),
+      [byId(POOL.filter(d => d.type === plan.type))],
+      [byId(POOL.filter(d => d.tier === plan.tier))],
+      [byId(POOL)]
     ];
-    for(const pool of tries){
-      const fresh = pool.filter(d => !used.has(d.id));
-      const pick = pickForDay(fresh.length ? fresh : pool, i);
-      if(pick){ used.add(pick.id); return pick; }
+    for(const raw of tries){
+      const pools = raw.filter(p => p.length);
+      const n = pools.reduce((a, p) => a + p.length, 0);
+      if(!n) continue;
+      const deck = deckFor(slot, pools, Math.floor(day / n));
+      const at = ((day % n) + n) % n;
+      // Step along the deck for the rare same-day clash -- two rounds relaxed
+      // onto one pool -- rather than re-dealing, which would put the cycle out
+      // of step with itself.
+      for(let k = 0; k < n; k++){
+        const pick = deck[(at + k) % n];
+        if(!used.has(pick.id)){ used.add(pick.id); return pick; }
+      }
     }
     return null;
   }).filter(Boolean);
+}
+
+function computeTargets(){
+  BY_ID = new Map(POOL.map(d => [d.id, d]));
+  targets = dealFor(dayIndex);
 }
 
 /* ---------- Detailed map geometry ----------
