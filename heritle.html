@@ -236,6 +236,27 @@
   /* Wrapped so the distance and its bearing stay on one line: in a column
      flex container a bare text node becomes a flex item of its own. */
   .map-readout .lg-dist{display:block;}
+  /* The one line that answers "did I get it?" -- above the country and the
+     distance, because that is the question a player asks first. */
+  .map-readout .lg-verdict{font-family:'JetBrains Mono',monospace;font-size:0.74rem;
+    letter-spacing:0.04em;text-transform:uppercase;}
+  .map-readout .lg-verdict.no{color:var(--heat-close);}
+  .map-readout .lg-verdict.ok{color:var(--correct);}
+  .map-readout .lg-verdict b{color:inherit;font-weight:600;}
+  /* Tries as boxes: a crossed one is spent. A count alone lived in the footer,
+     far below the map, where nobody looked. */
+  .map-readout .lg-tries{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    justify-content:center;font-family:'JetBrains Mono',monospace;font-size:0.66rem;
+    color:var(--ink-dim);}
+  .map-readout .lg-pips{display:flex;gap:4px;}
+  .lg-pip{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;
+    justify-content:center;font-size:0.62rem;line-height:1;
+    border:1px solid var(--gold-dim);color:var(--ink-dim);}
+  .lg-pip.free{opacity:0.45;}
+  .lg-pip.used{border-color:var(--heat-close);color:var(--heat-close);
+    background:rgba(184,83,46,0.12);}
+  .lg-pip.hit{border-color:var(--correct);color:var(--correct);
+    background:rgba(92,138,92,0.16);}
 
   .guess-row{position:relative;margin-bottom:12px;}
   .tap-hint{text-align:center;font-size:0.8rem;color:var(--ink-dim);padding:6px 0;}
@@ -745,6 +766,9 @@ const UI = {
        modeMaterial:'WORLD HERITAGE SITE', modeImmaterial:'INTANGIBLE HERITAGE',
        readoutStart:'Make your first guess', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} guesses this round`, clueLabels:['Continent','Category','Inscribed','Region','Description'],
+       countryLabel:'Country', rightCountry:'Right country', wrongCountry:'Wrong country',
+       tryAgain:'try again', guessOf:(n,max)=>`Guess ${n} of ${max}`,
+       triesLeft:(n)=>`${n} ${n===1?'try':'tries'} left`,
        win:'Found it', winSub:(n)=>`Solved in ${n} guess${n===1?'':'es'}.`, lose:'Round over',
        loseSub:'The answer was:', nextRound:'Next round', learnMore:'Learn more',
        finalTitle:'Today’s Heritle', finalSub:(s,max)=>`Score: ${s} / ${max}`, playTomorrow:'Come back tomorrow for three new sites and a new tradition.',
@@ -799,19 +823,20 @@ const UI = {
        fieldNotesTitle:'Field Notes', fieldNotesBtn:'Begin',
        fieldNotes:['Three inscribed sites a day, then a bonus round on a living tradition. You are shown a photograph, not a name.',
                    'Tap the map where you think it is, then press Guess. Each guess reports its distance and bearing to the site, and whether you have the right continent and region.',
-                   'Three guesses per site. Find the country and you take full marks at once; otherwise only your last guess scores, by how close it lands — and every miss uncovers another photograph.',
+                   'Four guesses per site. Find the country and the round is yours — worth most on the first guess and a little less on each one after. Miss it and your closest guess still scores, by distance and by how near it came culturally. Every miss uncovers another photograph.',
                    'Every entry you meet is accessioned into your collection.'],
        cbLabel:'Colour-blind marks', settingsTitle:'Settings',
        cbNote:'How far off a guess was is shown by colour — blue is cold through to red, green is right. That is the one thing the game says only in colour, so this adds a shape to every mark as well: ○ ■ ◆ ▲ ●, coldest to warmest.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Northern',S:'Southern',E:'Eastern',W:'Western',C:'Central'},
        regionOf:(dir,cont)=>`${dir} ${cont}`,
-       pointsFull:(p,max)=>`Full marks — <b>${p}</b> of ${max} points.`,
-       pointsPartial:(p,max,c,km)=>`Your last guess, <b>${c}</b>, was ${km} km away — <b>${p}</b> of ${max} points.`,
+       pointsSolved:(p,max,n)=>n===1 ? `Found on the first guess — <b>${p}</b> of ${max} points.`
+                                     : `Found on guess ${n} — <b>${p}</b> of ${max} points.`,
+       pointsPartial:(p,max,c,km)=>`Your closest guess, <b>${c}</b>, was ${km} km away — <b>${p}</b> of ${max} points.`,
        seeResult:'See result', shareBtn:'Copy result',
        shareNote:'Share your result with friends — it copies the grid, not the answers.', photoOf:(i,n)=>`photo ${i} of ${n}`, bonusBadge:'BONUS ROUND',
-       bonusIntro:'Bonus round — a living tradition. Three guesses, worth half the day.',
-       lastCounts:'Only your last guess scores, unless you take full marks earlier.',
+       bonusIntro:'Bonus round — a living tradition. Four guesses, worth half the day.',
+       lastCounts:'The sooner you find it, the more it is worth. Miss it and your closest guess still scores.',
        answerWas:'The country was:', countriesWere:'Inscribed by:', solvedCountry:(c)=>`It was <b>${c}</b>.`,
        learnLabel:'Learn more', linkWiki:'Encyclopedia article',
        linkOfficial:'Official UNESCO Listing',
@@ -823,6 +848,9 @@ const UI = {
        modeMaterial:'PATRIMOINE MONDIAL', modeImmaterial:'PATRIMOINE IMMATÉRIEL',
        readoutStart:'Faites votre première proposition', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} essais cette manche`, clueLabels:['Continent','Catégorie','Inscription','Région','Description'],
+       countryLabel:'Pays', rightCountry:'Bon pays', wrongCountry:'Mauvais pays',
+       tryAgain:'réessayez', guessOf:(n,max)=>`Essai ${n} sur ${max}`,
+       triesLeft:(n)=>`${n} essai${n===1?'':'s'} restant${n===1?'':'s'}`,
        win:'Trouvé', winSub:(n)=>`Résolu en ${n} essai${n===1?'':'s'}.`, lose:'Manche terminée',
        loseSub:'La réponse était :', nextRound:'Manche suivante', learnMore:'En savoir plus',
        finalTitle:'L’Heritle du jour', finalSub:(s,max)=>`Score : ${s} / ${max}`, playTomorrow:'Revenez demain pour trois nouveaux sites et une nouvelle tradition.',
@@ -877,19 +905,20 @@ const UI = {
        fieldNotesTitle:'Notes de terrain', fieldNotesBtn:'Commencer',
        fieldNotes:['Trois sites inscrits par jour, puis une manche bonus sur une tradition vivante. On vous montre une photographie, pas un nom.',
                    'Touchez la carte à l’endroit voulu, puis appuyez sur Proposer. Chaque proposition indique sa distance et sa direction, et si le continent et la région sont les bons.',
-                   'Trois essais par site. Trouvez le pays et vous obtenez d’emblée la note maximale ; sinon seul votre dernier essai compte, selon sa proximité — et chaque échec dévoile une photographie de plus.',
+                   'Quatre essais par site. Trouvez le pays et la manche est à vous — elle vaut le plus au premier essai et un peu moins à chacun des suivants. Sinon, votre proposition la plus proche compte quand même, selon la distance et la proximité culturelle. Chaque échec dévoile une photographie de plus.',
                    'Chaque entrée rencontrée est inventoriée dans votre collection.'],
        cbLabel:'Repères daltoniens', settingsTitle:'Réglages',
        cbNote:'L’éloignement d’une proposition est indiqué par la couleur : du bleu (froid) au rouge, le vert étant juste. C’est la seule information donnée uniquement par la couleur ; cette option ajoute donc une forme à chaque repère : ○ ■ ◆ ▲ ●, du plus froid au plus chaud.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Nord',S:'Sud',E:'Est',W:'Ouest',C:'Centre'},
        regionOf:(dir,cont)=>`${cont} — ${dir}`,
-       pointsFull:(p,max)=>`Note maximale — <b>${p}</b> points sur ${max}.`,
-       pointsPartial:(p,max,c,km)=>`Votre dernière proposition, <b>${c}</b>, était à ${km} km — <b>${p}</b> points sur ${max}.`,
+       pointsSolved:(p,max,n)=>n===1 ? `Trouvé du premier coup — <b>${p}</b> points sur ${max}.`
+                                     : `Trouvé au ${n}ᵉ essai — <b>${p}</b> points sur ${max}.`,
+       pointsPartial:(p,max,c,km)=>`Votre proposition la plus proche, <b>${c}</b>, était à ${km} km — <b>${p}</b> points sur ${max}.`,
        seeResult:'Voir le résultat', shareBtn:'Copier le résultat',
        shareNote:'Partagez votre résultat — la grille est copiée, pas les réponses.', photoOf:(i,n)=>`photo ${i} sur ${n}`, bonusBadge:'MANCHE BONUS',
-       bonusIntro:'Manche bonus — une tradition vivante. Trois essais, la moitié de la journée en jeu.',
-       lastCounts:'Seul votre dernier essai compte, sauf note maximale obtenue avant.',
+       bonusIntro:'Manche bonus — une tradition vivante. Quatre essais, la moitié de la journée en jeu.',
+       lastCounts:'Plus vous trouvez tôt, plus cela vaut. À défaut, votre proposition la plus proche compte quand même.',
        answerWas:'Le pays était :', countriesWere:'Inscrit par :', solvedCountry:(c)=>`C’était <b>${c}</b>.`,
        learnLabel:'En savoir plus', linkWiki:'Article encyclopédique',
        linkOfficial:'Fiche officielle UNESCO',
@@ -901,6 +930,9 @@ const UI = {
        modeMaterial:'PATRIMONIO MUNDIAL', modeImmaterial:'PATRIMONIO INMATERIAL',
        readoutStart:'Haz tu primera propuesta', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} intentos esta ronda`, clueLabels:['Continente','Categoría','Inscrito','Región','Descripción'],
+       countryLabel:'País', rightCountry:'País correcto', wrongCountry:'País incorrecto',
+       tryAgain:'inténtalo otra vez', guessOf:(n,max)=>`Intento ${n} de ${max}`,
+       triesLeft:(n)=>`${n} intento${n===1?'':'s'} restante${n===1?'':'s'}`,
        win:'Acertado', winSub:(n)=>`Resuelto en ${n} intento${n===1?'':'s'}.`, lose:'Ronda terminada',
        loseSub:'La respuesta era:', nextRound:'Siguiente ronda', learnMore:'Saber más',
        finalTitle:'El Heritle de hoy', finalSub:(s,max)=>`Puntuación: ${s} / ${max}`, playTomorrow:'Vuelve mañana para tres sitios nuevos y una nueva tradición.',
@@ -955,19 +987,20 @@ const UI = {
        fieldNotesTitle:'Notas de campo', fieldNotesBtn:'Empezar',
        fieldNotes:['Tres sitios inscritos al día y después una ronda bonus sobre una tradición viva. Se te muestra una fotografía, no un nombre.',
                    'Toca el mapa donde creas que está y pulsa Proponer. Cada intento indica su distancia y rumbo, y si el continente y la región son correctos.',
-                   'Tres intentos por sitio. Acierta el país y obtienes la nota máxima de inmediato; si no, solo cuenta tu última propuesta, según lo cerca que quede — y cada fallo descubre otra fotografía.',
+                   'Cuatro intentos por sitio. Acierta el país y la ronda es tuya: vale más al primer intento y algo menos en cada uno siguiente. Si no, tu propuesta más cercana puntúa igualmente, por distancia y por cercanía cultural. Cada fallo descubre otra fotografía.',
                    'Cada entrada que encuentras se registra en tu colección.'],
        cbLabel:'Marcas para daltonismo', settingsTitle:'Ajustes',
        cbNote:'Lo lejos que quedó una propuesta se indica con color: del azul (frío) al rojo, y verde si es correcta. Es lo único que el juego comunica solo con color, así que esta opción añade una forma a cada marca: ○ ■ ◆ ▲ ●, de más fría a más cálida.',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Norte',S:'Sur',E:'Este',W:'Oeste',C:'Centro'},
        regionOf:(dir,cont)=>`${cont} — ${dir}`,
-       pointsFull:(p,max)=>`Nota máxima — <b>${p}</b> de ${max} puntos.`,
-       pointsPartial:(p,max,c,km)=>`Tu última propuesta, <b>${c}</b>, estaba a ${km} km — <b>${p}</b> de ${max} puntos.`,
+       pointsSolved:(p,max,n)=>n===1 ? `Acertado al primer intento — <b>${p}</b> de ${max} puntos.`
+                                     : `Acertado en el intento ${n} — <b>${p}</b> de ${max} puntos.`,
+       pointsPartial:(p,max,c,km)=>`Tu propuesta más cercana, <b>${c}</b>, estaba a ${km} km — <b>${p}</b> de ${max} puntos.`,
        seeResult:'Ver resultado', shareBtn:'Copiar resultado',
        shareNote:'Comparte tu resultado — se copia la cuadrícula, no las respuestas.', photoOf:(i,n)=>`foto ${i} de ${n}`, bonusBadge:'RONDA BONUS',
-       bonusIntro:'Ronda bonus — una tradición viva. Tres intentos, la mitad de la jornada en juego.',
-       lastCounts:'Solo cuenta tu última propuesta, salvo nota máxima obtenida antes.',
+       bonusIntro:'Ronda bonus — una tradición viva. Cuatro intentos, la mitad de la jornada en juego.',
+       lastCounts:'Cuanto antes aciertes, más vale. Si no, tu propuesta más cercana puntúa igualmente.',
        answerWas:'El país era:', countriesWere:'Inscrito por:', solvedCountry:(c)=>`Era <b>${c}</b>.`,
        learnLabel:'Saber más', linkWiki:'Artículo enciclopédico',
        linkOfficial:'Ficha oficial de la UNESCO',
@@ -1150,14 +1183,17 @@ function pickForDay(pool, tier){
    The bonus round had a single guess, and a single guess is not a round: a
    tradition is far harder to place than a building -- no architecture, no
    vegetation, no signage -- so one try meant it was lost by default rather
-   than played. Three guesses, like the rest, and the ladder of photographs
-   that comes with them. It stays drawn from tier 1 and keeps its own scoring:
-   only the last guess counts, so the earlier two buy information. */
+   than played. It gets the same allowance as the rest, and the ladder of
+   photographs that comes with them, while staying drawn from tier 1.
+
+   Four guesses rather than three: a wrong-but-neighbouring guess is the most
+   common way to be close, and three tries left no room to work inwards from
+   one. */
 const ROUND_PLAN = [
-  { type: 'material',   tier: 1, guesses: 3, points: 100/3 },
-  { type: 'material',   tier: 2, guesses: 3, points: 100/3 },
-  { type: 'material',   tier: 3, guesses: 3, points: 100/3 },
-  { type: 'immaterial', tier: 1, guesses: 3, points: 50, bonus: true }
+  { type: 'material',   tier: 1, guesses: 4, points: 100/3 },
+  { type: 'material',   tier: 2, guesses: 4, points: 100/3 },
+  { type: 'material',   tier: 3, guesses: 4, points: 100/3 },
+  { type: 'immaterial', tier: 1, guesses: 4, points: 50, bonus: true }
 ];
 const N_ROUNDS = ROUND_PLAN.length;
 const MAX_SCORE = Math.round(ROUND_PLAN.reduce((a, r) => a + r.points, 0));
@@ -1552,9 +1588,39 @@ function dirLabel(deg){ return compassDirs[Math.round(deg/22.5) % 16]; }
    allowance and the LAST guess is the one that scores: the earlier ones buy
    information, not points, so a third guess is a commitment rather than a
    free extra try. */
+/* ---------- What a round is worth ----------
+   Solving used to be flat: any guess inside the allowance took full marks. So
+   the day's total collapsed onto eight values -- 117 is nothing more than two
+   sites and the bonus, which is why it comes up again and again, and why two
+   players who deduced it in one guess and stumbled into it in three scored
+   the same.
+
+   Now the credit decays with each try, so the score says how well it went and
+   not merely whether it went. A missed round is scored on its *best* guess
+   rather than its last, by geography and cultural affinity together: for a
+   tradition shared across a region, "the right part of the world" is the real
+   signal and kilometres are not, and a player who narrowed it to the right
+   region should not be punished for spending the last try on a long shot.
+   Missing is capped below the worst possible solve, so finding it always beats
+   not finding it. */
 const SCORE_SCALE_KM = 2000;
-function proximity(km, correctCountry){
-  return correctCountry ? 1 : Math.exp(-km / SCORE_SCALE_KM);
+const SOLVE_CREDIT = [1, 0.85, 0.72, 0.6];   // by the guess it was solved on
+const MISS_CEILING = 0.45;                   // under the worst solve, 0.6
+const REGION_FLOOR = 0.55, CONTINENT_FLOOR = 0.3;
+
+function solveCredit(n){
+  const i = Math.min(Math.max(1, n), SOLVE_CREDIT.length) - 1;
+  return SOLVE_CREDIT[i];
+}
+/* How near a single guess came: the better of how close it landed and how
+   near it was culturally. */
+function closeness(g){
+  const geo = Math.exp(-g.km / SCORE_SCALE_KM);
+  const cultural = g.regionOk ? REGION_FLOOR : (g.contOk ? CONTINENT_FLOOR : 0);
+  return Math.max(geo, cultural);
+}
+function missCredit(guesses){
+  return MISS_CEILING * guesses.reduce((best, g) => Math.max(best, closeness(g)), 0);
 }
 
 /* ---------- Map ---------- */
@@ -1880,7 +1946,8 @@ function renderHistory(){
     const tag = (ok, label) =>
       `<span class="hist-tag ${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${label}</span>`;
     const tags = g.contOk === undefined ? '' :
-      `<span class="hist-tags">${tag(g.contOk, T.clueLabels[0])}${tag(g.regionOk, T.clueLabels[3])}</span>`;
+      `<span class="hist-tags">${tag(g.bucket === 'correct', T.countryLabel)}`
+      + `${tag(g.contOk, T.clueLabels[0])}${tag(g.regionOk, T.clueLabels[3])}</span>`;
     // km before the tags: the tags claim a full row, so anything after them
     // wraps onto a third line.
     row.innerHTML = `<span class="hist-dot" data-glyph="${heatGlyph[g.bucket]||''}" style="background:${heatColorVar[g.bucket]}"></span>
@@ -1914,23 +1981,47 @@ function renderMapForRound(){
     readout.textContent = roundPlan(state.round).bonus ? T.bonusIntro : T.readoutStart;
   } else {
     // Same verdict the history row carries, restated where it cannot be
-    // missed: which country, how far off, and whether the continent and
-    // region were right.
+    // missed: whether the country was right at all, which country, how far
+    // off, and whether the continent and region were right.
+    //
+    // A wrong-but-neighbouring guess used to show two ticks and a small
+    // distance, which reads as success: the first player through the game
+    // thought she had solved it and that the game had stopped working. So the
+    // verdict now says so in words, the country gets a mark of its own next to
+    // the continent and region, and the tries are drawn as boxes that fill in
+    // -- there is no way to mistake a near miss for an answer.
     const last = gs[gs.length-1];
     const e = COUNTRIES.find(c => c.id === last.id);
+    const right = last.bucket === 'correct';
+    const allowed = guessesAllowed(state.round);
+    const left = Math.max(0, allowed - gs.length);
     const tag = (ok, label) =>
       `<span class="hist-tag ${ok ? 'ok' : 'no'}">${ok ? '\u2713' : '\u2717'} ${label}</span>`;
     const tags = last.contOk === undefined ? '' :
-      `<span class="hist-tags">${tag(last.contOk, T.clueLabels[0])}${tag(last.regionOk, T.clueLabels[3])}</span>`;
-    readout.className = 'map-readout last-guess';
+      `<span class="hist-tags">${tag(right, T.countryLabel)}`
+      + `${tag(last.contOk, T.clueLabels[0])}${tag(last.regionOk, T.clueLabels[3])}</span>`;
+    const pips = Array.from({ length: allowed }, (_, i) =>
+      `<span class="lg-pip ${i < gs.length ? (right && i === gs.length-1 ? 'hit' : 'used') : 'free'}"
+             aria-hidden="true">${i < gs.length ? (right && i === gs.length-1 ? '\u2713' : '\u2717') : ''}</span>`
+    ).join('');
+    const verdict = right
+      ? `<span class="lg-verdict ok"><b>\u2713 ${T.rightCountry}</b></span>`
+      : `<span class="lg-verdict no"><b>\u2717 ${T.wrongCountry}</b>`
+        + `${left > 0 ? ` \u2014 ${T.tryAgain}` : ''}</span>`;
+    readout.className = 'map-readout last-guess' + (right ? ' solved' : '');
     readout.style.setProperty('--lg-accent', heatColorVar[last.bucket]);
     readout.innerHTML =
-      `<span class="lg-head">
+      `${verdict}
+       <span class="lg-head">
          <span class="hist-dot" data-glyph="${heatGlyph[last.bucket]||''}" style="background:${heatColorVar[last.bucket]}"></span>
          <b>${e ? e.names[lang] : ''}</b>
        </span>
-       <span class="lg-dist">${T.readout(last.km, dirLabel(last.bearing))}</span>
-       ${tags}`;
+       ${right ? '' : `<span class="lg-dist">${T.readout(last.km, dirLabel(last.bearing))}</span>`}
+       ${tags}
+       <span class="lg-tries">
+         <span class="lg-pips">${pips}</span>
+         <span>${T.guessOf(gs.length, allowed)}${(!right && left > 0) ? ` \u00b7 ${T.triesLeft(left)}` : ''}</span>
+       </span>`;
   }
 }
 
@@ -1953,13 +2044,15 @@ function renderRoundResult(){
     : target.country[lang];
   const reveal = `<p>${several ? T.countriesWere : T.answerWas} <b>${answerNames}</b><br>
                   <span style="color:var(--cream)">${target.names[lang]}</span></p>`;
-  // A missed round still scores by proximity, so the points line is the real
-  // outcome -- "Round over" alone used to read as zero.
-  const last = currentGuesses()[currentGuesses().length - 1];
-  const lastName = last && (COUNTRIES.find(c=>c.id===last.id) || {}).names;
+  // A missed round still scores, so the points line is the real outcome --
+  // "Round over" alone used to read as zero. It names the guess that actually
+  // scored, which is the closest one of the round rather than the last.
+  const best = currentGuesses().reduce(
+    (b, g) => (b && closeness(b) >= closeness(g) ? b : g), null);
+  const bestName = best && (COUNTRIES.find(c=>c.id===best.id) || {}).names;
   const pointsBlock = solved
-    ? `<p class="pts">${T.pointsFull(pts, max)}</p>`
-    : `<p class="pts">${T.pointsPartial(pts, max, lastName ? lastName[lang] : '', last ? last.km : 0)}</p>`;
+    ? `<p class="pts">${T.pointsSolved(pts, max, currentGuesses().length)}</p>`
+    : `<p class="pts">${T.pointsPartial(pts, max, bestName ? bestName[lang] : '', best ? best.km : 0)}</p>`;
   box.innerHTML = `
     <span class="tier-badge">${roundPlan(state.round).bonus ? T.bonusBadge : T.tier[target.tier]}</span>
     <h2>${solved ? T.win : T.lose}</h2>
@@ -2505,27 +2598,34 @@ function submitGuess(country){
                  // Judged against any of the answer countries, for the same
                  // reason the answer itself is: a tradition shared across two
                  // continents is not "the wrong continent".
-                 contOk: !!(contCodeOf(country) && (answers.length > 1
+                 // Naming the country settles the continent and the region with
+                 // it. Both are measured from a country's centre against the
+                 // site's own position, so a country as large as India could
+                 // come back "right country, wrong region" -- which reads as a
+                 // bug at exactly the moment the player has just won.
+                 contOk: isCorrect || !!(contCodeOf(country) && (answers.length > 1
                         ? answers.some(a => contCodeOf(a) === contCodeOf(country))
                         : contCodeOf(country) === contCodeOf(target))),
-                 regionOk: answers.length > 1
+                 regionOk: isCorrect || (answers.length > 1
                         ? answers.some(a => regionOf(a) === regionOf(country))
-                        : regionOf(country) === regionOf(target) });
+                        : regionOf(country) === regionOf(target)) });
 
   const max = roundPlan(state.round).points;
   if(isCorrect){
     state.roundStatus[state.round] = 'solved';
-    state.roundScore[state.round] = max;          // full points, round over
+    // Worth more the sooner it was found, so deduction is rewarded over
+    // working through the allowance.
+    state.roundScore[state.round] = max * solveCredit(guesses.length);
     catalogue(target, true);
     // "Sharp eye": a tier-3 entry taken on the very first guess.
     if(target.tier === 3 && guesses.length === 1 && !isPractice){
       profile.gemFirstGuess = true; saveProfile();
     }
   } else if(guesses.length >= guessesAllowed(state.round)){
-    // Out of guesses. The last guess is what scores -- not the best one, and
-    // not nothing: a near miss is worth most of the round.
+    // Out of guesses. Scored on the best guess of the round rather than the
+    // last, so a near miss counts even when the final try was a gamble.
     state.roundStatus[state.round] = 'failed';
-    state.roundScore[state.round] = max * proximity(km, false);
+    state.roundScore[state.round] = max * missCredit(guesses);
     catalogue(target, false);   // revealed on failure still enters the catalogue
   }
   saveState();

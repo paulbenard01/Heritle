@@ -435,8 +435,8 @@ def play_day(page, base, day, width, label):
     readout = page.locator("#mapReadout")
     check("last-guess" in (readout.get_attribute("class") or ""),
           f"{label}: the guess verdict is shown under the map")
-    check(readout.locator(".hist-tag").count() == 2,
-          f"{label}: continent and region are marked on it",
+    check(readout.locator(".hist-tag").count() == 3,
+          f"{label}: country, continent and region are marked on it",
           str(readout.locator(".hist-tag").count()))
     rbox, vh = readout.bounding_box(), page.viewport_size["height"]
     # Wholly on screen and not flush against the bottom edge.
@@ -529,42 +529,80 @@ def play_day(page, base, day, width, label):
     page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0", timeout=15000)
     page.evaluate("document.getElementById('fnClose')?.click()")
     page.wait_for_timeout(250)
+    # The checks above spent guesses on round 1, and what a solve is worth now
+    # depends on which guess it lands on -- so clear the round before playing
+    # it, or "the first guess" is not the first guess.
+    page.evaluate("""
+      () => { state.guesses[0] = []; state.roundStatus[0] = null;
+              state.roundScore[0] = 0; saveState(); render(); }
+    """)
+    page.wait_for_timeout(150)
 
     # ---- round 1: win outright ----
     page.evaluate("submitGuess(targetCountry())")
     page.wait_for_timeout(250)
     check(page.evaluate("state.roundStatus[0]") == "solved", f"{label}: round 1 won")
     check(abs(page.evaluate("state.roundScore[0]") - page.evaluate("ROUND_PLAN[0].points")) < 0.01,
-          f"{label}: naming the country takes full marks",
+          f"{label}: the country on the first guess takes full marks",
           str(page.evaluate("state.roundScore[0]")))
     page.click("#nextBtn"); page.wait_for_timeout(250)
 
-    # ---- round 2: three wrong guesses -- the last one is what scores ----
+    # ---- round 2: spend the allowance -- the best guess is what scores ----
     allowed = page.evaluate("guessesAllowed(1)")
-    check(allowed == 3, f"{label}: three guesses on a heritage round", str(allowed))
+    check(allowed == 4, f"{label}: four guesses on a heritage round", str(allowed))
     wrongs = page.evaluate("""
       () => COUNTRIES.filter(c => c.names.en !== targets[1].country.en)
-                     .slice(0, 3).map(c => c.id)
+                     .slice(0, 4).map(c => c.id)
     """)
-    check(len(wrongs) == 3, f"{label}: three wrong countries available", str(len(wrongs)))
-    for cid in wrongs:
+    check(len(wrongs) == 4, f"{label}: four wrong countries available", str(len(wrongs)))
+    for i, cid in enumerate(wrongs):
         page.evaluate("id => submitGuess(COUNTRIES.find(c => c.id === id))", cid)
         page.wait_for_timeout(60)
+        if i == 0:
+            # The whole point of this panel: after a wrong guess it has to be
+            # impossible to think you solved it. The first player through the
+            # game guessed a neighbouring country, saw two ticks and a small
+            # distance, and concluded the game was broken.
+            rd = page.locator("#mapReadout")
+            txt = rd.inner_text()
+            check("\u2717" in txt, f"{label}: a wrong guess is marked with a cross", txt)
+            verdict = rd.locator(".lg-verdict").inner_text()
+            check("\u2717" in verdict and len(verdict.strip()) > 3,
+                  f"{label}: and says in words that the country is wrong", verdict)
+            check(rd.locator(".lg-verdict.no").count() == 1
+                  and rd.locator(".lg-verdict.ok").count() == 0,
+                  f"{label}: the verdict is not dressed as a success")
+            tags = rd.locator(".hist-tag").all_inner_texts()
+            check(len(tags) == 3,
+                  f"{label}: country, continent and region each get a mark", str(tags))
+            check(tags[0].startswith("\u2717"),
+                  f"{label}: and the country mark is the wrong one", str(tags))
+            pips = rd.locator(".lg-pip")
+            check(pips.count() == 4, f"{label}: one box per try", str(pips.count()))
+            check(rd.locator(".lg-pip.used").count() == 1
+                  and rd.locator(".lg-pip.free").count() == 3,
+                  f"{label}: one box spent, three still open")
+            tries = rd.locator(".lg-tries").inner_text()
+            check("1" in tries and "4" in tries,
+                  f"{label}: the tries are counted where the eye already is", tries)
+            check("3" in tries, f"{label}: and it says how many are left", tries)
     check(page.evaluate("state.roundStatus[1]") == "failed", f"{label}: round 2 missed",
           str(page.evaluate("state.roundStatus[1]")))
-    check(page.evaluate("state.guesses[1].length") == 3,
+    check(page.evaluate("state.guesses[1].length") == 4,
           f"{label}: the round ends after its allowance")
-    # The last guess scores by proximity, so a miss is worth something but
-    # never the full round.
-    expected = page.evaluate("""
-      () => { const g = state.guesses[1][state.guesses[1].length - 1];
-              return ROUND_PLAN[1].points * proximity(g.km, false); }
-    """)
+    # Scored on the closest guess of the round, not the last one: a player who
+    # narrowed it down and then gambled the final try keeps what they found.
+    expected = page.evaluate("() => ROUND_PLAN[1].points * missCredit(state.guesses[1])")
     check(abs(page.evaluate("state.roundScore[1]") - expected) < 0.01,
-          f"{label}: the last guess is the one that scores",
+          f"{label}: the best guess is the one that scores",
           f"{page.evaluate('state.roundScore[1]')} vs {expected}")
     check(page.evaluate("state.roundScore[1]") < page.evaluate("ROUND_PLAN[1].points"),
           f"{label}: a missed round scores less than full marks")
+    # Missing has to be worth less than the worst possible solve, or the
+    # incentive to actually find it disappears.
+    check(page.evaluate("state.roundScore[1]")
+          < page.evaluate("ROUND_PLAN[1].points * SOLVE_CREDIT[SOLVE_CREDIT.length-1]"),
+          f"{label}: and less than the latest possible solve")
     page.click("#nextBtn"); page.wait_for_timeout(250)
 
     # ---- round 3: a wrong guess first, then solve -- still full marks ----
@@ -574,8 +612,20 @@ def play_day(page, base, day, width, label):
     page.evaluate("submitGuess(targetCountry())")
     page.wait_for_timeout(250)
     check(page.evaluate("state.roundStatus[2]") == "solved", f"{label}: round 3 solved")
-    check(abs(page.evaluate("state.roundScore[2]") - page.evaluate("ROUND_PLAN[2].points")) < 0.01,
-          f"{label}: solving late still takes full marks")
+    rd = page.locator("#mapReadout")
+    check(rd.locator(".lg-verdict.ok").count() == 1,
+          f"{label}: a right country is marked right")
+    check(rd.locator(".lg-pip.hit").count() == 1,
+          f"{label}: and the box it was found on is ticked, not crossed")
+    # Solving on the second guess is worth less than solving on the first, or
+    # the day's score says nothing about how it went -- which is how every
+    # score landed on one of eight values.
+    expected = page.evaluate("() => ROUND_PLAN[2].points * SOLVE_CREDIT[1]")
+    check(abs(page.evaluate("state.roundScore[2]") - expected) < 0.01,
+          f"{label}: a later solve is worth less than an outright one",
+          f"{page.evaluate('state.roundScore[2]')} vs {expected}")
+    check(page.evaluate("state.roundScore[2]") > page.evaluate("ROUND_PLAN[2].points * 0.5"),
+          f"{label}: but still most of the round")
     page.click("#nextBtn"); page.wait_for_timeout(250)
 
     # ---- round 4: the intangible bonus round ----
@@ -590,15 +640,15 @@ def play_day(page, base, day, width, label):
     # A tradition is far harder to place than a building, so a single guess
     # meant the round was lost by default rather than played. Three, like the
     # rest -- and the photograph ladder that comes with them.
-    check(page.evaluate("guessesAllowed(3)") == 3,
-          f"{label}: the bonus round allows three guesses",
+    check(page.evaluate("guessesAllowed(3)") == 4,
+          f"{label}: the bonus round allows four guesses",
           str(page.evaluate("guessesAllowed(3)")))
     check(T_BONUS_INTRO_SHOWN(page), f"{label}: the bonus round says so before the guess")
     wrongs = page.evaluate("""
       () => COUNTRIES.filter(c => !targetCountries().some(a => a.id === c.id))
-                     .slice(0, 3).map(c => c.id)
+                     .slice(0, 4).map(c => c.id)
     """)
-    check(len(wrongs) == 3, f"{label}: three wrong countries available for the bonus")
+    check(len(wrongs) == 4, f"{label}: four wrong countries available for the bonus")
     for i, cid in enumerate(wrongs):
         page.evaluate("id => submitGuess(COUNTRIES.find(c => c.id === id))", cid)
         page.wait_for_timeout(80)
@@ -607,7 +657,7 @@ def play_day(page, base, day, width, label):
                   f"{label}: one wrong guess does not end the bonus round",
                   str(page.evaluate("state.roundStatus[3]")))
     check(page.evaluate("state.roundStatus[3]") == "failed", f"{label}: bonus round resolved")
-    check(page.evaluate("state.guesses[3].length") == 3,
+    check(page.evaluate("state.guesses[3].length") == 4,
           f"{label}: the bonus round ends after its allowance",
           str(page.evaluate("state.guesses[3].length")))
     page.click("#nextBtn"); page.wait_for_timeout(400)

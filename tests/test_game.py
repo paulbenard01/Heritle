@@ -157,7 +157,8 @@ def main():
                 # Each guess says what it already got right, so a try narrows
                 # the search instead of just reporting a number.
                 tags = page.locator(".hist-row .hist-tag")
-                check(tags.count() == 2, "guess shows continent and region verdicts",
+                check(tags.count() == 3,
+                      "guess shows country, continent and region verdicts",
                       str(tags.count()))
                 txt = page.locator(".hist-row").first.inner_text()
                 check("✓" in txt or "✗" in txt, "verdicts render a tick or cross", txt)
@@ -174,10 +175,13 @@ def main():
                 country_score = page.evaluate("totalScore()")
                 check(country_score > 0, "score awarded for the country", str(country_score))
 
-                check(abs(page.evaluate("state.roundScore[0]")
-                          - page.evaluate("ROUND_PLAN[0].points")) < 0.01,
-                      "naming the country takes the round's full points",
-                      str(page.evaluate("state.roundScore[0]")))
+                # Found on the second guess, so worth a little less than an
+                # outright solve -- the score has to say how it went, not just
+                # that it went.
+                expected = page.evaluate("() => ROUND_PLAN[0].points * SOLVE_CREDIT[1]")
+                check(abs(page.evaluate("state.roundScore[0]") - expected) < 0.01,
+                      "a solve on the second guess is worth its share of the round",
+                      f"{page.evaluate('state.roundScore[0]')} vs {expected}")
 
                 page.click("#nextBtn"); page.wait_for_timeout(300)
                 # Round 2 is played through the UI rather than by calling
@@ -194,10 +198,10 @@ def main():
                 page.click("#nextBtn"); page.wait_for_timeout(200)
                 page.evaluate("submitGuess(targetCountry())"); page.wait_for_timeout(200)
                 page.click("#nextBtn"); page.wait_for_timeout(200)
-                # The bonus round: three guesses like the rest, since a
+                # The bonus round: the same allowance as the rest, since a
                 # tradition on one guess was lost by default rather than played.
-                check(page.evaluate("guessesAllowed(3)") == 3,
-                      "the bonus round allows three guesses")
+                check(page.evaluate("guessesAllowed(3)") == 4,
+                      "the bonus round allows four guesses")
                 page.evaluate("submitGuess(targetCountry())"); page.wait_for_timeout(250)
                 check(page.evaluate("state.roundStatus[3]") == "solved",
                       "the bonus round resolves when named")
