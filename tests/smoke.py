@@ -1345,6 +1345,89 @@ def main():
               "without pulling the board out from under them")
         ctx.close()
 
+        # ---- a day, once dealt, stays dealt ----
+        # The deal is a function of the dataset, and the dataset moves: tiers
+        # are rank tertiles of sitelink counts and the deal walks a permutation
+        # of each pool, so regenerating it re-deals days that were already
+        # played. A puzzle could change under a player mid-round, and every
+        # past day replayed as something that never happened.
+        print("\n== a day stays dealt ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.wait_for_timeout(200)
+        first = page.evaluate("targets.map(e => e.id)")
+        check(page.evaluate("(state.ids || []).length") == len(first),
+              "the day's four entries are written into its save", str(first))
+        # Now do to the pool exactly what regenerating the dataset does: change
+        # what is in it, and re-deal.
+        moved = page.evaluate("""
+          () => {
+            const before = targets.map(e => e.id);
+            // What regenerating the dataset actually does: new entries, and
+            // sitelink counts that move entries between fame tiers.
+            POOL.forEach((e, i) => { e.tier = (i % 3) + 1; });
+            computeTargets();
+            const retiered = targets.map(e => e.id);
+
+            // And the harder case: an entry leaves the pool altogether,
+            // because the map cannot answer its country any more.
+            const lost = before[1];
+            POOL = POOL.filter(e => e.id !== lost);
+            computeTargets();
+            const afterLoss = targets.map(e => e.id);
+
+            // What the day would have been dealt without any of this.
+            const ids = state.ids; state.ids = null;
+            const rec = profile.days[dayIndex]; profile.days[dayIndex] = null;
+            const redealt = dealFor(dayIndex).map(e => e.id);
+            state.ids = ids; profile.days[dayIndex] = rec;
+            return { before, retiered, afterLoss, redealt, lost };
+          }
+        """)
+        check(moved["retiered"] == moved["before"],
+              "re-tiering the whole pool does not change a day already dealt",
+              f"{moved['before']} -> {moved['retiered']}")
+        check(moved["redealt"] != moved["before"],
+              "and that shift really would have re-dealt it otherwise",
+              str(moved["redealt"]))
+        survivors = [i for i in range(4) if i != 1]
+        check(all(moved["afterLoss"][i] == moved["before"][i] for i in survivors),
+              "an entry leaving the pool costs only its own round",
+              f"{moved['before']} -> {moved['afterLoss']}")
+        check(moved["afterLoss"][1] != moved["lost"]
+              and len(set(moved["afterLoss"])) == 4,
+              "and that round is refilled with something else",
+              str(moved["afterLoss"]))
+        check(not errs, "and nothing throws while it happens", "; ".join(errs[:2]))
+        ctx.close()
+
+        # The daily save is per-day and can be cleared; the passport record is
+        # what a replay months later has to lean on.
+        ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        play_day(page, base, None, 375, "freeze")
+        played = page.evaluate("profile.days[dayIndex].ids")
+        check(isinstance(played, list) and len(played) == 4,
+              "a finished day records what was played in the passport", str(played))
+        check(played == page.evaluate("targets.map(e => e.id)"),
+              "and it is what was actually on the board")
+        rebuilt = page.evaluate("""
+          () => {
+            state.ids = null;              // as if the daily save had expired
+            computeTargets();
+            return targets.map(e => e.id);
+          }
+        """)
+        check(rebuilt == played,
+              "so the day can be rebuilt from the passport alone", str(rebuilt))
+        ctx.close()
+
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which
         # used to be fatal: the state read and write had no guard at all, and

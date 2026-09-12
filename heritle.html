@@ -1383,9 +1383,60 @@ function dealFor(day){
   }).filter(Boolean);
 }
 
+/* A day is dealt once and then remembered, because the deal is a function of
+   the dataset and the dataset moves. Tiers are rank tertiles of sitelink
+   counts and the deal walks a permutation of each pool, so regenerating
+   data/dataset.json -- a new inscription, a changed sitelink count, an entry
+   whose country the map cannot answer -- reshuffles pools and re-deals days
+   that have already been played. Two things went wrong with that:
+
+     a puzzle could change under a player mid-round, if the file was replaced
+     between two visits on the same day;
+
+     and every past day replayed from the archive as a different puzzle, so
+     the archive quietly described something that never happened.
+
+   The four ids are written into the day's own save the first time it is
+   dealt, and into the passport record when the day is finished, which is what
+   outlives the daily key. A remembered day is rebuilt from those ids; if an
+   entry has since left the pool entirely it is dealt fresh, because a round
+   that cannot be rendered is worse than a round that changed. */
+function frozenIds(){
+  if(Array.isArray(state.ids) && state.ids.length) return state.ids;
+  const rec = profile.days && profile.days[dayIndex];
+  if(rec && Array.isArray(rec.ids) && rec.ids.length) return rec.ids;
+  return null;
+}
 function computeTargets(){
   BY_ID = new Map(POOL.map(d => [d.id, d]));
-  targets = dealFor(dayIndex);
+  const remembered = frozenIds();
+  let fresh = null;                      // dealt only if something is missing
+  const dealNow = ()=> (fresh || (fresh = dealFor(dayIndex)));
+
+  let picked;
+  if(remembered && remembered.length === N_ROUNDS){
+    const used = new Set();
+    const kept = remembered.map(id => {
+      const e = BY_ID.get(id);
+      if(!e || used.has(e.id)) return null;
+      used.add(e.id);
+      return e;
+    });
+    if(kept.every(Boolean)){
+      picked = kept;
+    }else{
+      // One entry has left the pool. Replace that slot only: re-dealing the
+      // whole day would throw away three rounds that are still perfectly good.
+      const spares = dealNow().filter(e => !used.has(e.id));
+      picked = kept.map(e => e || spares.shift() || null);
+      picked = picked.every(Boolean) ? picked : null;
+    }
+  }
+  targets = picked || dealNow();
+  if(targets.length === N_ROUNDS){
+    const ids = targets.map(e => e.id);
+    if(String(ids) !== String(state.ids)){ state.ids = ids; saveState(); }
+  }
 }
 
 /* ---------- Detailed map geometry ----------
@@ -1507,6 +1558,9 @@ if(!Array.isArray(state.roundScore))  state.roundScore = ROUND_PLAN.map(()=>0);
 state.guesses = state.guesses.map(g => Array.isArray(g) ? g : []);
 state.roundScore = state.roundScore.map(v => Number.isFinite(v) ? v : 0);
 if(!Number.isFinite(state.round) || state.round < 0) state.round = 0;
+if(!Array.isArray(state.ids) || state.ids.some(id => typeof id !== 'string')){
+  delete state.ids;                 // a bad freeze is re-dealt, not honoured
+}
 // A save written before the round count changed would be short by a round and
 // index past the end of its own arrays. The generation bump below clears those,
 // but pad defensively rather than trusting it.
@@ -1594,6 +1648,9 @@ function recordDay(){
   profile.days[dayIndex] = {
     score: totalScore(),
     statuses: state.roundStatus.slice(),
+    // What was actually played, so the archive can replay this day as it was
+    // however much the dataset moves afterwards.
+    ids: (targets || []).map(e => e.id),
     at: Date.now()
   };
   saveProfile();
