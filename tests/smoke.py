@@ -1208,6 +1208,108 @@ def main():
               "colour-blind marks toggle on")
         check(not errors, "no console errors across the panels", "; ".join(errors[:3]))
         ctx.close()
+
+        # ---- storage that fights back ----
+        # Three ways the game meets a browser it cannot save to, all of which
+        # used to be fatal: the state read and write had no guard at all, and
+        # they run at the top level and from inside submitGuess.
+        print("\n== hostile storage ==")
+
+        def storage_case(name, init_script, expect_remembers):
+            ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                      has_touch=True, is_mobile=True)
+            pg = ctx.new_page()
+            errs = []
+            pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.add_init_script(init_script)
+            pg.goto(base)
+            try:
+                pg.wait_for_function(
+                    "typeof POOL !== 'undefined' && POOL.length > 0", timeout=20000)
+                loaded = True
+            except Exception:
+                loaded = False
+            check(loaded, f"{name}: the game still loads")
+            if loaded:
+                pg.evaluate("document.getElementById('fnClose')?.click()")
+                pg.wait_for_timeout(200)
+                # The board has to be playable, not merely present: a throw
+                # inside submitGuess left the guess unrendered and the game
+                # looked like it had stopped responding.
+                tap_guess(pg, "COUNTRIES.find(c => c.names.en !== targets[0].country.en)")
+                pg.wait_for_timeout(400)
+                check(pg.evaluate("state.guesses[0].length") == 1,
+                      f"{name}: a guess is accepted",
+                      str(pg.evaluate("state.guesses[0].length")))
+                check(pg.locator(".hist-row").count() == 1,
+                      f"{name}: and the board redraws around it")
+                check(pg.locator("#mapReadout .lg-verdict").count() == 1,
+                      f"{name}: and the verdict is shown")
+                if expect_remembers is None:
+                    # The planted generation is a literal, so a bump to
+                    # STORAGE_GEN would disarm these cases in silence: the
+                    # page's own first-load sweep would delete the blob before
+                    # the read under test.
+                    check(pg.evaluate("STORAGE_GEN") == "4",
+                          f"{name}: the planted generation still matches the game's",
+                          str(pg.evaluate("STORAGE_GEN")))
+                if expect_remembers is False:
+                    # Nothing is written, which is the honest outcome; what
+                    # matters is that the game does not pretend otherwise by
+                    # falling over.
+                    pg.reload()
+                    pg.wait_for_function(
+                        "typeof POOL !== 'undefined' && POOL.length > 0", timeout=20000)
+                    check(pg.evaluate("state.guesses[0].length") == 0,
+                          f"{name}: it simply does not remember, and says nothing")
+            check(not errs, f"{name}: and nothing throws", "; ".join(errs[:2]))
+            ctx.close()
+
+        # 1. A blob that will not parse -- a tab killed mid-write, or a player
+        #    who edited it. JSON.parse threw at the top level: blank page, and
+        #    unrecoverable without devtools.
+        storage_case("corrupt save", """
+          (() => {
+            const day = Math.floor((Date.UTC(new Date().getFullYear(),
+                                             new Date().getMonth(),
+                                             new Date().getDate())
+                                    - Date.UTC(2026, 8, 11)) / 86400000);
+            // A returning player, or the sweep clears the blob before the
+            // read that is under test ever happens.
+            localStorage.setItem('heritle-gen', '4');
+            localStorage.setItem('heritle-' + day, '{"round":0,"guesses":[[');
+            localStorage.setItem('heritle-profile', 'not json at all');
+          })();
+        """, None)
+
+        # 2. A blob that parses but is the wrong shape. Every render walks
+        #    these arrays.
+        storage_case("nonsense save", """
+          (() => {
+            const day = Math.floor((Date.UTC(new Date().getFullYear(),
+                                             new Date().getMonth(),
+                                             new Date().getDate())
+                                    - Date.UTC(2026, 8, 11)) / 86400000);
+            localStorage.setItem('heritle-gen', '4');
+            localStorage.setItem('heritle-' + day,
+              JSON.stringify({ round: 'x', guesses: 7, roundStatus: null,
+                               roundScore: ['a'] }));
+          })();
+        """, None)
+
+        # 3. Storage that throws on every call, which is private browsing with
+        #    a zero quota, a full quota, and some extensions.
+        storage_case("storage throws", """
+          (() => {
+            const boom = () => { throw new DOMException('QuotaExceededError'); };
+            Object.defineProperty(window, 'localStorage', {
+              configurable: true,
+              get: () => ({ getItem: boom, setItem: boom, removeItem: boom,
+                            key: boom, clear: boom, length: 0 })
+            });
+          })();
+        """, False)
+
         browser.close()
 
     if httpd:

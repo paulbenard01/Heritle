@@ -1063,11 +1063,44 @@ const UI = {
    With detection and persistence it becomes a rare correction, and can be
    quiet. */
 const LANG_KEY = 'heritle-lang';
-function initialLang(){
+
+/* ---------- Storage, which is allowed to fail ----------
+   Every one of these calls can throw, and a throw here is fatal in a way
+   nothing else in the game is: the reads run at the top level, so one bad
+   value blanks the page, and the player cannot clear it without opening
+   devtools. The writes are worse than they look -- saveState() is called from
+   the middle of submitGuess(), so a throw there abandons the guess before the
+   board is re-rendered, and the game appears to have stopped accepting input.
+
+   Causes seen in the wild: private browsing with a zero quota, a full quota, a
+   browser extension replacing the storage object, and a half-written value
+   from a tab killed mid-write. None of them are the player's fault, and none
+   should cost more than the memory of the game. */
+function lsGet(key){
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+function lsSet(key, value){
+  try{ localStorage.setItem(key, value); return true; }catch(e){ return false; }
+}
+function lsRemove(key){
+  try{ localStorage.removeItem(key); }catch(e){ /* nothing to remove */ }
+}
+/* A stored blob that will not parse is a lost save, not a crash. */
+function lsJSON(key, fallback){
+  const raw = lsGet(key);
+  if(!raw) return fallback;
   try{
-    const saved = localStorage.getItem(LANG_KEY);
-    if(saved && UI[saved]) return saved;
-  }catch(e){ /* private mode */ }
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : fallback;
+  }catch(e){
+    lsRemove(key);            // it could only fail forever otherwise
+    return fallback;
+  }
+}
+
+function initialLang(){
+  const saved = lsGet(LANG_KEY);
+  if(saved && UI[saved]) return saved;
   const nav = (navigator.languages || [navigator.language || 'en'])
                 .map(l => String(l).slice(0,2).toLowerCase());
   return nav.find(l => UI[l]) || 'en';
@@ -1193,10 +1226,8 @@ const todayIndex = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.g
 const params = new URLSearchParams(location.search);
 
 function finishedDays(){
-  try{
-    const p = JSON.parse(localStorage.getItem('heritle-profile') || '{}');
-    return (p && typeof p.days === 'object' && p.days) ? p.days : {};
-  }catch(e){ return {}; }
+  const p = lsJSON('heritle-profile', {});
+  return (p && typeof p.days === 'object' && p.days) ? p.days : {};
 }
 
 const dayIndex = (function pickDay(){
@@ -1359,32 +1390,40 @@ async function loadDataset(){
    away real play. */
 const STORAGE_GEN = '4';
 const GEN_KEY = 'heritle-gen';
-try{
-  if(localStorage.getItem(GEN_KEY) !== STORAGE_GEN){
+if(lsGet(GEN_KEY) !== STORAGE_GEN){
+  try{
     Object.keys(localStorage)
       // The language preference is a UI setting, not game state: a reset of
       // the archives should not put a French player back into English.
       .filter(k => k.startsWith('heritle-') && k !== GEN_KEY && k !== LANG_KEY)
-      .forEach(k => localStorage.removeItem(k));
-    localStorage.setItem(GEN_KEY, STORAGE_GEN);
-  }
-}catch(e){ /* private mode: nothing was stored, so nothing needs clearing */ }
+      .forEach(lsRemove);
+  }catch(e){ /* no storage to enumerate means nothing was stored to clear */ }
+  lsSet(GEN_KEY, STORAGE_GEN);
+}
 
 /* ---------- State ---------- */
 const STORAGE_KEY = `heritle-${dayIndex}`;
-let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || JSON.stringify({
+let state = lsJSON(STORAGE_KEY, null) || {
   round: 0,
   guesses: ROUND_PLAN.map(()=>[]),
   roundStatus: ROUND_PLAN.map(()=>null),
   roundScore: ROUND_PLAN.map(()=>0)
-}));
+};
+// Shapes, not merely presence: a half-written or hand-edited blob can carry a
+// number where an array belongs, and every render walks these.
+if(!Array.isArray(state.guesses))     state.guesses = ROUND_PLAN.map(()=>[]);
+if(!Array.isArray(state.roundStatus)) state.roundStatus = ROUND_PLAN.map(()=>null);
+if(!Array.isArray(state.roundScore))  state.roundScore = ROUND_PLAN.map(()=>0);
+state.guesses = state.guesses.map(g => Array.isArray(g) ? g : []);
+state.roundScore = state.roundScore.map(v => Number.isFinite(v) ? v : 0);
+if(!Number.isFinite(state.round) || state.round < 0) state.round = 0;
 // A save written before the round count changed would be short by a round and
 // index past the end of its own arrays. The generation bump below clears those,
 // but pad defensively rather than trusting it.
 while(state.guesses.length     < N_ROUNDS) state.guesses.push([]);
 while(state.roundStatus.length < N_ROUNDS) state.roundStatus.push(null);
 while(state.roundScore.length  < N_ROUNDS) state.roundScore.push(0);
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function saveState(){ lsSet(STORAGE_KEY, JSON.stringify(state)); }
 
 /* ---------- Profile ----------
    Everything that outlives a single day: the catalogue of entries the player
@@ -1396,8 +1435,7 @@ const PROFILE_KEY = 'heritle-profile';
 
 function loadProfile(){
   let p = {};
-  try { p = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}') || {}; }
-  catch(e){ p = {}; }
+  p = lsJSON(PROFILE_KEY, {});
   return {
     collection: p.collection && typeof p.collection === 'object' ? p.collection : {},
     days:       p.days && typeof p.days === 'object' ? p.days : {},
@@ -1410,8 +1448,8 @@ function loadProfile(){
 }
 let profile = loadProfile();
 function saveProfile(){
-  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
-  catch(e){ /* private mode: the game still plays, it just won't remember */ }
+  // Private mode or a full quota: the game still plays, it just won't remember.
+  lsSet(PROFILE_KEY, JSON.stringify(profile));
 }
 
 function isFavourite(id){ return !!profile.favourites[id]; }
@@ -2768,7 +2806,7 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active'); lang = btn.dataset.lang;
-    try{ localStorage.setItem(LANG_KEY, lang); }catch(e){ /* private mode */ }
+    lsSet(LANG_KEY, lang);
     render(); renderNav(); renderCountdown();
     if(currentView !== 'Game') showView(currentView);
   });
