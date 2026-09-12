@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Heritle — three heritage guesses a day</title>
+<title>Heritle — three world heritage sites and a living tradition, daily</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -27,6 +27,42 @@
   }
   button{touch-action:manipulation;}
   .page{width:100%;max-width:480px;}
+
+  /* ---------- Wide screens ----------
+     The whole game was 480px wide on every display, so a laptop showed a
+     narrow strip of board in the middle of an otherwise empty navy field --
+     and the map, which is the input device in a map-guessing game, was a
+     third of the width it could have been. Above 980px the photograph and the
+     map sit side by side instead: the two things a round is actually made of,
+     both larger, and the guess is next to the evidence rather than under it.
+     Everything below them stays in one column, because a clue list and a
+     history are read, not aimed at. */
+  @media (min-width: 980px){
+    .page{max-width:1060px;}
+    #viewGame{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:22px;align-items:start;}
+    /* The row of pips, the badges and everything after the guess stay full
+       width; only the photograph and the map take a column each. */
+    #viewGame > .rounds-row, #viewGame > .meta-row, #viewGame > .clues,
+    #viewGame > .history, #viewGame > .round-result, #viewGame > .final-result{
+      grid-column:1 / -1;}
+    #viewGame > .photo-box{grid-column:1;grid-row:1;margin-bottom:0;}
+    #viewGame > .map-wrap{grid-column:2;grid-row:1;margin-bottom:0;}
+    /* The prompt to tap belongs under the thing being tapped, not under the
+       photograph on the other side of the board. */
+    #viewGame > .guess-row{grid-column:2;grid-row:2;align-self:start;margin-top:12px;}
+    /* A 16:9 photograph beside a 2:1 map: without this the taller of the two
+       stretches its column and the pair stop lining up at the top. */
+    #viewGame > .photo-box img{max-height:430px;object-fit:cover;}
+    /* Four clue cards across rather than two: at this width two of them leave
+       a line of text in a box the size of a postcard. Written with the id so
+       it beats the base rule further down the sheet. */
+    #viewGame > .clues{grid-template-columns:repeat(4, minmax(0,1fr));}
+    .view.active{padding-bottom:30px;}
+  }
+  /* Wider still: the column stops growing, because a photograph three feet
+     across is not a better puzzle and the text lines become unreadable. */
+  @media (min-width: 1400px){ .page{max-width:1180px;} }
   header{text-align:center;margin-bottom:16px;position:relative;}
   /* The mark sits opposite the language control, and costs nothing in the
      vertical budget above the photograph. */
