@@ -158,6 +158,28 @@ MARK_PROBE = """
   }
 """
 
+# A touch that starts, moves and ends -- and the click a phone fires after it,
+# which is the part that used to open the lightbox at the end of every swipe.
+SWIPE = """
+  ([sel, dx, dy, tap]) => {
+    const el = document.querySelector(sel);
+    const b = el.getBoundingClientRect();
+    const x = b.left + b.width / 2, y = b.top + b.height / 2;
+    const fire = (type, cx, cy) => {
+      const t = new Touch({ identifier: 1, target: el, clientX: cx, clientY: cy });
+      el.dispatchEvent(new TouchEvent(type, {
+        changedTouches: [t], touches: type === 'touchend' ? [] : [t],
+        bubbles: true, cancelable: true }));
+    };
+    fire('touchstart', x, y);
+    fire('touchmove', x + dx / 2, y + dy / 2);
+    fire('touchend', x + dx, y + dy);
+    // A real browser fires a click after a tap or a short drag, and suppresses
+    // it after a scroll. Passing tap:false is the scroll case.
+    if(tap !== false) el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -2154,6 +2176,76 @@ def main():
                 print(f"  ---- {tag}: photograph did not load, so no lightbox to page")
             check(not errs, f"{tag}: and none of it throws", "; ".join(errs[:2]))
             ctx.close()
+
+        # ---- and a thumb, which is what a phone actually has ----
+        # Reaching for a 46px arrow is not what a hand expects to do with a
+        # photograph.
+        ctx = browser.new_context(viewport={"width": 390, "height": 844},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        staged = page.evaluate("""
+          () => {
+            const many = POOL.find(e => (e.photos || []).length >= 2);
+            if(!many) return false;
+            targets[state.round] = many;
+            state.roundStatus[state.round] = null;
+            state.guesses[state.round] = [];
+            photoView[state.round] = 0;
+            render();
+            submitGuess(COUNTRIES.find(c => !targetCountries().some(a => a.id === c.id)));
+            photoView[state.round] = 0;   // start at the first, to page forward
+            render();
+            return true;
+          }
+        """)
+        page.wait_for_timeout(400)
+        if staged:
+            at = page.evaluate("photoIndexFor(currentTarget())")
+            page.evaluate(SWIPE, ["#photoBox", -90, 4])
+            page.wait_for_timeout(300)
+            check(page.evaluate("photoIndexFor(currentTarget())") == at + 1,
+                  "a swipe across the photograph pages it forward",
+                  str(page.evaluate("photoIndexFor(currentTarget())")))
+            check("open" not in (page.locator("#lightbox").get_attribute("class") or ""),
+                  "and a swipe is not also a tap, so it does not zoom in")
+            page.evaluate(SWIPE, ["#photoBox", 95, -3])
+            page.wait_for_timeout(300)
+            check(page.evaluate("photoIndexFor(currentTarget())") == at,
+                  "and back the other way")
+            # A page scrolled with a thumb over the picture must not page it.
+            # A page scrolled with a thumb over the picture: no click follows
+            # a scroll in a real browser, which is why tap is false here.
+            page.evaluate(SWIPE, ["#photoBox", 5, 120, False])
+            page.wait_for_timeout(250)
+            check(page.evaluate("photoIndexFor(currentTarget())") == at,
+                  "while a vertical drag leaves it alone")
+            check("open" not in (page.locator("#lightbox").get_attribute("class") or ""),
+                  "and does not zoom in either")
+            page.click("#photoBox")
+            page.wait_for_timeout(400)
+            if "open" in (page.locator("#lightbox").get_attribute("class") or ""):
+                src = page.evaluate("document.getElementById('lightboxImg').src")
+                page.evaluate(SWIPE, ["#lightbox", -100, 2])
+                page.wait_for_timeout(300)
+                check(page.evaluate("document.getElementById('lightboxImg').src") != src,
+                      "zoomed in, a swipe pages it too")
+                check("open" in (page.locator("#lightbox").get_attribute("class") or ""),
+                      "and does not close it on the way")
+                page.evaluate("""
+                  () => document.getElementById('lightbox')
+                          .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+                """)
+                page.wait_for_timeout(250)
+                check("open" not in (page.locator("#lightbox").get_attribute("class") or ""),
+                      "while a plain tap still closes it")
+        check(not errs, "and swiping throws nothing", "; ".join(errs[:2]))
+        ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which
