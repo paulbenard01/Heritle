@@ -147,6 +147,17 @@ HEADER_PROBE = """
   }
 """
 
+# The mark's size, and whether it says what it is.
+MARK_PROBE = """
+  () => {
+    const m = document.querySelector('.mark').getBoundingClientRect();
+    const h = document.querySelector('.mark-hint');
+    return { w: Math.round(m.width), h: Math.round(m.height),
+             hint: h ? getComputedStyle(h).display : null,
+             hintText: h ? h.textContent : '' };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1998,6 +2009,71 @@ def main():
             check(g["ig"] is not None and g["ig"]["r"] <= width,
                   f"{width}px: and Instagram is on the screen", str(g["ig"]))
             ctx.close()
+
+        # ---- the mark, and the tab ----
+        print("\n== the mark ==")
+        for width, wide in ((390, False), (1280, True)):
+            ctx = browser.new_context(viewport={"width": width, "height": 860})
+            page = ctx.new_page()
+            page.goto(base)
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            # Field Notes is over the page on a first visit, and its backdrop
+            # swallows the click on the mark.
+            page.evaluate("document.getElementById('fnClose')?.click()")
+            page.wait_for_timeout(250)
+            m = page.evaluate(MARK_PROBE)
+            tag = f"{width}px"
+            check(m["w"] >= 48, f"{tag}: the mark is big enough to press", str(m["w"]))
+            if wide:
+                # At 52px in the corner of a 1280px page it read as decoration,
+                # with the whole of Who am I, the reading list and the project
+                # behind it.
+                check(m["w"] >= 70,
+                      "on a wide screen it is big enough to be seen at all",
+                      str(m["w"]))
+                check(m["hint"] == "block" and m["hintText"].strip() != "",
+                      "and says what it is", f"{m['hint']} {m['hintText']!r}")
+                # Under the mark is where the menu drops, so a label there is
+                # covered the moment anyone uses it.
+                page.click("#mark")
+                page.wait_for_timeout(300)
+                hint = page.locator(".mark-hint").bounding_box()
+                menu = page.locator("#markMenu").bounding_box()
+                check(hint["x"] >= menu["x"] + menu["width"] - 2
+                      or hint["y"] + hint["height"] <= menu["y"] + 2,
+                      "and the open menu does not cover the label",
+                      f"hint {hint}, menu {menu}")
+                page.keyboard.press("Escape")
+            else:
+                check(m["hint"] == "none",
+                      "on a phone the label stays off: the header is full",
+                      str(m["hint"]))
+            ctx.close()
+        # One mark for a dark tab strip, one for a light one. A single mark that
+        # reads on both does not exist.
+        ctx = browser.new_context(viewport={"width": 390, "height": 800})
+        page = ctx.new_page()
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        icons = page.evaluate("""
+          () => [...document.querySelectorAll('link[rel=icon]')]
+                  .map(l => ({ media: l.media, file: l.href.split('/').pop() }))
+        """)
+        check(len(icons) == 2, "the tab has a mark for each theme", str(icons))
+        check({i["media"] for i in icons} ==
+              {"(prefers-color-scheme: dark)", "(prefers-color-scheme: light)"},
+              "one for dark, one for light", str([i["media"] for i in icons]))
+        check(len({i["file"] for i in icons}) == 2,
+              "and they are different files", str([i["file"] for i in icons]))
+        # A browser that ignores the media query takes the first one listed.
+        check(icons[0]["media"] == "(prefers-color-scheme: dark)",
+              "with the dark-tab one first, for browsers that ignore the query")
+        for i in icons:
+            r = page.request.get(base + "assets/" + i["file"])
+            check(r.status == 200, f"{i['file']} is actually there", str(r.status))
+        ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which

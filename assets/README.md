@@ -55,3 +55,19 @@ the kind that are invisible until they are not:
 Numeric precision was left alone: rounding the path coordinates to one decimal
 saved 30KB and visibly deformed the mark, because the data is relative and the
 error accumulates along each path.
+
+## The gate mark, second delivery
+
+`vectorised-4c7d2e03.svg` (gold, doors open), `vectorised-White.svg` and
+`vectorised-Black.svg`. All three arrived with a viewBox and no background
+rectangle — the two things the first vectorisation needed fixing for — and at
+13KB rather than 206KB, so they are used as they came.
+
+The white and black ones are the tab icon, chosen by the browser's own theme:
+a tab strip is white in one and near-black in the other, and a single mark that
+reads on both does not exist. The dark-theme one is listed first because a
+browser that does not understand the media query takes the first it finds, and
+most tab strips are dark.
+
+`vectorised-241b3301.svg` is the first delivery, kept because it is the only
+one with the cream fill inside the doors. Nothing loads it.
