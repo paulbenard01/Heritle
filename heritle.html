@@ -3,6 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Plain http and https are different origins, and localStorage belongs to an
+   origin. So http://heritle.org is not a shabbier version of the site -- it is
+   a different box with a different collection in it, and anyone arriving from
+   a link in an Instagram bio (which is http://) found an empty passport and no
+   streak. GitHub Pages will do this redirect itself once Enforce HTTPS is on;
+   this does not wait for that, and keeps working if it is ever turned off.
+
+   Before anything else on the page, so the wrong origin never gets as far as
+   writing to its own storage. */
+(function(){
+  var h = location.hostname;
+  if(location.protocol === 'http:' &&
+     h !== 'localhost' && h !== '' && !/^127\.|^\[?::1\]?$|^192\.168\./.test(h)){
+    location.replace('https://' + location.host + location.pathname
+                     + location.search + location.hash);
+  }
+})();
+</script>
 <title>Heritle</title>
 <!-- One file that changes its own colour, rather than two the browser picks
      between. Two <link rel="icon" media="..."> entries is the documented way
@@ -478,6 +497,20 @@
   .btn.secondary{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);}
   /* The countdown's replacement when the day turns under an open tab. */
   .btn.small{padding:7px 13px;font-size:0.75rem;}
+  /* The note for anyone who arrived inside another app's browser. Quiet, at
+     the foot, dismissible: it is an explanation, not an obstacle. */
+  .inapp-note{position:fixed;left:50%;transform:translateX(-50%);
+    bottom:max(10px, env(safe-area-inset-bottom));z-index:40;
+    width:min(420px, calc(100vw - 20px));display:flex;align-items:flex-start;gap:10px;
+    padding:11px 12px;background:var(--navy-2);border:1px solid var(--gold-dim);
+    border-radius:10px;box-shadow:0 12px 30px rgba(5,8,18,0.5);}
+  .inapp-note[hidden]{display:none;}
+  .inapp-note p{margin:0;flex:1;font-family:'JetBrains Mono',monospace;
+    font-size:0.6rem;line-height:1.55;color:var(--ink-dim);}
+  .inapp-note b{color:var(--cream);font-weight:500;}
+  .inapp-note button{flex:none;background:none;border:none;color:var(--gold-dim);
+    font-size:1.1rem;line-height:1;cursor:pointer;padding:0 2px;}
+  .inapp-note button:hover{color:var(--gold);}
   /* ---------- The foot of the page ---------- */
   .site-foot{margin-top:26px;padding-top:14px;
     border-top:1px solid rgba(201,162,75,0.18);text-align:center;}
@@ -916,6 +949,7 @@
 <!-- Dims the page behind the open menu. Outside .page so it covers
      everything, and beneath the menu so the menu stays lit. -->
 <div class="mark-dim" id="markDim" hidden></div>
+<div class="inapp-note" id="inappNote" hidden></div>
 
 <div class="modal-backdrop" id="aboutBackdrop">
   <div class="modal">
@@ -1224,6 +1258,7 @@ const UI = {
                instagram:'Instagram', source:'Source', contact:'Get in touch' },
        linkGroups:{ explore:'Read further', project:'This project' },
        achEarned:'Earned', achLocked:'Still to find',
+       inAppNote:'You are in <b>Instagram\u2019s own browser</b>, which keeps its progress separately from your usual one. Open heritle.org there to find your collection \u2014 or copy the backup code from the Passport and paste it across.',
        secretFound:'Secret found', awardWon:'Distinction earned',
        stampsMore:(n)=>`+ ${n} more day${n===1?'':'s'}`,
        earnedOnLabel:'Earned', spinHim:'Spin him', markHint:'About',
@@ -1389,6 +1424,7 @@ const UI = {
                instagram:'Instagram', source:'Code source', contact:'Nous écrire' },
        linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
        achEarned:'Obtenues', achLocked:'Encore à trouver',
+       inAppNote:'Vous êtes dans le <b>navigateur interne d\u2019Instagram</b>, qui garde sa progression à part. Ouvrez heritle.org dans votre navigateur habituel pour retrouver votre collection \u2014 ou copiez le code de sauvegarde du Passeport et collez-le ici.',
        secretFound:'Secret découvert', awardWon:'Distinction obtenue',
        stampsMore:(n)=>`+ ${n} autre${n===1?'':'s'} journée${n===1?'':'s'}`,
        earnedOnLabel:'Obtenue le', spinHim:'Le faire tourner', markHint:'À propos',
@@ -1554,6 +1590,7 @@ const UI = {
                instagram:'Instagram', source:'Código fuente', contact:'Escríbenos' },
        linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
+       inAppNote:'Estás en el <b>navegador interno de Instagram</b>, que guarda su progreso aparte. Abre heritle.org en tu navegador habitual para encontrar tu colección, o copia el código de copia de seguridad del Pasaporte y pégalo aquí.',
        secretFound:'Secreto descubierto', awardWon:'Distinción obtenida',
        stampsMore:(n)=>`+ ${n} jornada${n===1?'':'s'} más`,
        earnedOnLabel:'Obtenida el', spinHim:'Hazlo girar', markHint:'Acerca de',
@@ -1769,6 +1806,27 @@ const todayIndex = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.g
    is the back catalogue being a *link* -- something you can share, or walk up
    one number at a time without knowing anything. That was the actual hole. */
 const params = new URLSearchParams(location.search);
+
+/* Instagram appends its own tracking to every outbound link -- utm_source,
+   utm_medium, utm_content and an fbclid a hundred characters long. The game
+   ignores them, but they sit in the address bar, they get copied when somebody
+   shares the page, and they make one player's URL look nothing like another's.
+   Read first, then swept: replaceState leaves no history entry, so Back still
+   goes where it went. */
+(function sweepTracking(){
+  if(!location.search || !window.history || !history.replaceState) return;
+  const keep = new URLSearchParams(location.search);
+  let dropped = false;
+  [...keep.keys()].forEach(k => {
+    if(/^(utm_|fbclid$|gclid$|igshid$|mc_|ref$|ref_src$)/i.test(k)){
+      keep.delete(k);
+      dropped = true;
+    }
+  });
+  if(!dropped) return;
+  const q = keep.toString();
+  history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash);
+})();
 
 function finishedDays(){
   const p = lsJSON('heritle-profile', {});
@@ -4263,6 +4321,32 @@ function renderArchive(){
   });
 }
 
+/* ---------- Another app's browser ----------
+   Instagram, Facebook and the rest open links in a webview of their own, with
+   its own storage. So a player who taps the link in a bio is not in the
+   browser they normally play in: the collection, the streak and the passport
+   are all in the other one, and this looks like the game has forgotten them.
+
+   Nothing can be done about that from inside the page -- the two jars cannot
+   see each other -- so the only useful thing is to say so, once, quietly, and
+   point at the backup code for anyone who wants to carry a collection across. */
+const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|FBIOS|Line\/|MicroMessenger|TikTok|Snapchat/i;
+const INAPP_KEY = 'heritle-inapp-seen';
+
+function maybeInAppNote(){
+  const el = document.getElementById('inappNote');
+  if(!el || !IN_APP.test(navigator.userAgent || '')) return;
+  if(lsGet(INAPP_KEY)) return;
+  const T = t();
+  el.innerHTML = `<p>${T.inAppNote}</p>`
+    + `<button type="button" aria-label="${T.close}">&times;</button>`;
+  el.hidden = false;
+  el.querySelector('button').onclick = ()=>{
+    el.hidden = true;
+    lsSet(INAPP_KEY, '1');
+  };
+}
+
 /* ---------- Countdown ----------
    It counted to the next UTC midnight while the puzzle turns over at the
    player's own midnight, which are the same instant for almost nobody. In
@@ -4389,6 +4473,7 @@ Promise.all([loadDataset(), loadLand()]).then(()=>{
   renderNav();
   renderCountdown();
   noteLang();
+  maybeInAppNote();
   // Deep-linked back from a practice run: land where it was chosen from.
   if(openView === 'archive') showView('Archive');
   else maybeFieldNotes();

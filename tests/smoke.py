@@ -2281,6 +2281,65 @@ def main():
         check(not errs, "and swiping throws nothing", "; ".join(errs[:2]))
         ctx.close()
 
+        # ---- arriving from a link in a bio ----
+        # http:// and https:// are different origins, and localStorage belongs
+        # to an origin: the link in the Instagram bio was http, so it opened a
+        # different box with an empty passport in it.
+        print("\n== from Instagram ==")
+        IG_UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
+                 "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 "
+                 "Instagram 320.0.0.0.0 (iPhone14,2; iOS 17_5)")
+        ctx = browser.new_context(viewport={"width": 390, "height": 844},
+                                  user_agent=IG_UA, has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base + "?utm_source=ig&utm_medium=social&utm_content=link_in_bio"
+                         "&fbclid=PAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA")
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.wait_for_timeout(400)
+        # The campaign junk is read and then swept out of the address bar, so
+        # what a player copies from there is the address.
+        check("utm_source" not in page.url and "fbclid" not in page.url,
+              "the tracking parameters are swept out of the address bar", page.url)
+        check(page.evaluate("dayIndex") == page.evaluate("todayIndex")
+              and not page.evaluate("isPractice"),
+              "and the day is unaffected by them",
+              f"day {page.evaluate('dayIndex')}")
+        note = page.locator("#inappNote")
+        check(not note.is_hidden(),
+              "an in-app browser is told that its progress is its own")
+        if not note.is_hidden():
+            check(len(note.inner_text().strip()) > 60,
+                  "with the reason, not just a warning",
+                  note.inner_text().replace("\n", " ")[:80])
+            note.locator("button").click()
+            page.wait_for_timeout(200)
+            page.reload()
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            page.wait_for_timeout(300)
+            check(page.locator("#inappNote").is_hidden(),
+                  "and it is said once, not on every visit")
+        check(not errs, "and none of it throws", "; ".join(errs[:2]))
+        ctx.close()
+        # An ordinary browser is told nothing, because there is nothing to tell.
+        ctx = browser.new_context(viewport={"width": 390, "height": 844},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.wait_for_timeout(300)
+        check(page.locator("#inappNote").is_hidden(),
+              "an ordinary browser is not warned about anything")
+        # The https guard must never fire on a local address, or nothing here
+        # would load at all.
+        check(page.url.startswith("http://127.") or page.url.startswith("http://localhost"),
+              "and the https redirect leaves local addresses alone", page.url)
+        ctx.close()
+
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which
         # used to be fatal: the state read and write had no guard at all, and
