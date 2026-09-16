@@ -113,6 +113,21 @@ AWARD_PROBE = """
   }
 """
 
+# Where each piece of the board actually lands.
+ORDER_PROBE = """
+  () => {
+    const at = sel => {
+      const e = document.querySelector('#viewGame > ' + sel);
+      const b = e.getBoundingClientRect();
+      return { top: Math.round(b.top + scrollY), left: Math.round(b.left),
+               w: Math.round(b.width) };
+    };
+    return { rounds: at('.rounds-row'), meta: at('.meta-row'),
+             photo: at('.photo-box'), map: at('.map-wrap'),
+             guess: at('.guess-row'), clues: at('.clues') };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1094,15 +1109,35 @@ def main():
             shown_names = page.locator("#viewPassport .ach-tile span").all_inner_texts()
             check(any("Dizzy" in n for n in shown_names),
                   "and now it is on the page", str(shown_names[-4:]))
-            head = page.locator("#viewPassport .panel-head p").last.inner_text()
-            check(str(total_ach) in head,
-                  "and the count includes it once it exists", head)
-            # It is no longer secret to this player, so every count below is
-            # against the list as it now stands.
+            # Earning one secret reveals that one and no other, so the
+            # denominator moves by exactly one. It used to be compared against
+            # the whole table, which was the same number only while Dizzy was
+            # the only secret there was.
             expected_ach = page.evaluate("visibleAchievements().length")
-            check(expected_ach == total_ach,
-                  "and nothing is left hidden from someone who has them all",
-                  f"{expected_ach} shown, {total_ach} defined")
+            head = page.locator("#viewPassport .panel-head p").last.inner_text()
+            check(str(expected_ach) in head,
+                  "and the count includes it once it exists",
+                  f"{head} against {expected_ach} shown")
+            still_hidden = page.evaluate("""
+              () => ACHIEVEMENTS.filter(a => a.secret
+                      && !profile.achievements.includes(a.id)).length
+            """)
+            check(still_hidden >= 1 and expected_ach == total_ach - still_hidden,
+                  "and the secrets nobody has found yet stay out of the count",
+                  f"{expected_ach} shown, {total_ach} defined, {still_hidden} hidden")
+            # Generically: whatever secrets this run happens not to have
+            # earned -- playing through it in three languages earns one of
+            # them by itself -- must be nowhere on the page. Naming them here
+            # assumed they were unearned, which is a different claim.
+            hidden_names = page.evaluate("""
+              () => ACHIEVEMENTS.filter(a => a.secret
+                      && !profile.achievements.includes(a.id))
+                      .map(a => t().ach[a.id][0])
+            """)
+            on_page = page.locator("#viewPassport").inner_text()
+            check(all(n not in on_page for n in hidden_names),
+                  "and finding one secret does not give away the others",
+                  str(hidden_names))
         # Earned enough to be worth showing, rather than whatever four entries
         # in one day happens to unlock -- otherwise "only the earned ones are
         # shown" passes against an empty list and proves nothing.
@@ -1687,6 +1722,45 @@ def main():
               "and sets no cookies", page.evaluate("document.cookie"))
         check(not errs, "and none of the documents throw", "; ".join(errs[:2]))
         ctx.close()
+
+        # ---- the board is in the order it is read ----
+        # Naming grid rows for the photograph and the map while leaving the
+        # pips and the score badges to auto-placement put them *after* the
+        # board on a wide screen -- below the fold, on the live site, for four
+        # days. Auto-placement fills the first free row, and rows 1 and 2 were
+        # spoken for.
+        print("\n== reading order ==")
+        for width, wide in ((390, False), (1280, True)):
+            ctx = browser.new_context(viewport={"width": width, "height": 900})
+            page = ctx.new_page()
+            page.goto(base)
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            page.evaluate("document.getElementById('fnClose')?.click()")
+            page.wait_for_timeout(300)
+            box = page.evaluate(ORDER_PROBE)
+            tag = f"{width}px"
+            check(box["rounds"]["top"] < box["photo"]["top"],
+                  f"{tag}: the round pips are above the board",
+                  f"{box['rounds']['top']} vs {box['photo']['top']}")
+            check(box["meta"]["top"] < box["photo"]["top"],
+                  f"{tag}: and so is the score",
+                  f"{box['meta']['top']} vs {box['photo']['top']}")
+            check(box["clues"]["top"] >= box["photo"]["top"],
+                  f"{tag}: the clues come after it")
+            if wide:
+                check(box["map"]["left"] > box["photo"]["left"] + box["photo"]["w"] - 5,
+                      f"{tag}: photograph and map sit side by side",
+                      f"photo ends {box['photo']['left'] + box['photo']['w']}, "
+                      f"map starts {box['map']['left']}")
+                check(box["guess"]["left"] >= box["map"]["left"] - 5,
+                      f"{tag}: and the prompt to tap is under the map")
+            else:
+                check(box["map"]["top"] > box["photo"]["top"],
+                      f"{tag}: photograph above map, in one column")
+            check(page.evaluate("document.documentElement.scrollWidth")
+                  <= width + 1, f"{tag}: nothing pushes the page sideways")
+            ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which
