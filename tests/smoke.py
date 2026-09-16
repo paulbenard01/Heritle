@@ -128,6 +128,25 @@ ORDER_PROBE = """
   }
 """
 
+# Where the three things across the top of the page actually sit. The title is
+# measured as rendered text, not as the centred block it lives in.
+HEADER_PROBE = """
+  () => {
+    const box = sel => {
+      const e = document.querySelector(sel);
+      if(!e) return null;
+      const b = e.getBoundingClientRect();
+      return { l: Math.round(b.left), r: Math.round(b.right) };
+    };
+    const wm = document.querySelector('.wordmark');
+    const range = document.createRange();
+    range.selectNodeContents(wm);
+    const t = range.getBoundingClientRect();
+    return { text: { l: Math.round(t.left), r: Math.round(t.right) },
+             lang: box('.lang-slider'), mark: box('.mark'), ig: box('.lang-ig') };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1957,6 +1976,28 @@ def main():
             print("  ---- launch day: no past day to practise yet")
         check(not errs, "and practising throws nothing", "; ".join(errs[:2]))
         ctx.close()
+
+        # ---- nothing in the header runs into anything else ----
+        # The language control grew an Instagram mark, and the title ran into
+        # it: 29px of overlap at 320, 9px at 360, on a live site.
+        print("\n== the header holds together ==")
+        for width in (320, 360, 390, 430, 768):
+            ctx = browser.new_context(viewport={"width": width, "height": 800})
+            page = ctx.new_page()
+            page.goto(base)
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            page.wait_for_timeout(200)
+            g = page.evaluate(HEADER_PROBE)
+            check(g["text"]["r"] <= g["lang"]["l"],
+                  f"{width}px: the title does not reach the language picker",
+                  f"title ends {g['text']['r']}, picker starts {g['lang']['l']}")
+            check(g["text"]["l"] >= g["mark"]["r"],
+                  f"{width}px: nor the mark",
+                  f"mark ends {g['mark']['r']}, title starts {g['text']['l']}")
+            check(g["ig"] is not None and g["ig"]["r"] <= width,
+                  f"{width}px: and Instagram is on the screen", str(g["ig"]))
+            ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which

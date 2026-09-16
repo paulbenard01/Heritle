@@ -182,6 +182,16 @@
      is the vertical budget above the photograph going backwards. */
   .wordmark{font-family:'Playfair Display',serif;font-weight:700;font-size:2.4rem;
     color:var(--cream);padding:0 58px;}
+  /* The language control grew an Instagram mark, and on a narrow phone the
+     title ran straight into it: measured, the wordmark overlapped the picker
+     by 29px at 320 and 9px at 360. The title gives way rather than the link,
+     because the title is also written across the top of the page in words. */
+  @media (max-width:430px){
+    .wordmark{font-size:2rem;padding:0 74px 0 56px;}
+  }
+  @media (max-width:360px){
+    .wordmark{font-size:1.6rem;padding:0 86px 0 54px;}
+  }
   .pitch{color:var(--cream);font-size:0.95rem;margin-top:2px;}
   .tagline{color:var(--ink-dim);font-size:0.8rem;margin-top:2px;}
   /* Demoted deliberately. Gold is the palette's "act on this" colour -- the
