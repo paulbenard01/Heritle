@@ -51,7 +51,8 @@
     #viewGame > .photo-box{grid-column:1;grid-row:3;margin-bottom:0;}
     #viewGame > .map-wrap{grid-column:2;grid-row:3;margin-bottom:0;}
     #viewGame > .clues, #viewGame > .history,
-    #viewGame > .round-result, #viewGame > .final-result{grid-column:1 / -1;}
+    #viewGame > .round-result, #viewGame > .final-result,
+    #viewGame > #guessCounter, #viewGame > .countdown{grid-column:1 / -1;}
     /* The prompt to tap belongs under the thing being tapped, not under the
        photograph on the other side of the board. */
     #viewGame > .guess-row{grid-column:2;grid-row:4;align-self:start;margin-top:12px;}
@@ -731,13 +732,18 @@
 
 
     <footer id="guessCounter"></footer>
-    <footer class="site-foot" id="siteFoot"></footer>
     <div class="countdown" id="countdown"></div>
   </div>
 
   <div class="view" id="viewCollection"></div>
   <div class="view" id="viewPassport"></div>
   <div class="view" id="viewArchive"></div>
+
+  <!-- Outside the views, because terms and privacy are not part of today's
+       puzzle: inside the game view they showed on Today alone, and on a wide
+       screen they were auto-placed into the board's own grid, sitting in a
+       column beside the guess counter. -->
+  <footer class="site-foot" id="siteFoot"></footer>
 </div>
 
 <!-- Dims the page behind the open menu. Outside .page so it covers

@@ -1677,6 +1677,24 @@ def main():
         page.wait_for_timeout(250)
         foot = page.locator("#siteFoot")
         check(foot.count() == 1, "the page has a foot")
+        # On every view, not only Today: inside the game view it showed on one
+        # of the four, and on a wide screen it was auto-placed into the board's
+        # own grid, in a column beside the guess counter.
+        for view in ("Game", "Collection", "Passport", "Archive"):
+            page.evaluate("v => showView(v)", view)
+            page.wait_for_timeout(200)
+            box = page.evaluate("""
+              () => {
+                const f = document.getElementById('siteFoot').getBoundingClientRect();
+                const p = document.querySelector('.page').getBoundingClientRect();
+                return { h: f.height, w: Math.round(f.width), page: Math.round(p.width) };
+              }
+            """)
+            check(box["h"] > 0 and abs(box["w"] - box["page"]) < 2,
+                  f"and it is at the foot of {view}, the width of the page",
+                  f"{box['w']} of {box['page']}")
+        page.evaluate("showView('Game')")
+        page.wait_for_timeout(200)
         check(page.locator("#siteFoot [data-doc]").count() == 3,
               "with the three documents on it",
               str(page.locator("#siteFoot [data-doc]").all_inner_texts()))
