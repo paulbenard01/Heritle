@@ -284,9 +284,7 @@ def play_day(page, base, day, width, label):
         check(menu.is_hidden(), f"{label}: the menu starts closed")
         mark.click()
         page.wait_for_timeout(80)
-        check("spinning" in (mark.get_attribute("class") or ""),
-              f"{label}: tapping the mark starts the spin")
-        check(menu.is_visible(), f"{label}: and opens the menu")
+        check(menu.is_visible(), f"{label}: tapping the mark opens the menu")
         check(page.locator("#mark").get_attribute("aria-expanded") == "true",
               f"{label}: and says so to a screen reader")
         # It drops down rather than appearing, and the page goes quiet behind it.
@@ -297,12 +295,29 @@ def play_day(page, base, day, width, label):
         check(dim.is_visible(), f"{label}: and the page behind it is dimmed")
         mw = menu.bounding_box()["width"]
         check(mw >= 200, f"{label}: the menu is wide enough to read", str(round(mw)))
-        # It has to be able to spin again, so the class must come off at the end.
-        # A tap's flick coasts down under friction rather than on a timer, which
-        # takes about a second and a half from the flick speed.
-        page.wait_for_timeout(2400)
+        # The little person lives in the menu now, beside Who am I. Holding him
+        # winds him up; the header mark itself no longer turns.
+        figure = page.locator("#markTop")
+        check(figure.count() == 1, f"{label}: the little person is in the menu")
+        fb = figure.bounding_box()
+        page.mouse.move(fb["x"] + fb["width"] / 2, fb["y"] + fb["height"] / 2)
+        page.mouse.down()
+        page.wait_for_timeout(700)
+        check("spinning" in (figure.get_attribute("class") or ""),
+              f"{label}: holding him winds him up")
+        turned = page.evaluate(
+            "() => document.querySelector('#markTop img').style.transform")
+        check("rotate" in (turned or ""), f"{label}: and he turns", str(turned))
+        check(menu.is_visible(),
+              f"{label}: spinning him does not close the menu he is in")
+        page.mouse.up()
+        # He coasts down under friction rather than on a timer, so the class
+        # has to come off at the end or he could never go again.
+        page.wait_for_timeout(4000)
+        check("spinning" not in (figure.get_attribute("class") or ""),
+              f"{label}: and the spin clears itself so it can go again")
         check("spinning" not in (mark.get_attribute("class") or ""),
-              f"{label}: the spin clears itself so it can go again")
+              f"{label}: the header mark itself never spins")
     else:
         # Skipped, not returned from: a brand file that has not been uploaded
         # yet must not cost the other three hundred checks in this run.
@@ -1089,7 +1104,10 @@ def main():
         # hundred times without stopping. Measured at about ten and a half
         # seconds of holding, so this is slow but it is the real path.
         page.evaluate("showView('Today')"); page.wait_for_timeout(200)
-        dz = page.locator("#mark").bounding_box()
+        if page.locator("#markMenu").is_hidden():
+            page.locator("#mark").click()
+            page.wait_for_timeout(250)
+        dz = page.locator("#markTop").bounding_box()
         page.mouse.move(dz["x"] + dz["width"] / 2, dz["y"] + dz["height"] / 2)
         page.mouse.down()
         got = False
@@ -1099,10 +1117,15 @@ def main():
                 got = True
                 break
         page.mouse.up()
+        page.keyboard.press("Escape")       # or the dimmer eats the next click
+        page.wait_for_timeout(200)
         check(got, "a hundred turns without stopping earns Dizzy")
         if got:
-            check(page.locator(".dizzy-toast").count() == 1,
+            check(page.locator(".award-card").count() == 1,
                   "and it says so when it happens rather than waiting to be found")
+            check("Dizzy" in page.locator(".award-card").inner_text(),
+                  "naming it on the card",
+                  page.locator(".award-card").inner_text().replace("\n", " / "))
             check(page.evaluate("() => profile.achievements.includes('dizzy')"),
                   "and it is recorded")
             page.evaluate("showView('Passport')"); page.wait_for_timeout(300)
@@ -1180,6 +1203,8 @@ def main():
         check(cols == 3, "the stamps sit three to a row", str(cols))
         check(page.locator("#viewPassport .ach-detail").count() == 0,
               "no description is shown until a stamp is tapped")
+        page.evaluate("() => document.querySelectorAll('.award-card')"
+                      ".forEach(e => e.remove())")
         tiles = page.locator("#viewPassport > .ach-grid > .ach-tile")
         # The fourth tile: its detail has to land at the end of the second row,
         # not at the bottom of the grid, or it reads as unrelated to the tap.
@@ -1256,8 +1281,46 @@ def main():
         # local midnight has two different "today"s, and comparing across the
         # boundary fails on a game that behaved perfectly.
         today = fresh.evaluate("todayIndex")
-        check(landed == today,
-              "asking for an unplayed day by URL lands on today instead",
+        # A day that has happened opens again -- as practice, which is what the
+        # archive links to. What must hold is not that it is shut, but that it
+        # pays nothing: no score, no collection, no distinction.
+        if unplayed >= 0:
+            check(landed == unplayed and fresh.evaluate("isPractice"),
+                  "a day nobody played opens as practice",
+                  f"asked {unplayed}, landed {landed}, "
+                  f"practice {fresh.evaluate('isPractice')}")
+            before_practice = fresh.evaluate("""
+              () => ({ entries: Object.keys(profile.collection).length,
+                       ach: profile.achievements.length })
+            """)
+            fresh.evaluate("document.getElementById('fnClose')?.click()")
+            fresh.evaluate("submitGuess(targetCountry())")
+            fresh.wait_for_timeout(300)
+            check(fresh.evaluate("state.roundStatus[0]") == "solved",
+                  "and plays like the game it is")
+            # A delta, not a zero: this browser has already played today, so
+            # its collection is not empty and never will be again.
+            after = fresh.evaluate("""
+              () => ({ entries: Object.keys(profile.collection).length,
+                       day: !!profile.days[dayIndex],
+                       ach: profile.achievements.length })
+            """)
+            check(after["entries"] == before_practice["entries"]
+                  and not after["day"]
+                  and after["ach"] == before_practice["ach"],
+                  "while paying nothing into the collection, the record or the "
+                  "distinctions", f"{before_practice} -> {after}")
+        # Tomorrow, though, is not an archive.
+        ahead = ctx.new_page()
+        ahead.goto(f"{base}?day={today + 3}")
+        ahead.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                timeout=15000)
+        check(ahead.evaluate("dayIndex") == ahead.evaluate("todayIndex"),
+              "a day that has not happened yet lands on today",
+              str(ahead.evaluate("dayIndex")))
+        ahead.close()
+        check(landed == today or unplayed >= 0,
+              "asking for a day before the game existed lands on today",
               f"asked {unplayed}, got {landed}")
         # A PAST day this browser has finished is still replayable -- it spoils
         # nothing, and the archive offers it. Seeded, because the only day this
@@ -1291,21 +1354,24 @@ def main():
         # One row per day since launch, capped at the 60 the archive shows. On
         # day one that is a single row -- an archive of days nobody could have
         # played would be padding, not history.
-        # Only a played day offers a way back in; the rest say so.
+        # Every row opens now -- today to play, any past day to practise --
+        # and a day nobody finished still says so beside its link.
         links = page.locator("#viewArchive .arch-row a").count()
-        locked = page.locator("#viewArchive .arch-locked").count()
         rows = page.locator("#viewArchive .arch-row").count()
-        check(links + locked == rows,
-              "every archive row either opens or says it was not played",
-              f"{links} links + {locked} locked vs {rows} rows")
-        # Today always opens, plus one per finished day the archive actually
-        # lists: it shows today back sixty days, so a played day outside that
-        # window has no row and therefore no link.
+        check(links == rows, "every archive row offers a way in",
+              f"{links} links vs {rows} rows")
+        hrefs = page.locator("#viewArchive .arch-row a").evaluate_all(
+            "els => els.map(e => e.getAttribute('href'))")
+        past = [h for h in hrefs if h != "."]
+        check(all("practice=1" in h for h in past),
+              "and every past day is offered as practice, not as a scored round",
+              str(past[:3]))
         played_days = page.evaluate("Object.keys(profile.days).map(Number)")
-        lo = max(0, today - 60)
-        expect_links = 1 + sum(1 for d in played_days if d != today and lo <= d <= today)
-        check(links == expect_links,
-              "and only the played days do", f"{links} links, expected {expect_links}")
+        unplayed_rows = rows - sum(1 for d in played_days
+                                   if max(0, today - 60) <= d <= today)
+        check(page.locator("#viewArchive .arch-locked").count() == unplayed_rows,
+              "a day nobody finished still says so",
+              f"{page.locator('#viewArchive .arch-locked').count()} vs {unplayed_rows}")
         hrefs = page.locator("#viewArchive .arch-row a").evaluate_all(
             "els => els.map(e => e.getAttribute('href'))")
         check(all(h == "." or h.startswith("?day=") for h in hrefs),
@@ -1779,6 +1845,118 @@ def main():
             check(page.evaluate("document.documentElement.scrollWidth")
                   <= width + 1, f"{tag}: nothing pushes the page sideways")
             ctx.close()
+
+        # ---- winning something is an event ----
+        print("\n== announcements ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        page.wait_for_timeout(200)
+        page.evaluate("() => { POOL.slice(0, 12).forEach(e => catalogue(e, true)); "
+                      "checkAchievements(); }")
+        page.wait_for_timeout(500)
+        card = page.locator(".award-card")
+        check(card.count() == 1, "winning a distinction says so on the spot",
+              str(card.count()))
+        said = card.first.inner_text()
+        # Named through achText: the collection ladder and the continents are
+        # named by tier, not by id, so reading T.ach[id] skipped most of them
+        # and announced nothing at all.
+        check(len(said.strip()) > 20 and "undefined" not in said,
+              "and names what was won", said.replace("\n", " / "))
+        check(card.first.locator(".stamp-mark").count() == 1,
+              "with the stamp on it")
+        check(bool(page.evaluate(
+                "() => (document.querySelector('.award-card').className.match(/r-\\w+/)||[])[0]")),
+              "drawn in the rank that was won")
+        # Several can land together; they queue rather than stack up the screen.
+        page.evaluate("() => { POOL.slice(0, 120).forEach(e => catalogue(e, true)); "
+                      "checkAchievements(); }")
+        page.wait_for_timeout(300)
+        check(page.locator(".award-card").count() == 1,
+              "and several at once arrive one at a time",
+              str(page.locator(".award-card").count()))
+        # Restoring a backup re-earns in bulk: twenty announcements would be a
+        # punishment for restoring.
+        quiet = page.evaluate("""
+          () => {
+            document.querySelectorAll('.award-card').forEach(e => e.remove());
+            const code = exportProfile();
+            profile.achievements = []; profile.achievementsAt = {};
+            importProfile(code);
+            return document.querySelectorAll('.award-card').length;
+          }
+        """)
+        check(quiet == 0, "restoring a backup does not parade them", str(quiet))
+        # ---- the stamp row stays a row ----
+        page.evaluate("""
+          () => {
+            for(let i = 0; i < 9; i++)
+              profile.days[dayIndex - i] = { score: 100, ids: [],
+                statuses: ['solved','solved','solved','failed'], at: Date.now() };
+            saveProfile(); showView('Passport'); renderPassport();
+          }
+        """)
+        page.wait_for_timeout(300)
+        shown = page.locator("#viewPassport .stamps .stamp").count()
+        check(shown == 5, "the passport shows five days of stamps, not every day",
+              str(shown))
+        check(page.locator(".stamps-more").count() == 1,
+              "and says how many more there are",
+              page.locator(".stamps-more").inner_text()
+              if page.locator(".stamps-more").count() else "-")
+        check(not errs, "and none of it throws", "; ".join(errs[:2]))
+        ctx.close()
+
+        # ---- a missed day can be practised ----
+        # Closing the back catalogue stopped anyone farming a collection out of
+        # it. Practice gives the puzzle back without giving the credit.
+        print("\n== practising the archive ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        today = page.evaluate("todayIndex")
+        if today >= 1:
+            page.goto(f"{base}?day={today - 1}&practice=1")
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            page.wait_for_timeout(300)
+            check(page.evaluate("dayIndex") == today - 1,
+                  "a day nobody played can still be opened",
+                  str(page.evaluate("dayIndex")))
+            check(page.evaluate("isPractice"), "and it is practice")
+            page.evaluate("document.getElementById('fnClose')?.click()")
+            page.evaluate("submitGuess(targetCountry())")
+            page.wait_for_timeout(400)
+            check(page.evaluate("state.roundStatus[0]") == "solved",
+                  "it plays like the game it is")
+            check(page.evaluate("Object.keys(profile.collection).length") == 0,
+                  "but nothing it shows is catalogued",
+                  str(page.evaluate("Object.keys(profile.collection).length")))
+            check(not page.evaluate("!!profile.days[dayIndex]"),
+                  "and no score is recorded for it")
+            check(page.evaluate("profile.achievements.length") == 0,
+                  "so it cannot be farmed for distinctions")
+            # Tomorrow is not an archive.
+            page.goto(f"{base}?day={today + 3}")
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            check(page.evaluate("dayIndex") == page.evaluate("todayIndex"),
+                  "a day that has not happened yet lands on today",
+                  str(page.evaluate("dayIndex")))
+        else:
+            print("  ---- launch day: no past day to practise yet")
+        check(not errs, "and practising throws nothing", "; ".join(errs[:2]))
+        ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which

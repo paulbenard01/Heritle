@@ -37,3 +37,21 @@ The mark is referenced once, in the header of `heritle.html`:
 ```
 
 Changing which file the header uses means changing that one line.
+
+## vectorised-241b3301.svg — the gate mark
+
+Uploaded as a vectorisation, and edited twice on arrival. Both changes are
+the kind that are invisible until they are not:
+
+- **A `viewBox` was added.** Without one an SVG will not scale inside an
+  `<img>` in Safari — it draws at its intrinsic 3000px and blows the layout
+  apart. Chromium tolerates the omission, which is how it goes unnoticed.
+  `tests/test_pipeline.py` fails any SVG here that lacks one.
+- **The opening background rectangle was removed** from the first path
+  (`M0 0h3000v2813H0z`, filled `#FDFDF4`). It painted the whole canvas cream,
+  so on the navy page the mark arrived as a cream card rather than a disc.
+  The cream *inside* the disc is part of the artwork and is untouched.
+
+Numeric precision was left alone: rounding the path coordinates to one decimal
+saved 30KB and visibly deformed the mark, because the data is relative and the
+error accumulates along each path.

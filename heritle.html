@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Heritle — three world heritage sites and a living tradition, daily</title>
+<title>Heritle</title>
+<link rel="icon" type="image/svg+xml" href="assets/vectorised-241b3301.svg">
+<link rel="apple-touch-icon" href="assets/vectorised-241b3301.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -136,9 +138,37 @@
   .mark-menu{max-height:calc(100vh - 86px);overflow-y:auto;}
   .mark-menu a, .mark-menu button{line-height:1.25;}
   .mark-menu a span, .mark-menu button span{color:var(--gold-dim);}
-  /* The one item that stays inside the game gets a rule under it. */
-  .mark-menu .menu-inside{border-bottom:1px dashed rgba(201,162,75,0.22);
-    border-radius:8px 8px 0 0;margin-bottom:3px;}
+  /* The one item that stays inside the game gets a rule under it -- and the
+     little person sits at the end of that row, where a person belongs. */
+  .mark-menu .menu-inside{display:flex;align-items:center;gap:8px;
+    border-bottom:1px dashed rgba(201,162,75,0.22);
+    border-radius:8px 8px 0 0;margin-bottom:3px;padding-right:6px;}
+  .mark-menu .menu-about{flex:1 1 auto;min-width:0;justify-content:flex-start;}
+  /* Written against .mark-menu, or the sheet's own `.mark-menu button`
+     rule -- display:flex, width:100%, min-height:46px -- wins on specificity
+     and the little person takes the whole row, squeezing Who am I into three
+     lines beside him. */
+  .mark-menu .menu-figure{flex:none;width:44px;min-width:44px;height:44px;
+    min-height:44px;padding:0;border:none;
+    background:none;cursor:pointer;line-height:0;display:flex;
+    align-items:center;justify-content:center;
+    /* Held for ten seconds at a time, so none of the things a long press
+       normally does -- select, offer to save, start a drag -- may happen. */
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    touch-action:none;-webkit-tap-highlight-color:transparent;}
+  .mark-menu .menu-figure img{width:34px;height:34px;object-fit:contain;
+    transform-origin:50% 50%;transform:translateZ(0);pointer-events:none;}
+  .mark-menu .menu-figure.spinning img{will-change:transform;}
+  /* The marks a couple of the links carry. */
+  .mark-menu .menu-label{display:flex;align-items:center;gap:9px;min-width:0;}
+  .menu-icon{width:15px;height:15px;object-fit:contain;flex:none;opacity:0.85;}
+  .mark-menu a:hover .menu-icon{opacity:1;}
+  /* Instagram beside the language picker: videos are going up there, and a
+     link nobody finds is not a link. */
+  .lang-ig{display:inline-flex;align-items:center;padding:4px 2px 4px 8px;
+    opacity:0.6;}
+  .lang-ig:hover{opacity:1;}
+  .lang-ig img{width:15px;height:15px;display:block;}
   .mark-menu:empty{display:none;}
 
   .mark-dim{position:fixed;inset:0;z-index:10;background:rgba(8,12,24,0.62);
@@ -449,6 +479,8 @@
   .stat b{display:block;font-family:'Playfair Display',serif;color:var(--cream);font-size:1.25rem;}
   .stat span{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--ink-dim);
     text-transform:uppercase;letter-spacing:0.05em;}
+  .stamps-more{align-self:center;font-family:'JetBrains Mono',monospace;
+    font-size:0.62rem;color:var(--ink-dim);padding:0 4px;}
   .stamps{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
   .stamp{width:52px;height:52px;border-radius:50%;display:flex;flex-direction:column;
     align-items:center;justify-content:center;border:2px dashed;transform:rotate(-6deg);
@@ -553,6 +585,39 @@
      offering a link that would open an unplayed puzzle. */
   /* Announces itself: earned in the middle of nothing in particular, so it
      should not have to be discovered in the passport later. */
+  /* What arrives when something is won. Centred low on the screen, out of the
+     way of the board, and drawn in the rank's own colours so the card looks
+     like the thing it is announcing. */
+  .award-card{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    z-index:60;display:flex;flex-direction:column;align-items:center;gap:3px;
+    min-width:230px;max-width:min(330px, calc(100vw - 32px));
+    padding:14px 18px 15px;text-align:center;cursor:pointer;
+    background:var(--navy-2);border:1px solid var(--gold);border-radius:12px;
+    box-shadow:0 18px 44px rgba(5,8,18,0.6);
+    animation:award-in 0.36s cubic-bezier(0.2,0.8,0.3,1);}
+  @keyframes award-in{
+    from{ opacity:0; transform:translate(-50%, 16px) scale(0.96); }
+    to  { opacity:1; transform:translate(-50%, 0) scale(1); } }
+  @media (prefers-reduced-motion: reduce){ .award-card{animation:none;} }
+  .award-card.go{opacity:0;transition:opacity 0.4s ease;}
+  .award-card .stamp-mark{width:52px;height:52px;margin:2px 0 4px;}
+  .award-card b{font-family:'Playfair Display',serif;font-size:1.05rem;
+    color:var(--cream);font-weight:600;}
+  .award-card .award-desc{font-family:'Inter',sans-serif;font-size:0.72rem;
+    color:var(--ink-dim);line-height:1.35;}
+  .award-kind, .award-card .award-rank{font-family:'JetBrains Mono',monospace;
+    font-size:0.55rem;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--gold-dim);}
+  .award-card .award-rank{margin-top:6px;}
+  .award-card.r-prestige{border-color:var(--gold);
+    box-shadow:0 0 0 1px rgba(201,162,75,0.3), 0 18px 44px rgba(5,8,18,0.6);}
+  .award-card.r-prestige .award-kind{color:var(--gold);}
+  .award-card.r-rare{border-color:rgba(201,162,75,0.55);}
+  .award-card.r-secret{border-color:var(--heat-close);}
+  .award-card.r-secret .award-kind{color:var(--heat-close);}
+  .award-card.r-secret .stamp-mark .ring{stroke:var(--heat-close);fill:none;}
+  .award-card.r-secret .stamp-mark .stamp-text{fill:var(--heat-close);stroke:none;}
+
   .dizzy-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
     z-index:30;background:var(--navy-2);border:1px solid var(--gold);
     border-radius:10px;padding:11px 16px;text-align:center;
@@ -666,7 +731,7 @@
          assets/README.md -- capitalisation is part of the filename on Pages. -->
     <button class="mark" id="mark" aria-label="Heritle" aria-expanded="false"
             aria-controls="markMenu">
-      <img src="assets/heritlelogogold.svg" alt=""
+      <img src="assets/vectorised-241b3301.svg" alt=""
            onerror="this.closest('.mark').hidden = true">
     </button>
     <!-- Where the links live. The foot of the page was the wrong home for
@@ -679,6 +744,9 @@
       <button class="lang-btn active" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="fr">FR</button>
       <button class="lang-btn" data-lang="es">ES</button>
+      <a class="lang-ig" id="langIg" target="_blank" rel="noopener noreferrer">
+        <img src="assets/Instagram_white.svg" alt="" aria-hidden="true">
+      </a>
     </div>
   </header>
 
@@ -949,8 +1017,8 @@ const UI = {
        collectionEmpty:'Nothing catalogued yet. Finish a round and the entry is accessioned here.',
        passportTitle:'Passport', passportSub:'Your record of inscriptions visited',
        statPlayed:'Days', statStreak:'Streak', statBest:'Best', statAvg:'Avg score',
-       archiveTitle:'Archive', archiveSub:'Every day so far. Days you finished can be replayed for practice; any day can be looked up to see what it held.',
-       archiveOpen:'Replay', archiveMissed:'not played', archiveDone:'catalogued',
+       archiveTitle:'Archive', archiveSub:'Every day so far. Any of them can be played as practice — not scored, not collected — or looked up to see what it held.',
+       archiveOpen:'Replay', archiveTry:'Play it', archiveMissed:'not played', archiveDone:'catalogued',
        archiveShow:'What was it?', archiveHide:'Hide',
        archiveNoCredit:'Looking is not collecting — nothing here enters your collection or counts towards a distinction.', practiceBadge:'PRACTICE — not scored',
        nextIn:'Next inscription in', newDay:'A new day has begun — open it',
@@ -1052,7 +1120,9 @@ const UI = {
                instagram:'Instagram', source:'Source', contact:'Get in touch' },
        linkGroups:{ explore:'Read further', project:'This project' },
        achEarned:'Earned', achLocked:'Still to find',
-       secretFound:'Secret found', earnedOnLabel:'Earned',
+       secretFound:'Secret found', awardWon:'Distinction earned',
+       stampsMore:(n)=>`+ ${n} more day${n===1?'':'s'}`,
+       earnedOnLabel:'Earned', spinHim:'Spin him',
        rankNames:{ common:'Common', rare:'Rare', prestige:'Prestige', secret:'Secret' },
        achLockedNone:'Every distinction earned.',
        achEmpty:'Nothing stamped yet. Finish a day and the first one lands here.',
@@ -1112,8 +1182,8 @@ const UI = {
        collectionEmpty:'Rien encore catalogué. Terminez une manche et l’entrée sera inventoriée ici.',
        passportTitle:'Passeport', passportSub:'Votre registre d’inscriptions visitées',
        statPlayed:'Jours', statStreak:'Série', statBest:'Record', statAvg:'Score moyen',
-       archiveTitle:'Archives', archiveSub:'Tous les jours écoulés. Les journées terminées se rejouent à l’entraînement ; n’importe quelle journée peut être consultée.',
-       archiveOpen:'Rejouer', archiveMissed:'non jouée', archiveDone:'catalogué',
+       archiveTitle:'Archives', archiveSub:'Tous les jours écoulés. Chacun peut être joué à l’entraînement — sans score ni collection — ou simplement consulté.',
+       archiveOpen:'Rejouer', archiveTry:'Y jouer', archiveMissed:'non jouée', archiveDone:'catalogué',
        archiveShow:'C’était quoi ?', archiveHide:'Masquer',
        archiveNoCredit:'Regarder n’est pas collectionner : rien de tout cela n’entre dans votre collection ni ne compte pour une distinction.', practiceBadge:'ENTRAÎNEMENT — non compté',
        nextIn:'Prochaine inscription dans', newDay:'Un nouveau jour a commencé — l’ouvrir',
@@ -1215,7 +1285,9 @@ const UI = {
                instagram:'Instagram', source:'Code source', contact:'Nous écrire' },
        linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
        achEarned:'Obtenues', achLocked:'Encore à trouver',
-       secretFound:'Secret découvert', earnedOnLabel:'Obtenue le',
+       secretFound:'Secret découvert', awardWon:'Distinction obtenue',
+       stampsMore:(n)=>`+ ${n} autre${n===1?'':'s'} journée${n===1?'':'s'}`,
+       earnedOnLabel:'Obtenue le', spinHim:'Le faire tourner',
        rankNames:{ common:'Courante', rare:'Rare', prestige:'Prestige', secret:'Secrète' },
        achLockedNone:'Toutes les distinctions ont été obtenues.',
        achEmpty:'Rien d’apposé pour l’instant. Terminez une journée et le premier tampon arrive ici.',
@@ -1275,8 +1347,8 @@ const UI = {
        collectionEmpty:'Nada catalogado todavía. Termina una ronda y la entrada se registrará aquí.',
        passportTitle:'Pasaporte', passportSub:'Tu registro de inscripciones visitadas',
        statPlayed:'Días', statStreak:'Racha', statBest:'Récord', statAvg:'Puntuación media',
-       archiveTitle:'Archivo', archiveSub:'Todos los días hasta hoy. Las jornadas terminadas se pueden repetir como práctica; cualquier día se puede consultar.',
-       archiveOpen:'Rejugar', archiveMissed:'sin jugar', archiveDone:'catalogado',
+       archiveTitle:'Archivo', archiveSub:'Todos los días hasta hoy. Cualquiera puede jugarse como práctica —sin puntuar ni coleccionar— o simplemente consultarse.',
+       archiveOpen:'Rejugar', archiveTry:'Jugarlo', archiveMissed:'sin jugar', archiveDone:'catalogado',
        archiveShow:'¿Qué fue?', archiveHide:'Ocultar',
        archiveNoCredit:'Mirar no es coleccionar: nada de esto entra en tu colección ni cuenta para una distinción.', practiceBadge:'PRÁCTICA — sin puntuar',
        nextIn:'Próxima inscripción en', newDay:'Ha empezado un nuevo día — ábrelo',
@@ -1378,7 +1450,9 @@ const UI = {
                instagram:'Instagram', source:'Código fuente', contact:'Escríbenos' },
        linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
-       secretFound:'Secreto descubierto', earnedOnLabel:'Obtenida el',
+       secretFound:'Secreto descubierto', awardWon:'Distinción obtenida',
+       stampsMore:(n)=>`+ ${n} jornada${n===1?'':'s'} más`,
+       earnedOnLabel:'Obtenida el', spinHim:'Hazlo girar',
        rankNames:{ common:'Común', rare:'Rara', prestige:'Prestigio', secret:'Secreta' },
        achLockedNone:'Todas las distinciones conseguidas.',
        achEmpty:'Nada sellado todavía. Termina un día y el primero aparecerá aquí.',
@@ -1603,9 +1677,16 @@ const dayIndex = (function pickDay(){
     return Math.max(0, Math.floor(injected));
   }
   const asked = parseInt(params.get('day'), 10);
-  if(Number.isFinite(asked) && asked !== todayIndex
-     && Object.prototype.hasOwnProperty.call(finishedDays(), String(asked))){
-    return Math.max(0, asked);
+  // Any day that has already happened can be opened again -- but only as
+  // practice, which is what the archive links to. A practice day is not
+  // scored, not recorded, and nothing met in it is catalogued, so the back
+  // catalogue cannot be farmed for a collection or a score; what it gives
+  // back is the puzzle itself, for anyone who missed it.
+  //
+  // Today is never reachable this way, and neither is tomorrow: the day has
+  // to be in the past, which is the one thing worth enforcing here.
+  if(Number.isFinite(asked) && asked >= 0 && asked < todayIndex){
+    return asked;
   }
   return todayIndex;
 })();
@@ -2071,7 +2152,7 @@ function importProfile(code){
   // Distinctions are re-earned from what the collection now holds rather than
   // trusted from the code, so a hand-edited list cannot award anything.
   saveProfile();
-  checkAchievements();
+  checkAchievements({ quiet: true });
   saveProfile();
   return { entries, days, lost };
 }
@@ -2137,10 +2218,9 @@ function recordDay(){
     at: Date.now()
   };
   saveProfile();
-  // Any secret that fell out of finishing this day says so, rather than
-  // waiting to be noticed in the passport.
-  checkAchievements().filter(id => (ACHIEVEMENTS.find(a => a.id === id) || {}).secret)
-                     .forEach(showSecret);
+  // Anything that fell out of finishing this day says so, rather than waiting
+  // to be noticed in the passport. checkAchievements announces it.
+  checkAchievements();
 }
 
 /* Current and best run of consecutive days played. */
@@ -2267,7 +2347,7 @@ function stampSvg(mark, earned){
   </svg>`;
 }
 
-function checkAchievements(){
+function checkAchievements(opts){
   if(isPractice) return [];
   const fresh = [];
   ACHIEVEMENTS.forEach(a=>{
@@ -2277,8 +2357,61 @@ function checkAchievements(){
       fresh.push(a.id);
     }
   });
-  if(fresh.length) saveProfile();
+  if(fresh.length){
+    saveProfile();
+    // Winning something should be an event, not a number that quietly moves
+    // in a list nobody has open. Restoring a backup is the exception: it can
+    // re-earn twenty at once, and twenty announcements is a punishment.
+    if(!(opts && opts.quiet)) announce(fresh);
+  }
   return fresh;
+}
+
+/* ---------- Saying so ----------
+   One card at a time, queued, because several can land together -- finishing
+   a day can complete the collection ladder and a streak in the same instant.
+   Drawn in the rank's own colours, so what arrives looks like what was won. */
+const announceQueue = [];
+let announcing = false;
+
+function announce(ids){
+  (Array.isArray(ids) ? ids : [ids]).forEach(id => {
+    if(!announceQueue.includes(id)) announceQueue.push(id);
+  });
+  if(!announcing) nextAnnouncement();
+}
+
+function nextAnnouncement(){
+  const id = announceQueue.shift();
+  if(!id){ announcing = false; return; }
+  announcing = true;
+  const T = t();
+  const a = ACHIEVEMENTS.find(x => x.id === id);
+  // Through achText, not T.ach[id]: the collection ladder and the continents
+  // are named by tier and by continent rather than by id, so reading them
+  // straight off the table silently skipped every one of them -- which is to
+  // say, most of the distinctions in the game.
+  const said = a ? achText(a) : null;
+  if(!a || !said){ nextAnnouncement(); return; }
+  const kind = achClass(a);
+  const el = document.createElement('div');
+  el.className = `award-card r-${kind}`;
+  el.setAttribute('role', 'status');
+  el.innerHTML =
+    `<span class="award-kind">${a.secret ? T.secretFound : T.awardWon}</span>
+     ${stampSvg(a.mark, true)}
+     <b>${said[0]}</b><span class="award-desc">${said[1]}</span>
+     <span class="award-rank">${T.rankNames[kind]}</span>`;
+  document.body.appendChild(el);
+  // Long enough to read the name and the reason, short enough not to sit in
+  // front of the board.
+  const hold = setTimeout(()=> close(), 3600);
+  function close(){
+    clearTimeout(hold);
+    el.classList.add('go');
+    setTimeout(()=>{ el.remove(); nextAnnouncement(); }, 420);
+  }
+  el.addEventListener('click', close);
 }
 
 /* The date a distinction was earned, as the player's own calendar had it.
@@ -3216,13 +3349,15 @@ const SPIN = {
 };
 const DIZZY_TURNS = 100;
 
-(function markTop(){
+/* The header mark opens the menu and does nothing else. The spinning belongs
+   to the little person, and he has moved: he sits inside the menu now, beside
+   Who am I, which is the one row that is about a person. Same physics, same
+   hundred turns, same secret. */
+(function markMenu(){
   const mark = document.getElementById('mark');
   const menu = document.getElementById('markMenu');
   if(!mark || !menu) return;
-  const img = mark.querySelector('img');
   const dim = document.getElementById('markDim');
-  const calm = matchMedia('(prefers-reduced-motion: reduce)');
 
   const setOpen = (open)=>{
     // An empty menu is not worth opening: with nothing configured there is
@@ -3233,6 +3368,30 @@ const DIZZY_TURNS = 100;
     mark.setAttribute('aria-expanded', String(!menu.hidden));
   };
 
+  mark.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    setOpen(menu.hidden);
+  });
+  // Anywhere else, or Escape, closes it -- including a tap on the board, which
+  // is what a hand reaches for when it wants the menu gone.
+  document.addEventListener('click', (e)=>{
+    if(!menu.hidden && !menu.contains(e.target) && !mark.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && !menu.hidden){ setOpen(false); mark.focus(); }
+  });
+})();
+
+/* Wind him up. Holding accelerates at a constant rate to a cap; letting go
+   hands him to drag plus friction, so he coasts down and stops wherever his
+   momentum leaves him. There is no fixed duration and no tidy final angle,
+   which is the whole point of a top and the reason this is not a keyframe.
+
+   Attached to whatever element is given, because he has moved once already
+   and may move again. */
+function spinTop(host, img){
+  if(!host || !img) return;
+  const calm = matchMedia('(prefers-reduced-motion: reduce)');
   let angle = 0, vel = 0, held = false, raf = null, last = 0;
   let turnedThisSpin = 0;             // degrees since the top started moving
   let pressedAt = 0;
@@ -3253,78 +3412,54 @@ const DIZZY_TURNS = 100;
       // Hidden until it happens, which is the point of it.
       profile.dizzy = true;
       saveProfile();
-      const fresh = checkAchievements();
-      if(fresh.length) showDizzy();
+      checkAchievements();          // which announces it
     }
     if(!held && vel === 0){
       raf = null;
-      mark.classList.remove('spinning');
+      host.classList.remove('spinning');
       turnedThisSpin = 0;             // "in a row" means one continuous spin
-      return;                        // left at whatever angle it stopped on
+      return;                         // left at whatever angle it stopped on
     }
     raf = requestAnimationFrame(frame);
   }
 
   function start(){
     if(calm.matches) return;          // no wind-up for anyone who asked for none
-    mark.classList.add('spinning');
+    host.classList.add('spinning');
     if(raf === null){ last = performance.now(); raf = requestAnimationFrame(frame); }
   }
 
-  mark.addEventListener('pointerdown', (e)=>{
+  host.addEventListener('pointerdown', (e)=>{
     e.preventDefault();               // or a long press selects the image
     pressedAt = performance.now();
     held = true;
     start();
-    try{ mark.setPointerCapture(e.pointerId); }catch(err){ /* not fatal */ }
+    try{ host.setPointerCapture(e.pointerId); }catch(err){ /* not fatal */ }
   });
   const release = ()=>{
     if(!held) return;
     held = false;
-    const quick = performance.now() - pressedAt < SPIN.tapMs;
-    // A tap is a request for the menu; a hold was a request for a spin, and
-    // opening the menu over it afterwards is not what the hand asked for.
-    if(quick){
-      if(calm.matches || vel === 0) vel = Math.max(vel, 900);  // a flick, for the tap
+    // A tap is worth a flick, so the gesture always does something.
+    if(performance.now() - pressedAt < SPIN.tapMs){
+      vel = Math.max(vel, 900);
       start();
-      setOpen(menu.hidden);
     }
   };
-  mark.addEventListener('pointerup', release);
-  mark.addEventListener('pointercancel', release);
-  mark.addEventListener('lostpointercapture', release);
-  // Keyboard: a click with no pointer behind it is Enter or Space on the
-  // button, which should open the menu and give him a turn.
-  mark.addEventListener('click', (e)=>{
+  host.addEventListener('pointerup', release);
+  host.addEventListener('pointercancel', release);
+  host.addEventListener('lostpointercapture', release);
+  // He is inside the menu: a click on him must not reach the document handler
+  // that closes it, or he would be gone before he had turned twice.
+  host.addEventListener('click', (e)=>{
     e.stopPropagation();
-    if(e.detail === 0){ vel = Math.max(vel, 900); start(); setOpen(menu.hidden); }
+    if(e.detail === 0){ vel = Math.max(vel, 900); start(); }   // keyboard
   });
-
-  // Anywhere else, or Escape, closes it -- including a tap on the board, which
-  // is what a hand reaches for when it wants the menu gone.
-  document.addEventListener('click', (e)=>{
-    if(!menu.hidden && !menu.contains(e.target) && !mark.contains(e.target)) setOpen(false);
-  });
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && !menu.hidden){ setOpen(false); mark.focus(); }
-  });
-})();
-
-/* Earned in the middle of nothing in particular, so it says so itself rather
-   than waiting to be discovered in the passport. */
-function showSecret(id){
-  const T = t();
-  const said = T.ach[id];
-  if(!said) return;
-  const el = document.createElement('div');
-  el.className = 'dizzy-toast';
-  el.innerHTML = `<span class="toast-kind">${T.secretFound}</span>`
-               + `<b>${said[0]}</b><span>${said[1]}</span>`;
-  document.body.appendChild(el);
-  setTimeout(()=> el.classList.add('go'), 3000);
-  setTimeout(()=> el.remove(), 3800);
 }
-const showDizzy = ()=> showSecret('dizzy');
+
+/* Kept as names for what announce() does, because a secret earned in the
+   middle of nothing in particular is the case this started as. */
+const showSecret = (id)=> announce(id);
+const showDizzy = ()=> announce('dizzy');
 
 document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('modalBackdrop').classList.remove('open'));
 document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') e.currentTarget.classList.remove('open'); });
@@ -3480,7 +3615,7 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
     if(!isPractice && !profile.langsUsed[lang]){
       profile.langsUsed[lang] = Date.now();
       saveProfile();
-      if(checkAchievements().includes('polyglot')) showSecret('polyglot');
+      checkAchievements();          // which announces it
     }
     render(); renderNav(); renderCountdown();
     if(currentView !== 'Game') showView(currentView);
@@ -3548,17 +3683,45 @@ function renderLinks(){
   if(!box) return;
   // Who am I first, and it stays inside the game -- hence the rule under it,
   // separating the one item that does not leave from the ones that do.
+  // A few of these carry their own mark. The file names are the ones that
+  // were uploaded, capitalisation included: on Pages that is part of the name.
+  const ICONS = { instagram: 'assets/Instagram_white.svg',
+                  source:    'assets/github-white-icon.svg' };
   const item = (k) =>
     `<a href="${LINKS[k]}" target="_blank" rel="noopener noreferrer">`
-    + `${T.links[k]}<span aria-hidden="true">\u2197</span></a>`;
+    + `<span class="menu-label">`
+    + (ICONS[k] ? `<img class="menu-icon" src="${ICONS[k]}" alt="" aria-hidden="true">` : '')
+    + `${T.links[k]}</span><span aria-hidden="true">\u2197</span></a>`;
   box.innerHTML =
-    `<button class="menu-inside" id="aboutOpen">${T.about.label}</button>`
+    // The little person lives here now, beside the one item that is about a
+    // person. Holding him still winds him up, and a hundred turns still earns
+    // what it earned when he was at the top of the page.
+    `<div class="menu-inside">
+       <button class="menu-about" id="aboutOpen">${T.about.label}</button>
+       <button class="menu-figure" id="markTop" aria-label="${T.spinHim}"></button>
+     </div>`
     + LINK_GROUPS.map(g => {
         const links = g.keys.filter(k => LINKS[k]).map(item).join('');
         // A heading over nothing is worse than no heading.
         return links ? `<span class="menu-head">${T.linkGroups[g.label]}</span>${links}` : '';
       }).join('');
   document.getElementById('aboutOpen').onclick = openAbout;
+  // Built rather than written into the template, so a failure to load leaves
+  // the row as a row instead of a broken-image icon in the middle of it.
+  const figure = document.getElementById('markTop');
+  if(figure){
+    const img = new Image();
+    img.src = 'assets/heritlelogogold.svg';
+    img.alt = '';
+    img.onerror = ()=> figure.remove();
+    figure.appendChild(img);
+    spinTop(figure, img);
+  }
+  const ig = document.getElementById('langIg');
+  if(ig){
+    if(LINKS.instagram){ ig.href = LINKS.instagram; ig.title = T.links.instagram; }
+    else ig.hidden = true;
+  }
 }
 
 /* ---------- Who am I ---------- */
@@ -3663,7 +3826,10 @@ function renderPassport(){
                      .sort((a,b)=> b.day - a.day);
   const avg = days.length
     ? Math.round(days.reduce((a,b)=>a+(b.score||0),0) / days.length) : 0;
-  const stamps = days.map(d=>{
+  // Five, and the rest counted. One stamp a day for a year is a wall of
+  // stamps, and the point of the row is the last week, not the archive.
+  const STAMPS_SHOWN = 5;
+  const stamps = days.slice(0, STAMPS_SHOWN).map(d=>{
     const tier = d.score >= 80 ? 3 : (d.score >= 40 ? 2 : 1);
     return `<div class="stamp s${tier}" title="Day ${d.day}">
       <b>${Math.round(d.score)}</b><span>#${d.day}</span></div>`;
@@ -3704,7 +3870,10 @@ function renderPassport(){
        <div class="stat"><b>${st.best}</b><span>${T.statBest}</span></div>
        <div class="stat"><b>${avg}</b><span>${T.statAvg}</span></div>
      </div>
-     <div class="stamps">${stamps}</div>
+     <div class="stamps">${stamps}${
+       days.length > STAMPS_SHOWN
+         ? `<span class="stamps-more">${T.stampsMore(days.length - STAMPS_SHOWN)}</span>`
+         : ''}</div>
      <div class="panel-head" style="margin-top:20px"><h2>${T.achTitle}</h2>
        <p>${T.achEarned} ${earned.length} / ${shown.length}</p></div>
      ${ach}
@@ -3843,7 +4012,8 @@ function renderArchive(){
     // A replay only where there is something to go back to: today, or a day
     // this player finished. An unplayed day has no replay, because that link
     // was the back catalogue.
-    const replayable = d === todayIndex || !!rec;
+    // Every past day can be practised now, finished or not.
+    const replayable = true;
     const past = d < todayIndex;
     const open = archOpen === d;
     let reveal = '';
@@ -3874,11 +4044,12 @@ function renderArchive(){
         <span class="arch-score">${rec ? T.scoreOf(Math.round(rec.score), MAX_SCORE) : '\u2014'}</span>
         ${past ? `<button class="arch-peek" data-arch-day="${d}"
                     aria-expanded="${open}">${open ? T.archiveHide : T.archiveShow}</button>` : ''}
+        ${(past && !rec) ? `<span class="arch-locked">${T.archiveMissed}</span>` : ''}
         ${replayable
           ? `<a class="btn secondary" style="font-size:0.68rem;padding:7px 11px"
-                href="${d === todayIndex ? '.' : '?day=' + d}">${
-                  d===todayIndex ? T.navGame : T.archiveOpen}</a>`
-          : `<span class="arch-locked">${T.archiveMissed}</span>`}
+                href="${d === todayIndex ? '.' : '?day=' + d + '&practice=1'}">${
+                  d===todayIndex ? T.navGame : (rec ? T.archiveOpen : T.archiveTry)}</a>`
+          : ''}
       </div>
       ${reveal}
     </div>`);
