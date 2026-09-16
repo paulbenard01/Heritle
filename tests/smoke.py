@@ -151,10 +151,10 @@ HEADER_PROBE = """
 MARK_PROBE = """
   () => {
     const m = document.querySelector('.mark').getBoundingClientRect();
-    const h = document.querySelector('.mark-hint');
+    const img = document.querySelector('.mark > img');
     return { w: Math.round(m.width), h: Math.round(m.height),
-             hint: h ? getComputedStyle(h).display : null,
-             hintText: h ? h.textContent : '' };
+             imgW: img.offsetWidth, imgH: img.offsetHeight,
+             imgTransform: getComputedStyle(img).transform };
   }
 """
 
@@ -2032,23 +2032,19 @@ def main():
                 check(m["w"] >= 70,
                       "on a wide screen it is big enough to be seen at all",
                       str(m["w"]))
-                check(m["hint"] == "block" and m["hintText"].strip() != "",
-                      "and says what it is", f"{m['hint']} {m['hintText']!r}")
-                # Under the mark is where the menu drops, so a label there is
-                # covered the moment anyone uses it.
-                page.click("#mark")
-                page.wait_for_timeout(300)
-                hint = page.locator(".mark-hint").bounding_box()
-                menu = page.locator("#markMenu").bounding_box()
-                check(hint["x"] >= menu["x"] + menu["width"] - 2
-                      or hint["y"] + hint["height"] <= menu["y"] + 2,
-                      "and the open menu does not cover the label",
-                      f"hint {hint}, menu {menu}")
-                page.keyboard.press("Escape")
-            else:
-                check(m["hint"] == "none",
-                      "on a phone the label stays off: the header is full",
-                      str(m["hint"]))
+                # The ring is drawn on the button, so the picture has to
+                # fill the button: a 48px picture in a 76px button is what
+                # "the ring is not centred at all" was, and it happened
+                # because the bigger size lost on source order.
+                check(m["imgW"] == m["w"],
+                      "and the picture fills the button the ring is drawn on",
+                      f"picture {m['imgW']}, button {m['w']}")
+                # The disc inside the artwork is off-centre in its own canvas
+                # -- measured, 4.5px left and 7px up in a 200px box -- so it is
+                # nudged back. Without that the ring cannot be concentric.
+                check(m["imgTransform"] not in ("none", "", None),
+                      "with the artwork's own offset corrected",
+                      str(m["imgTransform"]))
             ctx.close()
         # One mark for a dark tab strip, one for a light one. A single mark that
         # reads on both does not exist.
@@ -2074,6 +2070,90 @@ def main():
             r = page.request.get(base + "assets/" + i["file"])
             check(r.status == 200, f"{i['file']} is actually there", str(r.status))
         ctx.close()
+
+        # ---- paging the photographs ----
+        # The arrows lived inside a picture that opens a lightbox when tapped,
+        # so on a desktop every attempt to page also zoomed in.
+        print("\n== the photographs ==")
+        for width in (390, 1280):
+            ctx = browser.new_context(viewport={"width": width, "height": 900})
+            page = ctx.new_page()
+            errs = []
+            page.on("pageerror", lambda e: errs.append(str(e)))
+            page.goto(base)
+            page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                                   timeout=20000)
+            page.evaluate("document.getElementById('fnClose')?.click()")
+            staged = page.evaluate("""
+              () => {
+                const many = POOL.find(e => (e.photos || []).length >= 2);
+                if(!many) return false;
+                targets[state.round] = many;
+                state.roundStatus[state.round] = null;
+                state.guesses[state.round] = [];
+                photoView[state.round] = 0;
+                render();
+                const wrong = COUNTRIES.find(c => !targetCountries()
+                                .some(a => a.id === c.id));
+                submitGuess(wrong);
+                return true;
+              }
+            """)
+            page.wait_for_timeout(500)
+            tag = f"{width}px"
+            unlocked = page.evaluate("unlockedCount(currentTarget())")
+            if unlocked < 2:
+                print(f"  ---- {tag}: this entry has one photograph; nothing to page")
+                ctx.close()
+                continue
+            arrows = page.locator(".photo-step:not([hidden])")
+            check(arrows.count() == 2, f"{tag}: an arrow down each side of the picture",
+                  str(arrows.count()))
+            nb = page.locator("#photoNext").bounding_box()
+            check(nb["width"] >= 40 and nb["height"] >= 70,
+                  f"{tag}: big enough to hit without aiming",
+                  f"{round(nb['width'])}x{round(nb['height'])}")
+            check(page.locator("#photoCount").is_visible(),
+                  f"{tag}: and the counter is still in the corner",
+                  page.locator("#photoCount").inner_text())
+            before = page.evaluate("photoIndexFor(currentTarget())")
+            page.click("#photoPrev")
+            page.wait_for_timeout(300)
+            check(page.evaluate("photoIndexFor(currentTarget())") == before - 1,
+                  f"{tag}: the arrow pages the photograph")
+            check("open" not in (page.locator("#lightbox").get_attribute("class") or ""),
+                  f"{tag}: and does not open the lightbox on the way")
+            # Zoomed in is where the detail is, so it is where a player wants
+            # to compare one photograph with the next.
+            page.click("#photoBox")
+            page.wait_for_timeout(400)
+            if "open" in (page.locator("#lightbox").get_attribute("class") or ""):
+                check(page.locator(".lightbox-step:not([hidden])").count() == 2,
+                      f"{tag}: the zoomed view has arrows too")
+                check(page.locator("#lightboxCount").inner_text().strip() != "",
+                      f"{tag}: and says which photograph this is",
+                      page.locator("#lightboxCount").inner_text())
+                src = page.evaluate("document.getElementById('lightboxImg').src")
+                page.click("#lightboxNext")
+                page.wait_for_timeout(300)
+                check(page.evaluate("document.getElementById('lightboxImg').src") != src,
+                      f"{tag}: paging while zoomed changes the picture")
+                check("open" in (page.locator("#lightbox").get_attribute("class") or ""),
+                      f"{tag}: and stays zoomed in")
+                src2 = page.evaluate("document.getElementById('lightboxImg').src")
+                page.keyboard.press("ArrowLeft")
+                page.wait_for_timeout(300)
+                check(page.evaluate("document.getElementById('lightboxImg').src") != src2,
+                      f"{tag}: the arrow keys page it as well")
+                zoomed_at = page.evaluate("photoIndexFor(currentTarget())")
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+                check(page.evaluate("photoIndexFor(currentTarget())") == zoomed_at,
+                      f"{tag}: and the board is left on the one you were looking at")
+            else:
+                print(f"  ---- {tag}: photograph did not load, so no lightbox to page")
+            check(not errs, f"{tag}: and none of it throws", "; ".join(errs[:2]))
+            ctx.close()
 
         # ---- storage that fights back ----
         # Three ways the game meets a browser it cannot save to, all of which

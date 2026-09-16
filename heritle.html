@@ -104,22 +104,6 @@
   .mark:hover, .mark[aria-expanded="true"]{
     box-shadow:0 0 0 2px rgba(201,162,75,0.45), 0 6px 22px rgba(201,162,75,0.18);}
   .mark:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
-  /* The label under it. Mono and small, like every other label in the game,
-     and only where there is room: on a phone the header is already three
-     things across one line. */
-  .mark-hint{display:none;position:absolute;top:50%;left:100%;
-    transform:translateY(-50%);margin-left:11px;
-    font-family:'JetBrains Mono',monospace;font-size:0.53rem;letter-spacing:0.16em;
-    text-transform:uppercase;color:var(--gold-dim);white-space:nowrap;
-    transition:color 0.18s ease;}
-  .mark:hover .mark-hint, .mark[aria-expanded="true"] .mark-hint{color:var(--gold);}
-  @media (min-width: 980px){
-    .mark{width:76px;height:76px;top:2px;}
-    .mark img{width:72px;height:72px;}
-    .mark-hint{display:block;}
-    /* The menu hangs from a bigger mark now. */
-    .mark-menu{top:88px;}
-  }
   .mark img{width:48px;height:48px;object-fit:contain;display:block;
     pointer-events:none;user-select:none;-webkit-user-drag:none;
     /* Promoted to its own layer up front. If the layer were created when the
@@ -137,6 +121,27 @@
   .mark img{transform-origin:50% 50%;}
   .mark.spinning img{will-change:transform;}
   @media (prefers-reduced-motion: reduce){ .mark.spin img{animation:none;} }
+
+  /* ---------- Where the mark sits, and why the ring fits it ----------
+     Measured off the artwork: in a 200px box the gold disc spans 170px and is
+     centred at (95.5, 93), not (100, 100) -- the vectorisation carries its own
+     asymmetric padding. A ring drawn on the button could therefore never be
+     concentric with the disc, which is what "not centred at all" was. The
+     picture is scaled until the disc fills the button (200/170) and nudged
+     back to the middle, so the ring hugs the disc rather than the file.
+
+     Written after the base rule rather than before it: same specificity, and
+     source order is what decides. That is how a 76px button ended up with a
+     48px picture inside it. */
+  .mark{overflow:hidden;}            /* the scaled corners are transparent */
+  .mark > img{transform:translate(2.65%, 4.1%) scale(1.176);}
+  @media (min-width: 980px){
+    /* Nearly twice the size: it is the door to everything that is not the
+       puzzle, on a page with room to spare on both sides. */
+    .mark{width:132px;height:132px;top:-14px;}
+    .mark > img{width:132px;height:132px;}
+    .mark-menu{top:126px;}
+  }
 
   /* The menu the mark opens. Anchored under it, left-aligned with it, and
      above the dimmer so it stays lit while the page behind it goes quiet. */
@@ -309,6 +314,22 @@
   .photo-nav{position:absolute;top:6px;left:8px;display:flex;align-items:center;gap:2px;
     background:rgba(19,29,52,0.72);border-radius:4px;}
   .photo-nav[hidden]{display:none;}
+  /* Half the height of the picture, down each edge, and wide enough to hit
+     without aiming. They stop the click reaching the picture underneath. */
+  .photo-step{position:absolute;top:50%;transform:translateY(-50%);
+    width:46px;height:58%;min-height:70px;display:flex;align-items:center;
+    justify-content:center;z-index:3;cursor:pointer;
+    background:linear-gradient(90deg, rgba(10,14,26,0.55), rgba(10,14,26,0));
+    border:none;color:var(--cream);font-size:1.9rem;line-height:1;
+    padding:0 0 4px;opacity:0.8;transition:opacity 0.15s ease;
+    border-radius:0 10px 10px 0;}
+  .photo-step.next{right:0;border-radius:10px 0 0 10px;
+    background:linear-gradient(270deg, rgba(10,14,26,0.55), rgba(10,14,26,0));}
+  .photo-step.prev{left:0;}
+  .photo-step:hover{opacity:1;}
+  .photo-step[hidden]{display:none;}
+  .photo-step:disabled{opacity:0.18;cursor:default;}
+  @media (min-width: 980px){ .photo-step{width:58px;font-size:2.3rem;} }
   .photo-nav button{background:none;border:none;color:var(--ink-dim);cursor:pointer;
     font-size:0.9rem;line-height:1;padding:4px 7px;min-height:30px;}
   .photo-nav button:disabled{opacity:0.25;cursor:default;}
@@ -331,6 +352,18 @@
     border:1px solid rgba(201,162,75,0.3);}
   .lightbox-credit{margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:0.68rem;
     color:var(--ink-dim);text-align:center;max-width:640px;}
+  .lightbox-step{position:absolute;top:50%;transform:translateY(-50%);
+    width:64px;height:40%;min-height:90px;display:flex;align-items:center;
+    justify-content:center;background:none;border:none;color:var(--cream);
+    font-size:2.6rem;line-height:1;cursor:pointer;opacity:0.65;padding:0 0 6px;
+    transition:opacity 0.15s ease;z-index:2;}
+  .lightbox-step:hover{opacity:1;}
+  .lightbox-step.prev{left:max(4px, env(safe-area-inset-left));}
+  .lightbox-step.next{right:max(4px, env(safe-area-inset-right));}
+  .lightbox-step[hidden]{display:none;}
+  .lightbox-step:disabled{opacity:0.2;cursor:default;}
+  .lightbox-count{margin-top:10px;font-family:'JetBrains Mono',monospace;
+    font-size:0.66rem;color:var(--gold-dim);letter-spacing:0.05em;}
   .lightbox-close{position:absolute;top:max(10px, env(safe-area-inset-top));right:14px;
     background:transparent;border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;
     min-width:44px;min-height:44px;font-size:1.1rem;cursor:pointer;}
@@ -782,7 +815,6 @@
             aria-controls="markMenu">
       <img src="assets/vectorised-4c7d2e03.svg" alt=""
            onerror="this.closest('.mark').hidden = true">
-      <span class="mark-hint" aria-hidden="true"></span>
     </button>
     <!-- Where the links live. The foot of the page was the wrong home for
          them: nobody scrolls past the puzzle to find out what the game is. -->
@@ -817,11 +849,16 @@
         <span id="fallbackText"></span>
       </div>
       <span class="photo-credit" id="photoCredit"></span>
+      <!-- The counter stays in the corner; the arrows are their own targets
+           down each side, because they sat inside a picture that opens a
+           lightbox when tapped and every near miss opened it. -->
       <div class="photo-nav" id="photoNav" hidden>
-        <button id="photoPrev" aria-label="Previous photograph">‹</button>
         <span class="photo-count" id="photoCount"></span>
-        <button id="photoNext" aria-label="Next photograph">›</button>
       </div>
+      <button class="photo-step prev" id="photoPrev" hidden
+              aria-label="Previous photograph">‹</button>
+      <button class="photo-step next" id="photoNext" hidden
+              aria-label="Next photograph">›</button>
       <span class="zoom-hint"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M11 8v6M8 11h6"/></svg></span>
     </div>
 
@@ -886,7 +923,12 @@
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+  <!-- Zoomed in is where the detail is, so it is also where a player wants to
+       compare one photograph against the next. -->
+  <button class="lightbox-step prev" id="lightboxPrev" aria-label="Previous photograph">‹</button>
+  <button class="lightbox-step next" id="lightboxNext" aria-label="Next photograph">›</button>
   <img id="lightboxImg" alt="">
+  <div class="lightbox-count" id="lightboxCount"></div>
   <div class="lightbox-credit" id="lightboxCredit"></div>
 </div>
 
@@ -1071,8 +1113,8 @@ const UI = {
        archiveOpen:'Replay', archiveTry:'Play it', archiveMissed:'not played', archiveDone:'catalogued',
        archiveShow:'What was it?', archiveHide:'Hide',
        archiveNoCredit:'Looking is not collecting — nothing here enters your collection or counts towards a distinction.', practiceBadge:'PRACTICE — not scored',
-       nextIn:'Next inscription in', newDay:'A new day has begun — open it',
-       backToToday:'Back to today',
+       nextIn:'Next round in', newDay:'A new day has begun — open it',
+       backToToday:'Back to today', backToArchive:'Back to the archive',
        achTitle:'Distinctions',
        ach:{ continents:['Circumnavigator','One entry catalogued on every continent'],
              perfect:['Full marks','A day scored the maximum'],
@@ -1236,8 +1278,8 @@ const UI = {
        archiveOpen:'Rejouer', archiveTry:'Y jouer', archiveMissed:'non jouée', archiveDone:'catalogué',
        archiveShow:'C’était quoi ?', archiveHide:'Masquer',
        archiveNoCredit:'Regarder n’est pas collectionner : rien de tout cela n’entre dans votre collection ni ne compte pour une distinction.', practiceBadge:'ENTRAÎNEMENT — non compté',
-       nextIn:'Prochaine inscription dans', newDay:'Un nouveau jour a commencé — l’ouvrir',
-       backToToday:'Revenir à aujourd’hui',
+       nextIn:'Prochaine manche dans', newDay:'Un nouveau jour a commencé — l’ouvrir',
+       backToToday:'Revenir à aujourd’hui', backToArchive:'Retour aux archives',
        achTitle:'Distinctions',
        ach:{ continents:['Tour du monde','Une entrée cataloguée sur chaque continent'],
              perfect:['Note maximale','Une journée au score maximal'],
@@ -1401,8 +1443,8 @@ const UI = {
        archiveOpen:'Rejugar', archiveTry:'Jugarlo', archiveMissed:'sin jugar', archiveDone:'catalogado',
        archiveShow:'¿Qué fue?', archiveHide:'Ocultar',
        archiveNoCredit:'Mirar no es coleccionar: nada de esto entra en tu colección ni cuenta para una distinción.', practiceBadge:'PRÁCTICA — sin puntuar',
-       nextIn:'Próxima inscripción en', newDay:'Ha empezado un nuevo día — ábrelo',
-       backToToday:'Volver a hoy',
+       nextIn:'Próxima ronda en', newDay:'Ha empezado un nuevo día — ábrelo',
+       backToToday:'Volver a hoy', backToArchive:'Volver al archivo',
        achTitle:'Distinciones',
        ach:{ continents:['Vuelta al mundo','Una entrada catalogada en cada continente'],
              perfect:['Nota máxima','Un día con la puntuación máxima'],
@@ -1741,6 +1783,9 @@ const dayIndex = (function pickDay(){
   return todayIndex;
 })();
 const isPractice = dayIndex !== todayIndex || params.get('practice') === '1';
+// Where to land after the deep link: the archive is where a practice day was
+// chosen, so it is where "back" means.
+const openView = params.get('view');
 
 /* Deterministic per-day pick. A plain dayIndex % pool.length would walk the
    fame-sorted pool in order, so consecutive days would be near-identical in
@@ -2036,8 +2081,12 @@ if(lsGet(GEN_KEY) !== STORAGE_GEN){
 }
 
 /* ---------- State ---------- */
+/* A practice run is played in memory and never written down. That is what
+   makes it a replay: reading the finished save back meant clicking Replay on a
+   day you had played landed you on its results screen, with the board over on
+   Today and no game in sight. Nothing to resume, so it starts again. */
 const STORAGE_KEY = `heritle-${dayIndex}`;
-let state = lsJSON(STORAGE_KEY, null) || {
+let state = (isPractice ? null : lsJSON(STORAGE_KEY, null)) || {
   round: 0,
   guesses: ROUND_PLAN.map(()=>[]),
   roundStatus: ROUND_PLAN.map(()=>null),
@@ -2060,7 +2109,10 @@ if(!Array.isArray(state.ids) || state.ids.some(id => typeof id !== 'string')){
 while(state.guesses.length     < N_ROUNDS) state.guesses.push([]);
 while(state.roundStatus.length < N_ROUNDS) state.roundStatus.push(null);
 while(state.roundScore.length  < N_ROUNDS) state.roundScore.push(0);
-function saveState(){ lsSet(STORAGE_KEY, JSON.stringify(state)); }
+function saveState(){
+  if(isPractice) return;            // practice leaves no trace, by definition
+  lsSet(STORAGE_KEY, JSON.stringify(state));
+}
 
 /* ---------- Profile ----------
    Everything that outlives a single day: the catalogue of entries the player
@@ -2832,15 +2884,22 @@ function renderPhotoCount(target){
   const nav = document.getElementById('photoNav');
   const el = document.getElementById('photoCount');
   if(!nav || !el) return;
+  const prev = document.getElementById('photoPrev');
+  const next = document.getElementById('photoNext');
   const unlocked = unlockedCount(target);
-  if(unlocked < 2){ nav.hidden = true; return; }
+  if(unlocked < 2){
+    nav.hidden = true;
+    if(prev) prev.hidden = true;
+    if(next) next.hidden = true;
+    return;
+  }
   nav.hidden = false;
   const i = photoIndexFor(target);
   el.textContent = t().photoOf(i + 1, unlocked);
   // Gold only while looking at the one the last guess just earned.
   el.classList.toggle('fresh', i === unlocked - 1 && currentGuesses().length > 0);
-  document.getElementById('photoPrev').disabled = i <= 0;
-  document.getElementById('photoNext').disabled = i >= unlocked - 1;
+  if(prev){ prev.hidden = false; prev.disabled = i <= 0; }
+  if(next){ next.hidden = false; next.disabled = i >= unlocked - 1; }
 }
 
 function renderClues(target){
@@ -3221,22 +3280,57 @@ function renderFinal(){
    The board crops to 16:10; this shows the whole frame so the detail the player
    is guessing from — architecture, vegetation, signage — is actually legible. */
 const lightbox = document.getElementById('lightbox');
-function openLightbox(){
+function fillLightbox(){
   const target = currentTarget();
-  const img = document.getElementById('siteImg');
-  if(!target || !document.getElementById('photoBox').classList.contains('zoomable')) return;
-  document.getElementById('lightboxImg').src = img.src;
-  document.getElementById('lightboxImg').alt = roundFinished() ? target.names[lang] : '';
+  if(!target) return;
   const shot = currentPhoto(target);
+  const unlocked = unlockedCount(target);
+  const i = photoIndexFor(target);
+  document.getElementById('lightboxImg').src =
+    (shot && (shot.path || shot.url)) || document.getElementById('siteImg').src;
+  document.getElementById('lightboxImg').alt = roundFinished() ? target.names[lang] : '';
   document.getElementById('lightboxCredit').textContent =
     (shot && roundFinished()) ? [shot.credit, shot.license].filter(Boolean).join(' · ') : '';
+  const count = document.getElementById('lightboxCount');
+  const prev = document.getElementById('lightboxPrev');
+  const next = document.getElementById('lightboxNext');
+  const several = unlocked > 1;
+  count.textContent = several ? t().photoOf(i + 1, unlocked) : '';
+  prev.hidden = next.hidden = !several;
+  prev.disabled = i <= 0;
+  next.disabled = i >= unlocked - 1;
+}
+function openLightbox(){
+  if(!currentTarget() ||
+     !document.getElementById('photoBox').classList.contains('zoomable')) return;
+  fillLightbox();
   lightbox.classList.add('open');
 }
 function closeLightbox(){ lightbox.classList.remove('open'); }
+/* Paging while zoomed in: the board behind it moves too, so closing the
+   lightbox leaves the player on the photograph they were just looking at. */
+function stepLightbox(by){
+  stepPhoto(by);
+  fillLightbox();
+}
 document.getElementById('photoBox').addEventListener('click', openLightbox);
 document.getElementById('lightboxClose').addEventListener('click', e=>{ e.stopPropagation(); closeLightbox(); });
+document.getElementById('lightboxPrev').addEventListener('click', e=>{
+  e.stopPropagation(); stepLightbox(-1);
+});
+document.getElementById('lightboxNext').addEventListener('click', e=>{
+  e.stopPropagation(); stepLightbox(1);
+});
+// The image itself is not a dismiss target once it can be paged: a tap meant
+// for an arrow that lands an inch wide should not close the whole thing.
+document.getElementById('lightboxImg').addEventListener('click', e=> e.stopPropagation());
 lightbox.addEventListener('click', closeLightbox);
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') closeLightbox();
+  if(!lightbox.classList.contains('open')) return;
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); stepLightbox(-1); }
+  if(e.key === 'ArrowRight'){ e.preventDefault(); stepLightbox(1); }
+});
 
 /* ---------- Info modal ---------- */
 /* Where to go to actually learn about the thing.
@@ -3473,8 +3567,13 @@ function spinTop(host, img){
     raf = requestAnimationFrame(frame);
   }
 
-  function start(){
-    if(calm.matches) return;          // no wind-up for anyone who asked for none
+  function start(held_){
+    // Reduced motion used to stop this dead, which quietly made Dizzy
+    // unreachable for anyone with the system setting on -- and nothing said
+    // so, because there is nothing to say: you hold him and he does not move.
+    // A hold is an explicit request to spin something, so it is honoured; what
+    // the preference suppresses is the unasked-for flick a tap gives him.
+    if(calm.matches && !held_) return;
     host.classList.add('spinning');
     if(raf === null){ last = performance.now(); raf = requestAnimationFrame(frame); }
   }
@@ -3483,16 +3582,16 @@ function spinTop(host, img){
     e.preventDefault();               // or a long press selects the image
     pressedAt = performance.now();
     held = true;
-    start();
+    start(true);
     try{ host.setPointerCapture(e.pointerId); }catch(err){ /* not fatal */ }
   });
   const release = ()=>{
     if(!held) return;
     held = false;
     // A tap is worth a flick, so the gesture always does something.
-    if(performance.now() - pressedAt < SPIN.tapMs){
+    if(performance.now() - pressedAt < SPIN.tapMs && !calm.matches){
       vel = Math.max(vel, 900);
-      start();
+      start(false);
     }
   };
   host.addEventListener('pointerup', release);
@@ -3502,7 +3601,7 @@ function spinTop(host, img){
   // that closes it, or he would be gone before he had turned twice.
   host.addEventListener('click', (e)=>{
     e.stopPropagation();
-    if(e.detail === 0){ vel = Math.max(vel, 900); start(); }   // keyboard
+    if(e.detail === 0){ vel = Math.max(vel, 900); start(true); }   // keyboard
   });
 }
 
@@ -3644,8 +3743,15 @@ function handleMapTap(evt){
 }
 document.getElementById('mapSvg').addEventListener('click', handleMapTap);
 
-document.getElementById('photoPrev').addEventListener('click', ()=> stepPhoto(-1));
-document.getElementById('photoNext').addEventListener('click', ()=> stepPhoto(1));
+// stopPropagation, or the click carries on to the photo box behind them and
+// opens the lightbox -- which is what paging through the photographs on a
+// desktop actually did.
+document.getElementById('photoPrev').addEventListener('click', e=>{
+  e.stopPropagation(); stepPhoto(-1);
+});
+document.getElementById('photoNext').addEventListener('click', e=>{
+  e.stopPropagation(); stepPhoto(1);
+});
 
 document.getElementById('confirmGuess').addEventListener('click', ()=>{
   if(!pendingCountry) return;
@@ -3748,7 +3854,8 @@ function renderLinks(){
     // what it earned when he was at the top of the page.
     `<div class="menu-inside">
        <button class="menu-about" id="aboutOpen">${T.about.label}</button>
-       <button class="menu-figure" id="markTop" aria-label="${T.spinHim}"></button>
+       <button class="menu-figure" id="markTop" aria-label="${T.spinHim}"
+               title="${T.spinHim}"></button>
      </div>`
     + LINK_GROUPS.map(g => {
         const links = g.keys.filter(k => LINKS[k]).map(item).join('');
@@ -3767,8 +3874,6 @@ function renderLinks(){
     figure.appendChild(img);
     spinTop(figure, img);
   }
-  const hint = document.querySelector('.mark-hint');
-  if(hint) hint.textContent = T.markHint;
   const ig = document.getElementById('langIg');
   if(ig){
     if(LINKS.instagram){ ig.href = LINKS.instagram; ig.title = T.links.instagram; }
@@ -4240,14 +4345,21 @@ Promise.all([loadDataset(), loadLand()]).then(()=>{
   if(isPractice){
     const b = document.createElement('div');
     b.className = 'practice-banner';
-    b.innerHTML = `${t().practiceBadge} · <a href="./" style="color:var(--gold)">${t().backToToday}</a>`;
+    const date = new Date(EPOCH + dayIndex * 86400000).toISOString().slice(0, 10);
+    // Which day this is, and the way back to where it was chosen from. A
+    // practice run reached from the archive should return there, not dump the
+    // player on today with no idea what happened.
+    b.innerHTML = `${t().practiceBadge} · ${date} · `
+      + `<a href="./?view=archive" style="color:var(--gold)">${t().backToArchive}</a>`;
     document.getElementById('viewGame').prepend(b);
   }
   render();
   renderNav();
   renderCountdown();
   noteLang();
-  maybeFieldNotes();
+  // Deep-linked back from a practice run: land where it was chosen from.
+  if(openView === 'archive') showView('Archive');
+  else maybeFieldNotes();
 });
 </script>
 </body>
