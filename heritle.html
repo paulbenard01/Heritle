@@ -4,14 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Heritle</title>
-<!-- A tab strip is white in one theme and near-black in the other, and a mark
-     that reads in both does not exist: these are the same mark drawn twice.
-     A browser that does not understand the media query takes the first, which
-     is why the dark-theme one is listed first -- most tab strips are dark. -->
-<link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)"
-      href="assets/vectorised-White.svg">
-<link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)"
-      href="assets/vectorised-Black.svg">
+<!-- One file that changes its own colour, rather than two the browser picks
+     between. Two <link rel="icon" media="..."> entries is the documented way
+     and it is not reliable -- browsers differ on which candidate they take,
+     and some ignore the media attribute entirely, which is how a black mark
+     ended up in a dark tab strip. An SVG favicon is a document, so it carries
+     its own stylesheet; see tools/make_favicon.py. -->
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="apple-touch-icon" href="assets/vectorised-4c7d2e03.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -223,8 +222,12 @@
   /* Only this line has to keep clear of the mark and the language control.
      Padding the whole header pushed the pitch onto two lines on a phone, which
      is the vertical budget above the photograph going backwards. */
-  .wordmark{font-family:'Playfair Display',serif;font-weight:700;font-size:2.4rem;
-    color:var(--cream);padding:0 58px;}
+  .wordmark{display:block;font-family:'Playfair Display',serif;font-weight:700;
+    font-size:2.4rem;color:var(--cream);padding:0 58px;
+    text-decoration:none;transition:color 0.15s ease;}
+  .wordmark:hover{color:var(--gold);}
+  .wordmark:focus-visible{outline:2px solid var(--gold);outline-offset:4px;
+    border-radius:6px;}
   /* The language control grew an Instagram mark, and on a narrow phone the
      title ran straight into it: measured, the wordmark overlapped the picker
      by 29px at 320 and 9px at 360. The title gives way rather than the link,
@@ -824,7 +827,11 @@
     <!-- Where the links live. The foot of the page was the wrong home for
          them: nobody scrolls past the puzzle to find out what the game is. -->
     <div class="mark-menu" id="markMenu" hidden></div>
-    <div class="wordmark">Heritle</div>
+    <!-- The way back. Searching Google to get to Google: after four links
+         deep into a heritage register, the name at the top is what a hand
+         reaches for. An anchor rather than a click handler, so it can be
+         middle-clicked, opened in a tab, and read as a link. -->
+    <a class="wordmark" href="." aria-label="Heritle">Heritle</a>
     <div class="pitch" id="pitch"></div>
     <div class="tagline" id="tagline"></div>
     <div class="lang-slider" role="tablist">

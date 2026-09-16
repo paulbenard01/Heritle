@@ -2079,18 +2079,52 @@ def main():
           () => [...document.querySelectorAll('link[rel=icon]')]
                   .map(l => ({ media: l.media, file: l.href.split('/').pop() }))
         """)
-        check(len(icons) == 2, "the tab has a mark for each theme", str(icons))
-        check({i["media"] for i in icons} ==
-              {"(prefers-color-scheme: dark)", "(prefers-color-scheme: light)"},
-              "one for dark, one for light", str([i["media"] for i in icons]))
-        check(len({i["file"] for i in icons}) == 2,
-              "and they are different files", str([i["file"] for i in icons]))
-        # A browser that ignores the media query takes the first one listed.
-        check(icons[0]["media"] == "(prefers-color-scheme: dark)",
-              "with the dark-tab one first, for browsers that ignore the query")
-        for i in icons:
-            r = page.request.get(base + "assets/" + i["file"])
-            check(r.status == 200, f"{i['file']} is actually there", str(r.status))
+        # One file, not two with media queries: browsers differ on which
+        # candidate they take and some ignore media entirely, which is how a
+        # black mark ended up in a dark tab strip.
+        check(len(icons) == 1, "the tab icon is one file, not a choice",
+              str(icons))
+        r = page.request.get(base + "assets/" + icons[0]["file"])
+        check(r.status == 200, "and it is actually there", str(r.status))
+        # It carries its own stylesheet, and that sheet answers the theme.
+        body = r.text()
+        check("prefers-color-scheme" in body and "<style" in body,
+              "and changes its own colour with the browser's theme",
+              body[:60])
+        ctx.close()
+
+        # ---- the way back ----
+        # Four links deep into a heritage register, the name at the top is what
+        # a hand reaches for -- searching Google to get to Google.
+        ctx = browser.new_context(viewport={"width": 1280, "height": 800})
+        page = ctx.new_page()
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        today = page.evaluate("todayIndex")
+        deep = f"{base}?day={max(0, today - 1)}&practice=1&view=archive"
+        page.goto(deep)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.wait_for_timeout(300)
+        check(page.evaluate("document.querySelector('.wordmark').tagName") == "A",
+              "the title is a link, not a click handler",
+              page.evaluate("document.querySelector('.wordmark').tagName"))
+        was = {"day": page.evaluate("dayIndex"),
+               "practice": page.evaluate("isPractice"),
+               "view": page.evaluate("currentView")}
+        page.click(".wordmark")
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.wait_for_timeout(300)
+        check(page.evaluate("dayIndex") == page.evaluate("todayIndex")
+              and not page.evaluate("isPractice")
+              and page.evaluate("currentView") == "Game",
+              "and clicking it leaves everything behind and lands on today",
+              f"{was} -> day {page.evaluate('dayIndex')}, "
+              f"practice {page.evaluate('isPractice')}, "
+              f"view {page.evaluate('currentView')}")
+        check("?" not in page.url, "on a clean address", page.url)
         ctx.close()
 
         # ---- paging the photographs ----
