@@ -353,6 +353,23 @@
   .btn.secondary{background:transparent;color:var(--gold);border:1px solid var(--gold-dim);}
   /* The countdown's replacement when the day turns under an open tab. */
   .btn.small{padding:7px 13px;font-size:0.75rem;}
+  /* ---------- The foot of the page ---------- */
+  .site-foot{margin-top:26px;padding-top:14px;
+    border-top:1px solid rgba(201,162,75,0.18);text-align:center;}
+  .foot-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 2px;}
+  .foot-links button, .foot-links a{background:none;border:none;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:0.63rem;letter-spacing:0.04em;
+    color:var(--ink-dim);text-decoration:none;padding:6px 9px;border-radius:6px;}
+  .foot-links button:hover, .foot-links a:hover{color:var(--gold);
+    background:rgba(201,162,75,0.08);}
+  .foot-credit{font-family:'JetBrains Mono',monospace;font-size:0.58rem;
+    color:rgba(156,166,192,0.6);line-height:1.6;margin:6px 0 0;}
+  .doc-head{font-family:'JetBrains Mono',monospace;font-size:0.66rem;
+    letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);
+    margin:18px 0 6px;}
+  .doc-head:first-child{margin-top:4px;}
+  .doc-updated{font-family:'JetBrains Mono',monospace;font-size:0.58rem;
+    color:var(--ink-dim);margin-top:18px;}
   /* Backup: a long code, so the box has to be a box rather than an input. */
   .backup{margin-top:16px;border-top:1px dashed rgba(201,162,75,0.22);padding-top:12px;}
   .backup summary{cursor:pointer;font-family:'JetBrains Mono',monospace;
@@ -450,6 +467,42 @@
   .ach-tile.locked span{color:var(--ink-dim);}
   .ach-tile.on{border-color:var(--gold);background:rgba(201,162,75,0.08);}
   .ach-tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  /* ---------- Rank ----------
+     Forty entries catalogued used to sit in the same frame as a month without
+     missing a day. A common stamp keeps the plain frame; a rare one is drawn
+     in gold; a prestige one gets a lit frame and a corner marker you can see
+     from across the grid. A secret is not a rank -- it is a different kind of
+     thing, and it looks like one: a wax seal. */
+  .ach-tile.r-rare{border-color:rgba(201,162,75,0.5);}
+  .ach-tile.r-prestige{border-color:var(--gold);
+    background:linear-gradient(180deg, rgba(201,162,75,0.13), rgba(201,162,75,0.04));
+    box-shadow:0 0 0 1px rgba(201,162,75,0.22), 0 4px 18px rgba(201,162,75,0.10);}
+  /* A notch of gold in the corner: rank readable without reading anything. */
+  .ach-tile.r-prestige::after{content:'';position:absolute;top:0;right:0;
+    border-width:0 13px 13px 0;border-style:solid;
+    border-color:transparent var(--gold) transparent transparent;
+    border-radius:0 9px 0 0;}
+  .ach-tile{position:relative;overflow:hidden;}
+  .ach-tile.r-secret{border-color:var(--heat-close);
+    background:linear-gradient(180deg, rgba(184,83,46,0.14), rgba(184,83,46,0.04));}
+  .ach-tile.r-secret span{color:#E9C7B4;}
+  /* The ring is drawn, not filled: filling it too painted the stamp into a
+     solid disc with its own mark invisible inside it. */
+  .ach-tile.r-secret .stamp-mark .ring{stroke:var(--heat-close);fill:none;}
+  .ach-tile.r-secret .stamp-mark .stamp-text{fill:var(--heat-close);stroke:none;}
+  /* Locked tiles say nothing about rank: that is half the point of a ladder. */
+  .ach-tile.locked.r-rare, .ach-tile.locked.r-prestige, .ach-tile.locked.r-secret{
+    border-color:rgba(156,166,192,0.22);background:transparent;box-shadow:none;}
+  .ach-tile.locked.r-prestige::after{display:none;}
+  .ach-when{font-family:'JetBrains Mono',monospace;font-size:0.53rem !important;
+    color:var(--gold-dim) !important;letter-spacing:0.02em;}
+  .ach-meta{display:block;margin-top:5px;font-family:'JetBrains Mono',monospace;
+    font-size:0.56rem;color:var(--gold-dim);letter-spacing:0.05em;text-transform:uppercase;}
+  .ach-detail.r-prestige{border-color:var(--gold);}
+  .ach-detail.r-secret{border-color:var(--heat-close);}
+  .toast-kind{display:block;font-family:'JetBrains Mono',monospace;font-size:0.55rem;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--heat-close);
+    margin-bottom:3px;}
   /* Spliced in at the end of the tapped tile's own row, so the description is
      never far from the stamp it belongs to. */
   .ach-detail{grid-column:1 / -1;display:flex;gap:12px;align-items:center;
@@ -507,6 +560,27 @@
   @keyframes toast-in{ from{ opacity:0; transform:translate(-50%,14px); }
                        to{ opacity:1; transform:translate(-50%,0); } }
 
+  .arch-item{display:flex;flex-direction:column;}
+  .arch-peek{background:none;border:1px solid var(--gold-dim);color:var(--gold-dim);
+    border-radius:6px;padding:6px 9px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.04em;}
+  .arch-peek:hover{color:var(--gold);border-color:var(--gold);}
+  .arch-reveal{background:rgba(19,29,52,0.6);border:1px solid rgba(201,162,75,0.18);
+    border-top:none;border-radius:0 0 8px 8px;padding:8px 9px 10px;margin-top:-4px;}
+  .arch-note{font-family:'JetBrains Mono',monospace;font-size:0.58rem;
+    color:var(--ink-dim);margin:2px 0 8px;line-height:1.4;}
+  .arch-entry{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+    background:none;border:none;padding:5px 4px;cursor:pointer;border-radius:7px;}
+  .arch-entry:hover{background:rgba(201,162,75,0.08);}
+  .arch-entry img, .arch-noimg{width:46px;height:34px;object-fit:cover;border-radius:5px;
+    flex:none;background:var(--navy-2);border:1px solid rgba(201,162,75,0.2);}
+  .arch-entry-text{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;}
+  .arch-entry-text b{color:var(--cream);font-size:0.76rem;font-weight:500;
+    overflow-wrap:break-word;}
+  .arch-entry-text span{font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+    color:var(--ink-dim);}
+  .arch-have{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--correct);
+    border:1px solid var(--correct);border-radius:4px;padding:2px 5px;flex:none;}
   .arch-locked{font-family:'JetBrains Mono',monospace;font-size:0.6rem;
     color:rgba(156,166,192,0.5);letter-spacing:0.04em;text-transform:uppercase;
     padding:7px 2px;}
@@ -653,6 +727,7 @@
 
 
     <footer id="guessCounter"></footer>
+    <footer class="site-foot" id="siteFoot"></footer>
     <div class="countdown" id="countdown"></div>
   </div>
 
@@ -715,6 +790,10 @@
    Paste a URL to turn a link on. Leave it as an empty string and the link is
    not rendered at all -- the game never shows a link that goes nowhere.
    Labels are translated below (T.links); these are only the addresses. */
+/* Published deliberately: a free game with no account still needs somewhere to
+   write to, and French law expects a contactable publisher. */
+const CONTACT_EMAIL = 'paulbenard01@gmail.com';
+
 const LINKS = {
   // Where to go and read more. Official listings first, because they are the
   // primary sources and they are free to everyone; nothing here needs an
@@ -860,8 +939,10 @@ const UI = {
        collectionEmpty:'Nothing catalogued yet. Finish a round and the entry is accessioned here.',
        passportTitle:'Passport', passportSub:'Your record of inscriptions visited',
        statPlayed:'Days', statStreak:'Streak', statBest:'Best', statAvg:'Avg score',
-       archiveTitle:'Archive', archiveSub:'Replay any past day. Practice runs are not scored.',
-       archiveOpen:'Replay', archiveMissed:'not played', archiveDone:'catalogued', practiceBadge:'PRACTICE — not scored',
+       archiveTitle:'Archive', archiveSub:'Every day so far. Days you finished can be replayed for practice; any day can be looked up to see what it held.',
+       archiveOpen:'Replay', archiveMissed:'not played', archiveDone:'catalogued',
+       archiveShow:'What was it?', archiveHide:'Hide',
+       archiveNoCredit:'Looking is not collecting — nothing here enters your collection or counts towards a distinction.', practiceBadge:'PRACTICE — not scored',
        nextIn:'Next inscription in', newDay:'A new day has begun — open it',
        backToToday:'Back to today',
        achTitle:'Distinctions',
@@ -886,7 +967,9 @@ const UI = {
              streak30:['The Long Season','A month without missing a day'],
              decades:['Time Traveller','Entries inscribed across five decades'],
              bonus10:['Tradition Hunter','The bonus round solved ten times'],
-             dizzy:['Dizzy','A hundred turns without letting him stop'] },
+             dizzy:['Dizzy','A hundred turns without letting him stop'],
+             polyglot:['Three Tongues','The game read in all three of its languages'],
+             nightowl:['The Small Hours','A day finished between midnight and five'] },
        about:{ label:'Who am I', title:'Who am I',
          body:[
            'I am Paul. I study heritage and museums, cultural heritage management, and I built Heritle on my own, out of an observation: the World Heritage lists are among the most remarkable inventories humanity has ever assembled, hardly anyone really knows them, and global trends aren’t always going in the direction of opening and sharing our natural and cultural wealth.',
@@ -894,11 +977,73 @@ const UI = {
            'Inscription brings protection, funding and expertise, and it brings crowds, speculation and pressure along with them: a place can be loved into difficulty. What helps over time is a public that knows what it has. People defend what they can name, and money follows attention. That is truer still of intangible heritage, where a craft, a song, a festival survives by being practised and known, and a tradition nobody has heard of is one bad decade from disappearing.',
            'Heritle is independent and free, with no account and no advertising, and is not affiliated with any heritage organisation. It reads public data and asks you to look closely at places worth knowing.'
          ] },
+       footContact:'Contact', footCredit:'Heritage data from Wikidata · photographs from Wikimedia Commons, credited individually · map from Natural Earth',
+       footRights:'© 2026 Paul Benard · An independent project, not affiliated with any heritage organisation.',
+       faq:{ title:'Questions',
+         sections:[
+           ['What is this?',
+            'A daily game about the World Heritage lists. Three inscribed sites and one living tradition, each shown as a photograph with its name taken away; you place them on a map. Everyone gets the same four, and they change at your local midnight.'],
+           ['Is it official?',
+            'No. Heritle is made by one person and is not affiliated with, endorsed by or connected to UNESCO or any other heritage organisation. It reads public data about the lists; it does not speak for anybody.'],
+           ['Where do the photographs and data come from?',
+            'The entries come from Wikidata, which publishes the lists as open data. The photographs come from Wikimedia Commons and are credited with their photographer and licence once a round is over — they are held back during it, because a licence template often names the country and hands you the answer. Country outlines come from Natural Earth, which is public domain.'],
+           ['How is the score worked out?',
+            'Each site is worth a third of 100 and the bonus tradition is worth 50, so a day is out of 150. Finding the country is worth most on the first guess and a little less on each one after. Miss it and your closest guess still scores, by how near it landed and by whether it was the right region or continent — for a tradition shared across a region, the right part of the world is the real signal.'],
+           ['Why can I not play a day I missed?',
+            'Because then the game would be a back catalogue rather than a daily one, and it could be binged from day one. Days you finished can be replayed for practice, and any past day can be looked up in the Archive to see what it held — looking does not add anything to your collection.'],
+           ['Will I lose my collection?',
+            'It lives in this browser and nowhere else: there is no account, so there is nothing on a server to restore it from. Clearing your site data, changing device, or leaving it a couple of weeks in some browsers will lose it. The Passport has a backup code for exactly this — copy it somewhere safe and paste it back on the new device.'],
+           ['Is there an app?',
+            'No, and there does not need to be. It is one page; add it to your home screen and it behaves much like one.'],
+           ['Can I suggest something, or tell you it is broken?',
+            'Please do — the address is at the foot of the page, and the source is public.']
+         ] },
+       privacy:{ title:'Privacy',
+         sections:[
+           ['The short version',
+            'No account, no sign-up, no tracking, no analytics, no advertising, and no cookies. Nothing you do here is sent to me, because there is nowhere to send it to: Heritle is a single page with no server of its own.'],
+           ['What is stored, and where',
+            'Your progress — the day in play, your collection, your distinctions, your language and the colour-blind setting — is kept in your browser\u2019s local storage, on your device. It never leaves it. I cannot read it, and I could not recover it for you if you lost it.'],
+           ['Who else your browser talks to',
+            'Three parties, none of them mine. The page is hosted on GitHub Pages, which like any web host sees the request and your IP address in its own logs. Photographs are fetched directly from Wikimedia Commons, so your browser contacts Wikimedia, under their privacy policy. Fonts are fetched from Google Fonts, which means Google sees the request too — that one is a dependency I would rather remove, and intend to.'],
+           ['No profiling, and nothing to ask for',
+            'Since no personal data is collected or held, there is nothing to access, correct, export or erase. Clearing this site\u2019s data in your browser removes everything Heritle has ever stored, immediately and completely.'],
+           ['Children',
+            'The game collects nothing from anyone, of any age.'],
+           ['If you want to ask about any of this',
+            'Write to ' + CONTACT_EMAIL + '.']
+         ] },
+       terms:{ title:'Terms',
+         sections:[
+           ['1. What these cover',
+            'These terms govern the use of Heritle, a free daily game published by Paul Benard at heritle.org.'],
+           ['2. Access',
+            'The game is free and requires no account, password or registration. There is no leaderboard and no public profile: nothing you do is visible to anyone else.'],
+           ['3. Fair use',
+            'Please do not use automated means to disrupt the service or to interfere with other people\u2019s use of it. The game runs entirely in your own browser, so what you do with your own copy of the page is your business.'],
+           ['4. Rights in the game, and in what it shows',
+            'The code, design, wording and game mechanics are the publisher\u2019s. The material the game presents is not: the heritage data comes from Wikidata under CC0, the photographs from Wikimedia Commons under their own individual licences and credited as such, and the country outlines from Natural Earth in the public domain. No ownership of that material is claimed here, and no right to reuse it is granted by these terms — its own licences govern that.'],
+           ['5. Independence',
+            'Heritle is not affiliated with, endorsed by or connected to UNESCO or any other heritage organisation, and does not speak for any of them.'],
+           ['6. Availability',
+            'The service is provided as it is, with no guarantee of continuous availability. It may be interrupted, changed or discontinued at any time, without notice.'],
+           ['7. Your progress',
+            'Progress is stored only in your browser. Losing it — by clearing your site data, changing device, or your browser evicting its storage — loses the progress with it, and the publisher cannot be held liable for that. A backup code is provided in the Passport for this reason.'],
+           ['8. Changes to these terms',
+            'These terms may be modified. The version in force is the one published on the site at the time you read it.'],
+           ['9. Law',
+            'These terms are governed by French law. Any dispute falls to the French courts.'],
+           ['10. Contact',
+            CONTACT_EMAIL]
+         ],
+         updated:'Last updated: 13 September 2026' },
        links:{ list:'The World Heritage List', ich:'Living traditions',
                news:'Heritage news', europeana:'Europeana collections',
                instagram:'Instagram', source:'Source', contact:'Get in touch' },
        linkGroups:{ explore:'Read further', project:'This project' },
        achEarned:'Earned', achLocked:'Still to find',
+       secretFound:'Secret found', earnedOnLabel:'Earned',
+       rankNames:{ common:'Common', rare:'Rare', prestige:'Prestige', secret:'Secret' },
        achLockedNone:'Every distinction earned.',
        achEmpty:'Nothing stamped yet. Finish a day and the first one lands here.',
        fieldNotesTitle:'Field Notes', fieldNotesBtn:'Begin',
@@ -957,8 +1102,10 @@ const UI = {
        collectionEmpty:'Rien encore catalogué. Terminez une manche et l’entrée sera inventoriée ici.',
        passportTitle:'Passeport', passportSub:'Votre registre d’inscriptions visitées',
        statPlayed:'Jours', statStreak:'Série', statBest:'Record', statAvg:'Score moyen',
-       archiveTitle:'Archives', archiveSub:'Rejouez n’importe quel jour passé. Les parties d’entraînement ne comptent pas.',
-       archiveOpen:'Rejouer', archiveMissed:'non jouée', archiveDone:'catalogué', practiceBadge:'ENTRAÎNEMENT — non compté',
+       archiveTitle:'Archives', archiveSub:'Tous les jours écoulés. Les journées terminées se rejouent à l’entraînement ; n’importe quelle journée peut être consultée.',
+       archiveOpen:'Rejouer', archiveMissed:'non jouée', archiveDone:'catalogué',
+       archiveShow:'C’était quoi ?', archiveHide:'Masquer',
+       archiveNoCredit:'Regarder n’est pas collectionner : rien de tout cela n’entre dans votre collection ni ne compte pour une distinction.', practiceBadge:'ENTRAÎNEMENT — non compté',
        nextIn:'Prochaine inscription dans', newDay:'Un nouveau jour a commencé — l’ouvrir',
        backToToday:'Revenir à aujourd’hui',
        achTitle:'Distinctions',
@@ -983,7 +1130,9 @@ const UI = {
              streak30:['La longue saison','Un mois sans manquer un jour'],
              decades:['Voyageur du temps','Des entrées inscrites sur cinq décennies'],
              bonus10:['Chasseur de traditions','La manche bonus résolue dix fois'],
-             dizzy:['Tête qui tourne','Cent tours sans le laisser s’arrêter'] },
+             dizzy:['Tête qui tourne','Cent tours sans le laisser s’arrêter'],
+             polyglot:['Trois langues','Le jeu lu dans chacune de ses trois langues'],
+             nightowl:['Les petites heures','Une journée terminée entre minuit et cinq heures'] },
        about:{ label:'Qui suis-je', title:'Qui suis-je',
          body:[
            'Je m’appelle Paul. J’étudie le patrimoine et les musées, la gestion du patrimoine culturel, et j’ai construit Heritle seul, à partir d’un constat : les listes du patrimoine mondial comptent parmi les inventaires les plus remarquables que l’humanité ait jamais établis, presque personne ne les connaît vraiment, et les tendances mondiales ne vont pas toujours dans le sens de l’ouverture et du partage de nos richesses naturelles et culturelles.',
@@ -991,11 +1140,73 @@ const UI = {
            'L’inscription apporte protection, financements et expertise ; elle apporte aussi la foule, la spéculation et la pression : un lieu peut être aimé jusqu’à l’étouffement. Ce qui aide dans la durée, c’est un public qui sait ce qu’il possède. On défend ce que l’on sait nommer, et les moyens suivent l’attention. C’est plus vrai encore du patrimoine immatériel, où un savoir-faire, un chant, une fête ne survivent qu’en étant pratiqués et connus, et où une tradition dont personne n’a entendu parler est à une mauvaise décennie de disparaître.',
            'Heritle est indépendant et gratuit, sans compte ni publicité, et n’est affilié à aucune organisation patrimoniale. Le jeu lit des données publiques et vous demande de regarder de près des lieux qui méritent d’être connus.'
          ] },
+       footContact:'Contact', footCredit:'Données patrimoniales de Wikidata · photographies de Wikimedia Commons, créditées une à une · fond de carte Natural Earth',
+       footRights:'© 2026 Paul Benard · Projet indépendant, sans affiliation à aucune organisation patrimoniale.',
+       faq:{ title:'Questions',
+         sections:[
+           ['Qu’est-ce que c’est ?',
+            'Un jeu quotidien sur les listes du patrimoine mondial. Trois sites inscrits et une tradition vivante, montrés en photographie et privés de leur nom ; à vous de les situer sur une carte. Tout le monde reçoit les quatre mêmes, et ils changent à votre minuit local.'],
+           ['Est-ce officiel ?',
+            'Non. Heritle est fait par une seule personne et n’est ni affilié à l’UNESCO ni à aucune autre organisation patrimoniale, ni approuvé par elles. Le jeu lit des données publiques sur les listes ; il ne parle au nom de personne.'],
+           ['D’où viennent les photographies et les données ?',
+            'Les entrées viennent de Wikidata, qui publie les listes en données ouvertes. Les photographies viennent de Wikimedia Commons et sont créditées — photographe et licence — une fois la manche terminée : elles sont retenues pendant, parce qu’un modèle de licence nomme souvent le pays et donne la réponse. Les contours des pays viennent de Natural Earth, dans le domaine public.'],
+           ['Comment le score est-il calculé ?',
+            'Chaque site vaut un tiers de 100 et la tradition bonus vaut 50 : la journée est sur 150. Trouver le pays vaut le plus au premier essai, un peu moins à chacun des suivants. À défaut, votre proposition la plus proche compte quand même, selon la distance et selon que la région ou le continent étaient les bons — pour une tradition partagée par toute une région, c’est la bonne partie du monde qui est le vrai signal.'],
+           ['Pourquoi ne puis-je pas jouer une journée manquée ?',
+            'Parce que le jeu deviendrait un catalogue à rattraper plutôt qu’un rendez-vous quotidien, et qu’on pourrait l’enchaîner depuis le premier jour. Les journées terminées se rejouent à l’entraînement, et n’importe quelle journée passée peut être consultée dans les Archives pour voir ce qu’elle contenait — regarder n’ajoute rien à votre collection.'],
+           ['Vais-je perdre ma collection ?',
+            'Elle vit dans ce navigateur et nulle part ailleurs : il n’y a pas de compte, donc rien sur un serveur pour la restaurer. Effacer les données du site, changer d’appareil, ou laisser passer quinze jours sur certains navigateurs la fait disparaître. Le Passeport contient un code de sauvegarde prévu pour cela : copiez-le en lieu sûr et collez-le sur le nouvel appareil.'],
+           ['Y a-t-il une application ?',
+            'Non, et ce n’est pas nécessaire. C’est une seule page : ajoutez-la à votre écran d’accueil et elle se comportera à peu près comme une application.'],
+           ['Puis-je proposer quelque chose, ou signaler un problème ?',
+            'Volontiers — l’adresse est en bas de page, et le code source est public.']
+         ] },
+       privacy:{ title:'Confidentialité',
+         sections:[
+           ['En résumé',
+            'Pas de compte, pas d’inscription, pas de pistage, pas de statistiques, pas de publicité, pas de cookies. Rien de ce que vous faites ici ne m’est envoyé, car il n’y a nulle part où l’envoyer : Heritle est une page unique, sans serveur propre.'],
+           ['Ce qui est conservé, et où',
+            'Votre progression — la journée en cours, votre collection, vos distinctions, votre langue et le réglage daltonien — est gardée dans le stockage local de votre navigateur, sur votre appareil. Elle n’en sort jamais. Je ne peux pas la lire, et je ne pourrais pas la récupérer si vous la perdiez.'],
+           ['Les autres avec qui votre navigateur communique',
+            'Trois tiers, dont aucun n’est moi. La page est hébergée par GitHub Pages, qui, comme tout hébergeur, voit la requête et votre adresse IP dans ses propres journaux. Les photographies sont chargées directement depuis Wikimedia Commons : votre navigateur contacte donc Wikimedia, sous sa politique de confidentialité. Les polices viennent de Google Fonts, ce qui signifie que Google voit aussi la requête — cette dépendance-là, je préférerais m’en passer, et j’ai l’intention de le faire.'],
+           ['Aucun profilage, et rien à demander',
+            'Puisque aucune donnée personnelle n’est collectée ni détenue, il n’y a rien à consulter, corriger, exporter ou effacer. Effacer les données de ce site dans votre navigateur supprime tout ce que Heritle a jamais enregistré, immédiatement et entièrement.'],
+           ['Les enfants',
+            'Le jeu ne collecte rien de personne, à aucun âge.'],
+           ['Pour poser une question',
+            'Écrivez à ' + CONTACT_EMAIL + '.']
+         ] },
+       terms:{ title:'Conditions',
+         sections:[
+           ['1. Objet',
+            'Les présentes conditions régissent l’utilisation de Heritle, jeu quotidien gratuit publié par Paul Benard à l’adresse heritle.org.'],
+           ['2. Accès',
+            'Le jeu est gratuit et ne requiert ni compte, ni mot de passe, ni inscription. Il n’y a ni classement ni profil public : rien de ce que vous faites n’est visible par quiconque.'],
+           ['3. Usage loyal',
+            'Merci de ne pas recourir à des moyens automatisés pour perturber le service ou gêner son usage par d’autres. Le jeu tourne entièrement dans votre navigateur : ce que vous faites de votre propre copie de la page ne regarde que vous.'],
+           ['4. Droits sur le jeu, et sur ce qu’il montre',
+            'Le code, le graphisme, les textes et les mécaniques appartiennent à l’éditeur. Ce que le jeu présente, non : les données patrimoniales viennent de Wikidata sous CC0, les photographies de Wikimedia Commons sous leurs licences respectives et créditées comme telles, les contours des pays de Natural Earth, dans le domaine public. Aucune propriété n’est revendiquée sur ces éléments, et les présentes conditions n’accordent aucun droit de réutilisation : leurs propres licences s’appliquent.'],
+           ['5. Indépendance',
+            'Heritle n’est ni affilié à l’UNESCO ni à aucune autre organisation patrimoniale, ni approuvé par elles, et ne parle pas en leur nom.'],
+           ['6. Disponibilité',
+            'Le service est fourni tel quel, sans garantie de disponibilité continue. Il peut être interrompu, modifié ou arrêté à tout moment, sans préavis.'],
+           ['7. Votre progression',
+            'La progression est stockée uniquement dans votre navigateur. La perdre — en effaçant les données du site, en changeant d’appareil, ou parce que le navigateur libère son stockage — fait disparaître la progression avec elle, sans que l’éditeur puisse en être tenu responsable. Un code de sauvegarde est prévu dans le Passeport à cette fin.'],
+           ['8. Modification des conditions',
+            'Les présentes conditions peuvent être modifiées. La version en vigueur est celle publiée sur le site au moment où vous la consultez.'],
+           ['9. Droit applicable',
+            'Les présentes conditions sont régies par le droit français. Tout litige relève des tribunaux français.'],
+           ['10. Contact',
+            CONTACT_EMAIL]
+         ],
+         updated:'Dernière mise à jour : 13 septembre 2026' },
        links:{ list:'La Liste du patrimoine mondial', ich:'Traditions vivantes',
                news:'Actualité du patrimoine', europeana:'Collections Europeana',
                instagram:'Instagram', source:'Code source', contact:'Nous écrire' },
        linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
        achEarned:'Obtenues', achLocked:'Encore à trouver',
+       secretFound:'Secret découvert', earnedOnLabel:'Obtenue le',
+       rankNames:{ common:'Courante', rare:'Rare', prestige:'Prestige', secret:'Secrète' },
        achLockedNone:'Toutes les distinctions ont été obtenues.',
        achEmpty:'Rien d’apposé pour l’instant. Terminez une journée et le premier tampon arrive ici.',
        fieldNotesTitle:'Notes de terrain', fieldNotesBtn:'Commencer',
@@ -1054,8 +1265,10 @@ const UI = {
        collectionEmpty:'Nada catalogado todavía. Termina una ronda y la entrada se registrará aquí.',
        passportTitle:'Pasaporte', passportSub:'Tu registro de inscripciones visitadas',
        statPlayed:'Días', statStreak:'Racha', statBest:'Récord', statAvg:'Puntuación media',
-       archiveTitle:'Archivo', archiveSub:'Vuelve a jugar cualquier día pasado. Las prácticas no puntúan.',
-       archiveOpen:'Rejugar', archiveMissed:'sin jugar', archiveDone:'catalogado', practiceBadge:'PRÁCTICA — sin puntuar',
+       archiveTitle:'Archivo', archiveSub:'Todos los días hasta hoy. Las jornadas terminadas se pueden repetir como práctica; cualquier día se puede consultar.',
+       archiveOpen:'Rejugar', archiveMissed:'sin jugar', archiveDone:'catalogado',
+       archiveShow:'¿Qué fue?', archiveHide:'Ocultar',
+       archiveNoCredit:'Mirar no es coleccionar: nada de esto entra en tu colección ni cuenta para una distinción.', practiceBadge:'PRÁCTICA — sin puntuar',
        nextIn:'Próxima inscripción en', newDay:'Ha empezado un nuevo día — ábrelo',
        backToToday:'Volver a hoy',
        achTitle:'Distinciones',
@@ -1080,7 +1293,9 @@ const UI = {
              streak30:['La larga temporada','Un mes sin faltar un día'],
              decades:['Viajero del tiempo','Entradas inscritas a lo largo de cinco décadas'],
              bonus10:['Cazador de tradiciones','La ronda bonus resuelta diez veces'],
-             dizzy:['Mareado','Cien vueltas sin dejarlo parar'] },
+             dizzy:['Mareado','Cien vueltas sin dejarlo parar'],
+             polyglot:['Tres lenguas','El juego leído en sus tres idiomas'],
+             nightowl:['La madrugada','Una jornada terminada entre medianoche y las cinco'] },
        about:{ label:'Quién soy', title:'Quién soy',
          body:[
            'Me llamo Paul. Estudio patrimonio y museos, gestión del patrimonio cultural, y construí Heritle por mi cuenta a partir de una constatación: las listas del patrimonio mundial están entre los inventarios más notables que la humanidad ha reunido jamás, casi nadie las conoce de verdad, y las tendencias mundiales no siempre van en la dirección de abrir y compartir nuestra riqueza natural y cultural.',
@@ -1088,11 +1303,73 @@ const UI = {
            'La inscripción trae protección, financiación y experiencia, y trae consigo multitudes, especulación y presión: un lugar puede ser querido hasta la asfixia. Lo que ayuda con el tiempo es un público que sepa lo que tiene. Se defiende lo que se sabe nombrar, y los recursos siguen a la atención. Y más aún en el patrimonio inmaterial, donde un oficio, un canto, una fiesta sobreviven al practicarse y al conocerse, y donde una tradición de la que nadie ha oído hablar está a una mala década de desaparecer.',
            'Heritle es independiente y gratuito, sin cuenta ni publicidad, y no está afiliado a ninguna organización del patrimonio. Lee datos públicos y te pide mirar de cerca lugares que vale la pena conocer.'
          ] },
+       footContact:'Contacto', footCredit:'Datos patrimoniales de Wikidata · fotografías de Wikimedia Commons, acreditadas una por una · base cartográfica de Natural Earth',
+       footRights:'© 2026 Paul Benard · Proyecto independiente, sin afiliación a ninguna organización del patrimonio.',
+       faq:{ title:'Preguntas',
+         sections:[
+           ['¿Qué es esto?',
+            'Un juego diario sobre las listas del patrimonio mundial. Tres sitios inscritos y una tradición viva, mostrados como fotografía y sin su nombre; tú los sitúas en un mapa. Todo el mundo recibe los mismos cuatro, y cambian a tu medianoche local.'],
+           ['¿Es oficial?',
+            'No. Heritle lo hace una sola persona y no está afiliado a la UNESCO ni a ninguna otra organización del patrimonio, ni cuenta con su respaldo. Lee datos públicos sobre las listas; no habla en nombre de nadie.'],
+           ['¿De dónde salen las fotografías y los datos?',
+            'Las entradas vienen de Wikidata, que publica las listas como datos abiertos. Las fotografías vienen de Wikimedia Commons y se acreditan —fotógrafo y licencia— cuando termina la ronda: se retienen durante ella porque una plantilla de licencia suele nombrar el país y regalar la respuesta. Los contornos de los países vienen de Natural Earth, de dominio público.'],
+           ['¿Cómo se calcula la puntuación?',
+            'Cada sitio vale un tercio de 100 y la tradición bonus vale 50: la jornada es sobre 150. Acertar el país vale más al primer intento y algo menos en cada uno siguiente. Si no, tu propuesta más cercana puntúa igualmente, según lo cerca que quedara y según si la región o el continente eran los correctos: para una tradición compartida por toda una región, la parte del mundo correcta es la señal que importa.'],
+           ['¿Por qué no puedo jugar un día que me perdí?',
+            'Porque entonces el juego sería un catálogo por recuperar en lugar de una cita diaria, y podría devorarse desde el primer día. Las jornadas terminadas se pueden repetir como práctica, y cualquier día pasado se puede consultar en el Archivo para ver qué contenía: mirar no añade nada a tu colección.'],
+           ['¿Voy a perder mi colección?',
+            'Vive en este navegador y en ningún otro sitio: no hay cuenta, así que no hay nada en un servidor desde donde restaurarla. Borrar los datos del sitio, cambiar de dispositivo o pasar un par de semanas sin entrar en algunos navegadores la hace desaparecer. El Pasaporte incluye un código de copia de seguridad precisamente para esto: guárdalo en un lugar seguro y pégalo en el dispositivo nuevo.'],
+           ['¿Hay aplicación?',
+            'No, y no hace falta. Es una sola página: añádela a tu pantalla de inicio y se comportará prácticamente como una aplicación.'],
+           ['¿Puedo sugerir algo o avisar de un fallo?',
+            'Por favor: la dirección está al pie de la página, y el código es público.']
+         ] },
+       privacy:{ title:'Privacidad',
+         sections:[
+           ['En resumen',
+            'Sin cuenta, sin registro, sin seguimiento, sin analíticas, sin publicidad y sin cookies. Nada de lo que haces aquí me llega, porque no hay ningún sitio al que enviarlo: Heritle es una sola página, sin servidor propio.'],
+           ['Qué se guarda, y dónde',
+            'Tu progreso —la jornada en curso, tu colección, tus distinciones, tu idioma y el ajuste para daltonismo— se guarda en el almacenamiento local de tu navegador, en tu dispositivo. Nunca sale de ahí. Yo no puedo leerlo, y no podría recuperarlo si lo perdieras.'],
+           ['Con quién más habla tu navegador',
+            'Tres terceros, ninguno mío. La página está alojada en GitHub Pages, que como cualquier alojamiento ve la petición y tu dirección IP en sus propios registros. Las fotografías se cargan directamente desde Wikimedia Commons, así que tu navegador contacta con Wikimedia, bajo su política de privacidad. Las tipografías vienen de Google Fonts, lo que significa que Google también ve la petición: esa dependencia preferiría quitarla, y tengo intención de hacerlo.'],
+           ['Sin perfilado, y nada que solicitar',
+            'Como no se recoge ni se conserva ningún dato personal, no hay nada que consultar, corregir, exportar o borrar. Borrar los datos de este sitio en tu navegador elimina todo lo que Heritle haya guardado, de inmediato y por completo.'],
+           ['Menores',
+            'El juego no recoge nada de nadie, a ninguna edad.'],
+           ['Para preguntar sobre cualquiera de estos puntos',
+            'Escribe a ' + CONTACT_EMAIL + '.']
+         ] },
+       terms:{ title:'Condiciones',
+         sections:[
+           ['1. Objeto',
+            'Estas condiciones regulan el uso de Heritle, un juego diario gratuito publicado por Paul Benard en heritle.org.'],
+           ['2. Acceso',
+            'El juego es gratuito y no requiere cuenta, contraseña ni registro. No hay clasificación ni perfil público: nada de lo que hagas es visible para nadie más.'],
+           ['3. Uso leal',
+            'Por favor, no emplees medios automatizados para perturbar el servicio ni para dificultar su uso por parte de otras personas. El juego se ejecuta enteramente en tu navegador: lo que hagas con tu propia copia de la página es asunto tuyo.'],
+           ['4. Derechos sobre el juego, y sobre lo que muestra',
+            'El código, el diseño, los textos y la mecánica pertenecen al editor. Lo que el juego presenta, no: los datos patrimoniales vienen de Wikidata bajo CC0, las fotografías de Wikimedia Commons bajo sus licencias respectivas y acreditadas como tales, y los contornos de los países de Natural Earth, de dominio público. Aquí no se reclama ninguna propiedad sobre ese material, y estas condiciones no conceden ningún derecho de reutilización: rigen sus propias licencias.'],
+           ['5. Independencia',
+            'Heritle no está afiliado a la UNESCO ni a ninguna otra organización del patrimonio, no cuenta con su respaldo y no habla en su nombre.'],
+           ['6. Disponibilidad',
+            'El servicio se ofrece tal cual, sin garantía de disponibilidad continua. Puede interrumpirse, cambiarse o cesar en cualquier momento, sin previo aviso.'],
+           ['7. Tu progreso',
+            'El progreso se guarda únicamente en tu navegador. Perderlo —al borrar los datos del sitio, cambiar de dispositivo, o porque el navegador libere su almacenamiento— hace desaparecer el progreso con él, sin que el editor pueda ser considerado responsable. Por eso el Pasaporte incluye un código de copia de seguridad.'],
+           ['8. Cambios en estas condiciones',
+            'Estas condiciones pueden modificarse. La versión vigente es la publicada en el sitio en el momento en que la consultas.'],
+           ['9. Ley aplicable',
+            'Estas condiciones se rigen por la ley francesa. Cualquier litigio corresponde a los tribunales franceses.'],
+           ['10. Contacto',
+            CONTACT_EMAIL]
+         ],
+         updated:'Última actualización: 13 de septiembre de 2026' },
        links:{ list:'La Lista del Patrimonio Mundial', ich:'Tradiciones vivas',
                news:'Noticias del patrimonio', europeana:'Colecciones Europeana',
                instagram:'Instagram', source:'Código fuente', contact:'Escríbenos' },
        linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
+       secretFound:'Secreto descubierto', earnedOnLabel:'Obtenida el',
+       rankNames:{ common:'Común', rare:'Rara', prestige:'Prestigio', secret:'Secreta' },
        achLockedNone:'Todas las distinciones conseguidas.',
        achEmpty:'Nada sellado todavía. Termina un día y el primero aparecerá aquí.',
        fieldNotesTitle:'Notas de campo', fieldNotesBtn:'Empezar',
@@ -1178,6 +1455,14 @@ function initialLang(){
   return nav.find(l => UI[l]) || 'en';
 }
 let lang = initialLang();
+// Noted on load as well as on a switch: a player who reads it in French from
+// the first visit never touches the language control.
+function noteLang(){
+  if(typeof profile === 'undefined' || isPractice) return;
+  if(profile.langsUsed[lang]) return;
+  profile.langsUsed[lang] = Date.now();
+  saveProfile();
+}
 function t(){ return UI[lang]; }
 
 /* ---------- Dataset loading ----------
@@ -1654,6 +1939,15 @@ function loadProfile(){
     seenFieldNotes: !!p.seenFieldNotes,
     colorblind: !!p.colorblind,
     favourites: p.favourites && typeof p.favourites === 'object' ? p.favourites : {},
+    // When each distinction was earned. A passport is a record of where you
+    // have been and when; without the date the stamps are a set, not a story.
+    // Earned before this existed means no date, which is shown as no date
+    // rather than as a guess.
+    achievementsAt: p.achievementsAt && typeof p.achievementsAt === 'object'
+                    ? p.achievementsAt : {},
+    // Quietly kept for the secret distinctions.
+    langsUsed: p.langsUsed && typeof p.langsUsed === 'object' ? p.langsUsed : {},
+    nightOwl: !!p.nightOwl,
     dizzy: !!p.dizzy
   };
 }
@@ -1707,8 +2001,13 @@ function exportProfile(){
        }, {}),
     a: profile.achievements.slice(),
     f: Object.keys(profile.favourites),
+    // The one-off facts a collection cannot be re-derived from: they are how
+    // three of the distinctions are earned, and a backup that dropped them
+    // silently un-earned a secret on the new phone.
     g: profile.gemFirstGuess ? 1 : 0,
-    z: profile.dizzy ? 1 : 0
+    z: profile.dizzy ? 1 : 0,
+    n: profile.nightOwl ? 1 : 0,
+    l: Object.keys(profile.langsUsed)
   });
 }
 
@@ -1755,6 +2054,10 @@ function importProfile(code){
   });
   if(data.g) profile.gemFirstGuess = true;
   if(data.z) profile.dizzy = true;
+  if(data.n) profile.nightOwl = true;
+  (Array.isArray(data.l) ? data.l : []).forEach(l => {
+    if(UI[l] && !profile.langsUsed[l]) profile.langsUsed[l] = 1;
+  });
   // Distinctions are re-earned from what the collection now holds rather than
   // trusted from the code, so a hand-edited list cannot award anything.
   saveProfile();
@@ -1812,6 +2115,9 @@ function catalogue(entry, solved){
 
 function recordDay(){
   if(isPractice) return;
+  // Finished in the small hours, by the player's own clock.
+  const hour = new Date().getHours();
+  if(hour >= 0 && hour < 5) profile.nightOwl = true;
   profile.days[dayIndex] = {
     score: totalScore(),
     statuses: state.roundStatus.slice(),
@@ -1821,6 +2127,10 @@ function recordDay(){
     at: Date.now()
   };
   saveProfile();
+  // Any secret that fell out of finishing this day says so, rather than
+  // waiting to be noticed in the passport.
+  checkAchievements().filter(id => (ACHIEVEMENTS.find(a => a.id === id) || {}).secret)
+                     .forEach(showSecret);
 }
 
 /* Current and best run of consecutive days played. */
@@ -1862,14 +2172,21 @@ const daysPlayed = ()=> Object.values(profile.days);
 /* Each distinction carries the mark that goes in its stamp -- short, because a
    stamp is small, and text rather than a symbol so it centres and renders the
    same everywhere. */
+/* Not all of these are worth the same, and the passport used to show them as
+   if they were: forty entries catalogued sat in the same frame as a month
+   without missing a day. Three ranks -- and a fourth that is not a rank at
+   all, for the ones nobody is told about. */
+const RANK = { common: 'common', rare: 'rare', prestige: 'prestige' };
+
 const ACHIEVEMENTS = [
-  { id:'continents', mark:'360', test:()=> {
+  { id:'continents', mark:'360', rank:RANK.prestige, test:()=> {
       const seen = new Set(catalogued().map(r=>r.continent).filter(Boolean));
       return ['EU','AS','AF','NA','SA','OC'].every(c=>seen.has(c));
     } },
-  { id:'perfect',   mark:'MAX', test:()=> daysPlayed().some(d=>d.score >= MAX_SCORE) },
-  { id:'hiddengem', mark:'1st', test:()=> !!profile.gemFirstGuess },
-  { id:'flawless',  mark:'4/4', test:()=> daysPlayed().some(d =>
+  { id:'perfect',   mark:'MAX', rank:RANK.prestige,
+    test:()=> daysPlayed().some(d=>d.score >= MAX_SCORE) },
+  { id:'hiddengem', mark:'1st', rank:RANK.rare, test:()=> !!profile.gemFirstGuess },
+  { id:'flawless',  mark:'4/4', rank:RANK.prestige, test:()=> daysPlayed().some(d =>
       d.statuses && d.statuses.length === N_ROUNDS && d.statuses.every(x=>x==='solved')) },
   // The collection ladder. Tiered because a single badge at twenty-five meant
   // nothing happened for six days and then never again; named rather than
@@ -1877,30 +2194,39 @@ const ACHIEVEMENTS = [
   ...ARCHIVIST_TIERS.map(n => ({
     // '1K' rather than '1000': four digits do not fit a stamp legibly.
     id: 'coll' + n, tier: n, mark: n >= 1000 ? (n / 1000) + 'K' : String(n),
+    // The ladder earns its rank: the first rungs are a week of play, the last
+    // is the better part of a year.
+    rank: n >= 500 ? RANK.prestige : n >= 100 ? RANK.rare : RANK.common,
     test: () => collectionSize() >= n
   })),
   // A continent at a time, which is the shape the collection actually grows in.
   ...Object.entries(CONTINENT_GOALS).map(([code, goal]) => ({
-    id: 'cont' + code, cont: code, goal, mark: code,
+    id: 'cont' + code, cont: code, goal, mark: code, rank: RANK.rare,
     test: () => catalogued().filter(r => r.continent === code).length >= goal
   })),
-  { id:'trad10', mark:'X', test:()=>
+  { id:'trad10', mark:'X', rank:RANK.common, test:()=>
       catalogued().filter(r => r.type === 'immaterial').length >= 10 },
-  { id:'trad50', mark:'L', test:()=>
+  { id:'trad50', mark:'L', rank:RANK.rare, test:()=>
       catalogued().filter(r => r.type === 'immaterial').length >= 50 },
-  { id:'streak7',  mark:'7',  test:()=> streaks().best >= 7 },
-  { id:'streak30', mark:'30', test:()=> streaks().best >= 30 },
+  { id:'streak7',  mark:'7',  rank:RANK.rare,     test:()=> streaks().best >= 7 },
+  { id:'streak30', mark:'30', rank:RANK.prestige, test:()=> streaks().best >= 30 },
   // Inscription decades, so a collection spread across the register's whole
   // history is worth something a pile of famous cathedrals is not.
-  { id:'decades', mark:'50s', test:()=>
+  { id:'decades', mark:'50s', rank:RANK.prestige, test:()=>
       new Set(catalogued().map(r => r.year).filter(Boolean)
                           .map(y => Math.floor(y / 10))).size >= 5 },
-  { id:'bonus10', mark:'B', test:()=>
+  { id:'bonus10', mark:'B', rank:RANK.rare, test:()=>
       daysPlayed().filter(d => d.statuses && d.statuses[3] === 'solved').length >= 10 },
   // Hidden: not listed among what is left to find, because a secret you can
   // read off a list is not one. Earned by spinning the little person a hundred
   // turns without letting him stop.
-  { id:'dizzy', mark:'∞', secret:true, test:()=> !!profile.dizzy }
+  { id:'dizzy', mark:'∞', secret:true, test:()=> !!profile.dizzy },
+  // Read in all three languages. The game is trilingual because the lists are;
+  // somebody who goes looking in each of them should be noticed.
+  { id:'polyglot', mark:'III', secret:true, test:()=>
+      ['en','fr','es'].every(l => !!profile.langsUsed[l]) },
+  // Finished a day between midnight and five, by the player's own clock.
+  { id:'nightowl', mark:'02', secret:true, test:()=> !!profile.nightOwl }
 ];
 
 /* What the passport shows: everything except secrets nobody has earned yet. */
@@ -1936,11 +2262,24 @@ function checkAchievements(){
   const fresh = [];
   ACHIEVEMENTS.forEach(a=>{
     if(!profile.achievements.includes(a.id) && a.test()){
-      profile.achievements.push(a.id); fresh.push(a.id);
+      profile.achievements.push(a.id);
+      profile.achievementsAt[a.id] = Date.now();
+      fresh.push(a.id);
     }
   });
   if(fresh.length) saveProfile();
   return fresh;
+}
+
+/* The date a distinction was earned, as the player's own calendar had it.
+   Anything earned before the dates were kept has none, and says so. */
+function earnedOn(id){
+  const at = profile.achievementsAt && profile.achievementsAt[id];
+  if(!at) return '';
+  const d = new Date(at);
+  return isNaN(d) ? '' : d.toLocaleDateString(
+    lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
+    { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 /* ---------- Colour-blind support ----------
@@ -2186,6 +2525,7 @@ function render(){
   const T = t();
   document.getElementById('pitch').textContent = T.pitch;
   renderLinks();
+  renderFooterDocs();
   document.getElementById('tagline').textContent = T.tagline;
   renderTapHint();
 
@@ -2962,15 +3302,19 @@ const DIZZY_TURNS = 100;
 
 /* Earned in the middle of nothing in particular, so it says so itself rather
    than waiting to be discovered in the passport. */
-function showDizzy(){
+function showSecret(id){
   const T = t();
+  const said = T.ach[id];
+  if(!said) return;
   const el = document.createElement('div');
   el.className = 'dizzy-toast';
-  el.innerHTML = `<b>${T.ach.dizzy[0]}</b><span>${T.ach.dizzy[1]}</span>`;
+  el.innerHTML = `<span class="toast-kind">${T.secretFound}</span>`
+               + `<b>${said[0]}</b><span>${said[1]}</span>`;
   document.body.appendChild(el);
-  setTimeout(()=> el.classList.add('go'), 2600);
-  setTimeout(()=> el.remove(), 3400);
+  setTimeout(()=> el.classList.add('go'), 3000);
+  setTimeout(()=> el.remove(), 3800);
 }
+const showDizzy = ()=> showSecret('dizzy');
 
 document.getElementById('modalClose').addEventListener('click', ()=> document.getElementById('modalBackdrop').classList.remove('open'));
 document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') e.currentTarget.classList.remove('open'); });
@@ -3121,6 +3465,13 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
     document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active'); lang = btn.dataset.lang;
     lsSet(LANG_KEY, lang);
+    // Quietly noted: a game that exists in three languages should notice a
+    // player who reads it in all three.
+    if(!isPractice && !profile.langsUsed[lang]){
+      profile.langsUsed[lang] = Date.now();
+      saveProfile();
+      if(checkAchievements().includes('polyglot')) showSecret('polyglot');
+    }
     render(); renderNav(); renderCountdown();
     if(currentView !== 'Game') showView(currentView);
   });
@@ -3201,13 +3552,43 @@ function renderLinks(){
 }
 
 /* ---------- Who am I ---------- */
-function openAbout(){
+function openAbout(){ openPage(t().about); }
+
+/* ---------- The pages at the foot ----------
+   Terms, privacy and a plain list of questions, in the same panel as Who am I.
+   A document is a list of headed sections; a section is a heading and some
+   paragraphs, and a paragraph may be a question with its answer. */
+function openPage(doc){
   const T = t();
-  document.getElementById('aboutTitle').textContent = T.about.title;
+  document.getElementById('aboutTitle').textContent = doc.title;
+  const body = (doc.sections || []).map(sec =>
+      `<h4 class="doc-head">${sec[0]}</h4>`
+    + sec.slice(1).map(p => `<p>${p}</p>`).join('')
+    ).join('');
   document.getElementById('aboutBody').innerHTML =
-    T.about.body.map(p => `<p>${p}</p>`).join('');
+    (doc.body ? doc.body.map(p => `<p>${p}</p>`).join('') : '')
+    + body
+    + (doc.updated ? `<p class="doc-updated">${doc.updated}</p>` : '');
   document.getElementById('aboutClose').textContent = T.close;
   document.getElementById('aboutBackdrop').classList.add('open');
+  document.querySelector('#aboutBackdrop .modal').scrollTop = 0;
+}
+
+function renderFooterDocs(){
+  const T = t();
+  const el = document.getElementById('siteFoot');
+  if(!el) return;
+  el.innerHTML =
+    `<div class="foot-links">
+       <button data-doc="faq">${T.faq.title}</button>
+       <button data-doc="privacy">${T.privacy.title}</button>
+       <button data-doc="terms">${T.terms.title}</button>
+       <a href="mailto:${CONTACT_EMAIL}">${T.footContact}</a>
+     </div>
+     <p class="foot-credit">${T.footCredit}</p>
+     <p class="foot-credit">${T.footRights}</p>`;
+  el.querySelectorAll('[data-doc]').forEach(b =>
+    b.onclick = ()=> openPage(T[b.dataset.doc]));
 }
 (function aboutPanel(){
   const back = document.getElementById('aboutBackdrop');
@@ -3285,8 +3666,17 @@ function renderPassport(){
   // only when asked for -- a full-width row each turns a page of stamps into a
   // list again, which is the opposite of what a passport looks like.
   const shown = visibleAchievements();
-  const earned = shown.filter(a => profile.achievements.includes(a.id));
-  const locked = shown.filter(a => !profile.achievements.includes(a.id));
+  // Earned in the order they were earned, newest first: a passport is a record
+  // of where you have been and when, and the newest stamp is the one a player
+  // came back to look at. Anything earned before the dates were kept sorts to
+  // the end rather than jumping to the front on a zero.
+  const RANK_ORDER = { prestige: 0, secret: 1, rare: 2, common: 3 };
+  const earned = shown.filter(a => profile.achievements.includes(a.id))
+    .sort((a, b) => (profile.achievementsAt[b.id] || 0)
+                  - (profile.achievementsAt[a.id] || 0));
+  // Still to find, hardest last: the ladder reads as a ladder.
+  const locked = shown.filter(a => !profile.achievements.includes(a.id))
+    .sort((a, b) => RANK_ORDER[achClass(b)] - RANK_ORDER[achClass(a)]);
   const achEarned = earned.length
     ? achGrid(earned, true)
     : `<p class="ach-empty">${T.achEmpty}</p>`;
@@ -3381,25 +3771,57 @@ let achOpen = null;
 /* A grid of stamps, with the description of the open one spliced in at the end
    of its own row rather than at the bottom of the grid -- on a page of twenty
    tiles, a detail panel far from the tile you tapped reads as unrelated. */
+/* The class a stamp is drawn in: its rank, or 'secret' for the ones nobody is
+   told about, which are not a rank so much as a different kind of thing. */
+function achClass(a){
+  return a.secret ? 'secret' : (a.rank || 'common');
+}
+
 function achGrid(list, got){
   const cols = 3;
+  const T = t();
   const open = list.find(a => a.id === achOpen);
   const out = [];
   list.forEach((a, i)=>{
     const [name] = achText(a);
-    out.push(`<button class="ach-tile${got ? '' : ' locked'}` +
+    const when = got ? earnedOn(a.id) : '';
+    out.push(`<button class="ach-tile r-${achClass(a)}${got ? '' : ' locked'}` +
              `${achOpen === a.id ? ' on' : ''}" data-ach="${a.id}"` +
              ` aria-expanded="${achOpen === a.id}">` +
-             `${stampSvg(a.mark, got)}<span>${name}</span></button>`);
+             `${stampSvg(a.mark, got)}<span>${name}</span>` +
+             `${when ? `<time class="ach-when">${when}</time>` : ''}</button>`);
     const rowStart = Math.floor(i / cols) * cols;
     const lastInRow = (i % cols === cols - 1) || i === list.length - 1;
     if(open && lastInRow && list.slice(rowStart, i + 1).some(x => x.id === achOpen)){
       const [name2, desc] = achText(open);
-      out.push(`<div class="ach-detail">${stampSvg(open.mark, got)}
-        <div><b>${name2}</b><span>${desc}</span></div></div>`);
+      const on = got ? earnedOn(open.id) : '';
+      out.push(`<div class="ach-detail r-${achClass(open)}">${stampSvg(open.mark, got)}
+        <div><b>${name2}</b><span>${desc}</span>
+        <span class="ach-meta">${T.rankNames[achClass(open)]}${
+          on ? ` \u00b7 ${T.earnedOnLabel} ${on}` : ''}</span></div></div>`);
     }
   });
   return `<div class="ach-grid">${out.join('')}</div>`;
+}
+
+/* What a past day held. Played or not, the four entries are knowable -- a
+   finished day carries its ids, and any other day can be dealt again, because
+   the deal is a pure function of the date. Closing the back catalogue took the
+   replay away, which was right, but it also took away any way of finding out
+   what a missed day even was, and an archive that lists sixty dates and
+   nothing else is a calendar.
+
+   Seeing is not collecting. Nothing here calls catalogue(), so a day looked up
+   in the archive never enters the collection and never counts towards a
+   distinction: the entries are shown, the credit is not given. Today is never
+   revealed, for obvious reasons. */
+let archOpen = null;
+
+function archiveEntries(day){
+  const rec = profile.days[day];
+  const ids = (rec && Array.isArray(rec.ids) && rec.ids.length) ? rec.ids : null;
+  const fromIds = ids ? ids.map(id => BY_ID.get(id)).filter(Boolean) : [];
+  return fromIds.length ? fromIds : dealFor(day);
 }
 
 function renderArchive(){
@@ -3408,22 +3830,67 @@ function renderArchive(){
   for(let d = todayIndex; d >= Math.max(0, todayIndex - 60); d--){
     const rec = profile.days[d];
     const date = new Date(EPOCH + d * 86400000).toISOString().slice(0,10);
-    // A link only where there is something to go back to: today, or a day this
-    // player finished. An unplayed day has no replay, because that link was
-    // the back catalogue.
-    const openable = d === todayIndex || !!rec;
-    rows.push(`<div class="arch-row">
-      <span class="arch-day">${date}${d===todayIndex ? ' ·' : ''}</span>
-      <span class="arch-score">${rec ? T.scoreOf(Math.round(rec.score), MAX_SCORE) : '—'}</span>
-      ${openable
-        ? `<a class="btn secondary" style="font-size:0.68rem;padding:7px 11px"
-              href="${d === todayIndex ? '.' : '?day=' + d}">${
-                d===todayIndex ? T.navGame : T.archiveOpen}</a>`
-        : `<span class="arch-locked">${T.archiveMissed}</span>`}</div>`);
+    // A replay only where there is something to go back to: today, or a day
+    // this player finished. An unplayed day has no replay, because that link
+    // was the back catalogue.
+    const replayable = d === todayIndex || !!rec;
+    const past = d < todayIndex;
+    const open = archOpen === d;
+    let reveal = '';
+    if(past && open){
+      const entries = archiveEntries(d);
+      reveal = `<div class="arch-reveal">
+        <p class="arch-note">${T.archiveNoCredit}</p>
+        ${entries.map(e => {
+          const shot = (e.photos && e.photos[0]) || e.image;
+          const src = (shot && (shot.path || shot.url)) || '';
+          return `<button class="arch-entry" data-arch-entry="${e.id}">
+            ${src ? `<img src="${src}" alt="" loading="lazy">`
+                  : `<span class="arch-noimg"></span>`}
+            <span class="arch-entry-text">
+              <b>${(e.names && (e.names[lang] || e.names.en)) || e.id}</b>
+              <span>${[typeof e.country === 'string' ? e.country
+                        : (e.country && (e.country[lang] || e.country.en)),
+                       e.year].filter(Boolean).join(' · ')}</span>
+            </span>
+            ${profile.collection[e.id] ? `<span class="arch-have">${T.archiveDone}</span>` : ''}
+          </button>`;
+        }).join('')}
+      </div>`;
+    }
+    rows.push(`<div class="arch-item">
+      <div class="arch-row">
+        <span class="arch-day">${date}${d===todayIndex ? ' \u00b7' : ''}</span>
+        <span class="arch-score">${rec ? T.scoreOf(Math.round(rec.score), MAX_SCORE) : '\u2014'}</span>
+        ${past ? `<button class="arch-peek" data-arch-day="${d}"
+                    aria-expanded="${open}">${open ? T.archiveHide : T.archiveShow}</button>` : ''}
+        ${replayable
+          ? `<a class="btn secondary" style="font-size:0.68rem;padding:7px 11px"
+                href="${d === todayIndex ? '.' : '?day=' + d}">${
+                  d===todayIndex ? T.navGame : T.archiveOpen}</a>`
+          : `<span class="arch-locked">${T.archiveMissed}</span>`}
+      </div>
+      ${reveal}
+    </div>`);
   }
   document.getElementById('viewArchive').innerHTML =
     `<div class="panel-head"><h2>${T.archiveTitle}</h2><p>${T.archiveSub}</p></div>
      <div class="arch-list">${rows.join('')}</div>`;
+  document.querySelectorAll('#viewArchive [data-arch-day]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const d = Number(btn.dataset.archDay);
+      archOpen = (archOpen === d) ? null : d;
+      renderArchive();
+    };
+  });
+  document.querySelectorAll('#viewArchive [data-arch-entry]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const e = BY_ID.get(btn.dataset.archEntry);
+      // The record, when there is one, so a catalogued entry keeps its
+      // accession number; otherwise the live entry, read-only.
+      if(e) openInfoModal(e, profile.collection[e.id] || null);
+    };
+  });
 }
 
 /* ---------- Countdown ----------
@@ -3546,6 +4013,7 @@ Promise.all([loadDataset(), loadLand()]).then(()=>{
   render();
   renderNav();
   renderCountdown();
+  noteLang();
   maybeFieldNotes();
 });
 </script>

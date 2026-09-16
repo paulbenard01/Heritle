@@ -99,6 +99,20 @@ MERGE_PROBE = """
   }
 """
 
+# Ranks as defined, and which distinctions carry none.
+AWARD_PROBE = """
+  () => {
+    const ranks = {};
+    const unranked = [];
+    ACHIEVEMENTS.forEach(a => {
+      const k = a.secret ? 'secret' : a.rank;
+      if(!k) unranked.push(a.id);
+      else ranks[k] = (ranks[k] || 0) + 1;
+    });
+    return { ranks, unranked, secrets: ACHIEVEMENTS.filter(a => a.secret).length };
+  }
+"""
+
 def check(cond, label, detail=""):
     print(("  PASS " if cond else "  FAIL ") + label + (f"  [{detail}]" if detail and not cond else ""))
     if not cond:
@@ -1203,6 +1217,10 @@ def main():
         fresh.goto(f"{base}?day={unplayed}")
         fresh.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0", timeout=15000)
         landed = fresh.evaluate("dayIndex")
+        # Read again from the page that did the landing: a run that straddles
+        # local midnight has two different "today"s, and comparing across the
+        # boundary fails on a game that behaved perfectly.
+        today = fresh.evaluate("todayIndex")
         check(landed == today,
               "asking for an unplayed day by URL lands on today instead",
               f"asked {unplayed}, got {landed}")
@@ -1511,6 +1529,163 @@ def main():
         check(fresh.evaluate("importProfile('')") is None, "and so is an empty one")
         check(not errs, "and none of it throws", "; ".join(errs[:2]))
         ctx2.close()
+        ctx.close()
+
+        # ---- rank, date, and the secrets ----
+        print("\n== distinctions ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        play_day(page, base, None, 375, "awards")
+        spread = page.evaluate(AWARD_PROBE)
+        check(spread["unranked"] == [],
+              "every distinction has a rank or is a secret", str(spread["unranked"]))
+        check(spread["secrets"] >= 3,
+              "there are several secrets, not one", str(spread["secrets"]))
+        check(spread["ranks"]["prestige"] >= 3 and spread["ranks"]["common"] >= 3,
+              "and the ranks are actually used", str(spread["ranks"]))
+        page.evaluate("showView('Passport')")
+        page.wait_for_timeout(350)
+        tiles = page.locator("#viewPassport > .ach-grid > .ach-tile")
+        earned = page.evaluate("profile.achievements.length")
+        check(tiles.count() == earned, "the earned stamps are on the page",
+              f"{tiles.count()} of {earned}")
+        # A passport is a record of where you have been and when.
+        dated = page.locator("#viewPassport > .ach-grid .ach-when").count()
+        check(dated == earned, "each carries the date it was earned",
+              f"{dated} of {earned}")
+        order = page.evaluate("""
+          () => [...document.querySelectorAll('#viewPassport > .ach-grid > .ach-tile')]
+                  .map(t => profile.achievementsAt[t.dataset.ach] || 0)
+        """)
+        check(order == sorted(order, reverse=True),
+              "newest first, so the passport reads chronologically", str(order[:4]))
+        classes = page.evaluate("""
+          () => [...document.querySelectorAll('#viewPassport > .ach-grid > .ach-tile')]
+                  .map(t => (t.className.match(/r-\\w+/) || ['?'])[0])
+        """)
+        check(all(c != "?" for c in classes),
+              "and every stamp is drawn in its rank", str(set(classes)))
+        check(page.locator("#viewPassport .ach-tile.r-secret").count() >= 1,
+              "a secret earned is drawn as a secret")
+        tiles.first.click()
+        page.wait_for_timeout(250)
+        detail = page.locator("#viewPassport .ach-detail").inner_text()
+        check(any(w in detail.upper() for w in ("SECRET", "PRESTIGE", "RARE", "COMMON",
+                                                "SECRÈTE", "COURANTE", "COMÚN", "RARA")),
+              "and says its rank when tapped", detail.replace("\n", " | "))
+        check(not errs, "and none of it throws", "; ".join(errs[:2]))
+        ctx.close()
+
+        # ---- the archive shows what a day was ----
+        # Closing the back catalogue took the replay away, which was right, and
+        # also took away any way of finding out what a missed day even was.
+        print("\n== the archive ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812},
+                                  has_touch=True, is_mobile=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        page.evaluate("showView('Archive')")
+        page.wait_for_timeout(350)
+        peeks = page.locator("#viewArchive [data-arch-day]")
+        if page.evaluate("todayIndex") > 0:
+            check(peeks.count() >= 1, "a past day can be looked up",
+                  str(peeks.count()))
+            before = page.evaluate("Object.keys(profile.collection).length")
+            peeks.first.click()
+            page.wait_for_timeout(400)
+            names = page.locator("#viewArchive .arch-entry-text b").all_inner_texts()
+            check(len(names) == 4, "and shows all four entries of that day", str(names))
+            check(all(n.strip() for n in names), "each one named", str(names))
+            check(page.locator("#viewArchive .arch-note").count() == 1,
+                  "with it said plainly that looking is not collecting")
+            # The whole point of the compromise.
+            check(page.evaluate("Object.keys(profile.collection).length") == before,
+                  "and nothing is catalogued by looking",
+                  f"{before} -> {page.evaluate('Object.keys(profile.collection).length')}")
+            page.locator("#viewArchive .arch-entry").first.click()
+            page.wait_for_timeout(300)
+            check("open" in (page.locator("#modalBackdrop").get_attribute("class") or ""),
+                  "an entry from the archive opens")
+            check(page.evaluate("Object.keys(profile.collection).length") == before,
+                  "and opening it does not catalogue it either")
+            check(page.evaluate("profile.achievements.length") == 0,
+                  "nor does it earn anything",
+                  str(page.evaluate("profile.achievements")))
+        else:
+            print("  ---- launch day: no past day to look up yet")
+        check(page.evaluate(
+                "() => !document.querySelector(`[data-arch-day='${todayIndex}']`)"),
+              "today is never revealed in the archive")
+        check(not errs, "and the archive throws nothing", "; ".join(errs[:2]))
+        ctx.close()
+
+        # ---- the pages at the foot ----
+        # A site that asks nothing of anyone still has to say so somewhere, in
+        # every language it speaks.
+        print("\n== terms, privacy, questions ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        page.wait_for_timeout(250)
+        foot = page.locator("#siteFoot")
+        check(foot.count() == 1, "the page has a foot")
+        check(page.locator("#siteFoot [data-doc]").count() == 3,
+              "with the three documents on it",
+              str(page.locator("#siteFoot [data-doc]").all_inner_texts()))
+        check(page.locator('#siteFoot a[href^="mailto:"]').count() == 1,
+              "and somewhere to write to")
+        # The credit line is not decoration: the photographs are other
+        # people's work under their own licences.
+        credit = foot.inner_text()
+        for owed in ("Wikidata", "Commons", "Natural Earth"):
+            check(owed in credit, f"the foot credits {owed}", credit[:90])
+        seen = {}
+        for code in ("en", "fr", "es"):
+            page.evaluate("c => { lang = c; render(); }", code)
+            page.wait_for_timeout(200)
+            for doc in ("faq", "privacy", "terms"):
+                page.locator(f"#siteFoot [data-doc={doc}]").click()
+                page.wait_for_timeout(180)
+                title = page.locator("#aboutTitle").inner_text().strip()
+                text = page.locator("#aboutBody").inner_text().strip()
+                heads = page.locator("#aboutBody .doc-head").count()
+                check(bool(title) and heads >= 5 and len(text) > 600,
+                      f"{code} {doc}: written, not stubbed",
+                      f"{heads} sections, {len(text)} chars")
+                seen[(code, doc)] = text
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(120)
+        # Each language its own text, not the English one showing through.
+        for doc in ("faq", "privacy", "terms"):
+            check(len({seen[(c, doc)] for c in ("en", "fr", "es")}) == 3,
+                  f"{doc} is written three times over, not once and reused")
+        # The claims in there have to be true of this build, or the privacy
+        # page is a lie: no analytics, no cookies, no third party but the ones
+        # it names.
+        hosts = page.evaluate("""
+          () => [...new Set(performance.getEntriesByType('resource')
+                   .map(r => new URL(r.name).host))].sort()
+        """)
+        outside = [h for h in hosts if "127.0.0.1" not in h and "localhost" not in h]
+        check(all(("wikimedia" in h or "wikipedia" in h or "gstatic" in h
+                   or "googleapis" in h) for h in outside),
+              "the page contacts nobody the privacy page does not name", str(outside))
+        check(page.evaluate("document.cookie") == "",
+              "and sets no cookies", page.evaluate("document.cookie"))
+        check(not errs, "and none of the documents throw", "; ".join(errs[:2]))
         ctx.close()
 
         # ---- storage that fights back ----
