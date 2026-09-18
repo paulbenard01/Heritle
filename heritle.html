@@ -206,7 +206,7 @@
      and the little person takes the whole row, squeezing Who am I into three
      lines beside him. */
   .mark-menu .menu-figure{flex:none;width:44px;min-width:44px;height:44px;
-    min-height:44px;padding:0;border:none;
+    min-height:44px;padding:0;border:none;position:relative;
     background:none;cursor:pointer;line-height:0;display:flex;
     align-items:center;justify-content:center;
     /* Held for ten seconds at a time, so none of the things a long press
@@ -216,6 +216,17 @@
   .mark-menu .menu-figure img{width:34px;height:34px;object-fit:contain;
     transform-origin:50% 50%;transform:translateZ(0);pointer-events:none;}
   .mark-menu .menu-figure.spinning img{will-change:transform;}
+  /* Ten seconds of holding with nothing to show for it reads as a broken
+     button -- which is exactly what it was reported as. Past a few turns he
+     starts counting them out loud, so the hold is visibly getting somewhere.
+     It gives the secret away no more than the spinning already does. */
+  .mark-menu .menu-figure .spin-turns{position:absolute;right:100%;top:50%;
+    transform:translateY(-50%);margin-right:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.58rem;color:var(--gold);letter-spacing:0.04em;
+    white-space:nowrap;pointer-events:none;opacity:0;
+    transition:opacity 0.25s ease;}
+  .mark-menu .menu-figure .spin-turns.on{opacity:0.9;}
   /* The marks a couple of the links carry. */
   .mark-menu .menu-label{display:flex;align-items:center;gap:9px;min-width:0;}
   .menu-icon{width:15px;height:15px;object-fit:contain;flex:none;opacity:0.85;}
@@ -1129,12 +1140,13 @@ const FALLBACK_DATA = [
 /* ---------- i18n ---------- */
 const UI = {
   en:{ pitch:'Guess and Discover the world heritage!', tagline:'three sites and a tradition each day', tapPrompt:'Tap the map to place your guess', tapAgain:'Tap again to move it',
-       confirmGuess:'Guess', tapWater:'That is open water — tap a country',
-       tapUnknown:'No entries from that country',
+       confirmGuess:'Guess', openWater:'Open water',
+       siteHere:'The site is here',
        modeMaterial:'WORLD HERITAGE SITE', modeImmaterial:'INTANGIBLE HERITAGE',
        readoutStart:'Make your first guess', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} guesses this round`, clueLabels:['Continent','Category','Inscribed','Region','Description'],
-       countryLabel:'Country', rightCountry:'Right country', wrongCountry:'Wrong country',
+       countryLabel:'Country', spotLabel:'Placement', rightCountry:'Right country',
+       nearEnough:(km)=>`Close enough \u2014 ${km} km away`, wrongCountry:'Wrong place',
        tryAgain:'try again', guessOf:(n,max)=>`Guess ${n} of ${max}`,
        triesLeft:(n)=>`${n} ${n===1?'try':'tries'} left`,
        win:'Found it', winSub:(n)=>`Solved in ${n} guess${n===1?'':'es'}.`, lose:'Round over',
@@ -1262,6 +1274,7 @@ const UI = {
        secretFound:'Secret found', awardWon:'Distinction earned',
        stampsMore:(n)=>`+ ${n} more day${n===1?'':'s'}`,
        earnedOnLabel:'Earned', spinHim:'Spin him', markHint:'About',
+       turns:(n)=>`${n} turns`,
        rankNames:{ common:'Common', rare:'Rare', prestige:'Prestige', secret:'Secret' },
        achLockedNone:'Every distinction earned.',
        achEmpty:'Nothing stamped yet. Finish a day and the first one lands here.',
@@ -1295,12 +1308,13 @@ const UI = {
        linkVideo:(n)=>`Discover videos about ${n}`, close:'Close',
        galOf:(i,n)=>`Photograph ${i} of ${n}`, noPhoto:'No photograph available' },
   fr:{ pitch:'Devinez et découvrez le patrimoine mondial !', tagline:'trois sites et une tradition chaque jour', tapPrompt:'Touchez la carte pour placer votre proposition', tapAgain:'Touchez à nouveau pour la déplacer',
-       confirmGuess:'Proposer', tapWater:'C’est en pleine eau — touchez un pays',
-       tapUnknown:'Aucune entrée pour ce pays',
+       confirmGuess:'Proposer', openWater:'Pleine mer',
+       siteHere:'Le site est ici',
        modeMaterial:'PATRIMOINE MONDIAL', modeImmaterial:'PATRIMOINE IMMATÉRIEL',
        readoutStart:'Faites votre première proposition', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} essais cette manche`, clueLabels:['Continent','Catégorie','Inscription','Région','Description'],
-       countryLabel:'Pays', rightCountry:'Bon pays', wrongCountry:'Mauvais pays',
+       countryLabel:'Pays', spotLabel:'Placement', rightCountry:'Bon pays',
+       nearEnough:(km)=>`Assez près \u2014 à ${km} km`, wrongCountry:'Mauvais endroit',
        tryAgain:'réessayez', guessOf:(n,max)=>`Essai ${n} sur ${max}`,
        triesLeft:(n)=>`${n} essai${n===1?'':'s'} restant${n===1?'':'s'}`,
        win:'Trouvé', winSub:(n)=>`Résolu en ${n} essai${n===1?'':'s'}.`, lose:'Manche terminée',
@@ -1428,6 +1442,7 @@ const UI = {
        secretFound:'Secret découvert', awardWon:'Distinction obtenue',
        stampsMore:(n)=>`+ ${n} autre${n===1?'':'s'} journée${n===1?'':'s'}`,
        earnedOnLabel:'Obtenue le', spinHim:'Le faire tourner', markHint:'À propos',
+       turns:(n)=>`${n} tours`,
        rankNames:{ common:'Courante', rare:'Rare', prestige:'Prestige', secret:'Secrète' },
        achLockedNone:'Toutes les distinctions ont été obtenues.',
        achEmpty:'Rien d’apposé pour l’instant. Terminez une journée et le premier tampon arrive ici.',
@@ -1461,12 +1476,13 @@ const UI = {
        linkVideo:(n)=>`Découvrir des vidéos sur ${n}`, close:'Fermer',
        galOf:(i,n)=>`Photographie ${i} sur ${n}`, noPhoto:'Aucune photographie disponible' },
   es:{ pitch:'¡Adivina y descubre el patrimonio mundial!', tagline:'tres sitios y una tradición cada día', tapPrompt:'Toca el mapa para colocar tu propuesta', tapAgain:'Toca otra vez para moverla',
-       confirmGuess:'Proponer', tapWater:'Eso es mar abierto — toca un país',
-       tapUnknown:'Sin entradas de ese país',
+       confirmGuess:'Proponer', openWater:'Mar abierto',
+       siteHere:'El sitio está aquí',
        modeMaterial:'PATRIMONIO MUNDIAL', modeImmaterial:'PATRIMONIO INMATERIAL',
        readoutStart:'Haz tu primera propuesta', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} intentos esta ronda`, clueLabels:['Continente','Categoría','Inscrito','Región','Descripción'],
-       countryLabel:'País', rightCountry:'País correcto', wrongCountry:'País incorrecto',
+       countryLabel:'País', spotLabel:'Colocación', rightCountry:'País correcto',
+       nearEnough:(km)=>`Bastante cerca \u2014 a ${km} km`, wrongCountry:'Lugar incorrecto',
        tryAgain:'inténtalo otra vez', guessOf:(n,max)=>`Intento ${n} de ${max}`,
        triesLeft:(n)=>`${n} intento${n===1?'':'s'} restante${n===1?'':'s'}`,
        win:'Acertado', winSub:(n)=>`Resuelto en ${n} intento${n===1?'':'s'}.`, lose:'Ronda terminada',
@@ -1594,6 +1610,7 @@ const UI = {
        secretFound:'Secreto descubierto', awardWon:'Distinción obtenida',
        stampsMore:(n)=>`+ ${n} jornada${n===1?'':'s'} más`,
        earnedOnLabel:'Obtenida el', spinHim:'Hazlo girar', markHint:'Acerca de',
+       turns:(n)=>`${n} vueltas`,
        rankNames:{ common:'Común', rare:'Rara', prestige:'Prestigio', secret:'Secreta' },
        achLockedNone:'Todas las distinciones conseguidas.',
        achEmpty:'Nada sellado todavía. Termina un día y el primero aparecerá aquí.',
@@ -2656,6 +2673,15 @@ function dirLabel(deg){ return compassDirs[Math.round(deg/22.5) % 16]; }
    region should not be punished for spending the last try on a long shot.
    Missing is capped below the worst possible solve, so finding it always beats
    not finding it. */
+/* Free placement: a guess is a point, not a country off a list. Which means
+   "right" needs a definition, and this is it -- inside one of the inscribing
+   countries, or within a hundred kilometres of the site itself. The second
+   half matters for the cases the first half gets wrong: a site two valleys
+   over the border, an island whose polygon the map does not carry, a tradition
+   whose country is enormous. A hundred kilometres is close enough that the
+   player has genuinely found the place. */
+const NEAR_KM = 100;
+
 const SCORE_SCALE_KM = 2000;
 const SOLVE_CREDIT = [1, 0.85, 0.72, 0.6];   // by the guess it was solved on
 const MISS_CEILING = 0.45;                   // under the worst solve, 0.6
@@ -2751,6 +2777,12 @@ function scalePins(force){
   document.querySelectorAll('#pinLayer circle').forEach(c=>{
     c.setAttribute('r', c.dataset.r * k);
   });
+  // The reveal's caption has to stay legible at every zoom, so it is counter-
+  // scaled like the pins rather than growing with the map.
+  document.querySelectorAll('#pinLayer text').forEach(el=>{
+    el.setAttribute('font-size', el.dataset.fs * k);
+    el.setAttribute('y', Number(el.dataset.y) - Number(el.dataset.dy) * k);
+  });
 }
 
 /* Screen point -> world coordinate, honouring the current zoom. */
@@ -2787,17 +2819,69 @@ function addPin(lat,lng,bucket,big){
   layer.appendChild(circle);
   scalePins(true);   // this one has never been scaled
 }
-function addTargetPin(lat,lng){
+/* Where the site actually was. A thin ring was easy to lose on a busy map at
+   the one moment it matters most -- the end of a round nobody solved -- so it
+   is now a filled gold point inside a halo, captioned. */
+function addTargetPin(lat,lng,label){
   const p = project(lat,lng);
   const layer = document.getElementById('pinLayer');
-  const star = document.createElementNS('http://www.w3.org/2000/svg','circle');
-  star.setAttribute('cx',p.x); star.setAttribute('cy',p.y); star.setAttribute('r',6);
-  star.dataset.r = 6; star.dataset.sw = 2;
-  star.setAttribute('fill','none'); star.setAttribute('stroke','var(--gold)');
-  star.setAttribute('stroke-width','2');
-  star.setAttribute('vector-effect','non-scaling-stroke');
-  layer.appendChild(star);
+  const ns = 'http://www.w3.org/2000/svg';
+  const ring = document.createElementNS(ns,'circle');
+  ring.setAttribute('cx',p.x); ring.setAttribute('cy',p.y); ring.setAttribute('r',10);
+  ring.dataset.r = 10; ring.dataset.sw = 2;
+  ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--gold)');
+  ring.setAttribute('stroke-width','2');
+  ring.setAttribute('vector-effect','non-scaling-stroke');
+  ring.setAttribute('class','target-ring');
+  layer.appendChild(ring);
+  const dot = document.createElementNS(ns,'circle');
+  dot.setAttribute('cx',p.x); dot.setAttribute('cy',p.y); dot.setAttribute('r',4);
+  dot.dataset.r = 4; dot.dataset.sw = 1.5;
+  dot.setAttribute('fill','var(--gold)'); dot.setAttribute('stroke','var(--navy)');
+  dot.setAttribute('stroke-width','1.5');
+  dot.setAttribute('vector-effect','non-scaling-stroke');
+  layer.appendChild(dot);
+  if(label){
+    const txt = document.createElementNS(ns,'text');
+    // Near an edge the caption would be cut off by the sheet -- a site on the
+    // Pacific coast read "he site is here". So it anchors away from whichever
+    // edge it is close to, and drops below the pin at the top of the map.
+    const anchor = p.x < 46 ? 'start' : (p.x > MAP_W - 46 ? 'end' : 'middle');
+    // dy is subtracted, so a positive value lifts the caption clear of the
+    // pin; near the top of the sheet it drops below it instead.
+    const above = p.y > 20;
+    txt.setAttribute('x',p.x); txt.setAttribute('y',p.y);
+    txt.dataset.y = p.y; txt.dataset.dy = above ? 13 : -12; txt.dataset.fs = 9;
+    txt.setAttribute('text-anchor',anchor);
+    txt.setAttribute('fill','var(--gold)');
+    txt.setAttribute('paint-order','stroke');
+    txt.setAttribute('stroke','var(--navy)');
+    txt.setAttribute('stroke-width','3');
+    txt.setAttribute('stroke-linejoin','round');
+    txt.setAttribute('font-size',9);
+    txt.setAttribute('font-weight','600');
+    txt.textContent = label;
+    layer.appendChild(txt);
+  }
   scalePins(true);
+}
+
+/* The gap the player never closed, drawn: nearest guess to the site. */
+function addMissLine(fromLat, fromLng, toLat, toLng){
+  const a = project(fromLat, fromLng), b = project(toLat, toLng);
+  // Across the dateline the short way is off the edge of the sheet, which is
+  // still truer than a line dragged back across the whole world.
+  let ax = a.x;
+  if(Math.abs(b.x - ax) > MAP_W/2) ax += (b.x > ax ? MAP_W : -MAP_W);
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1',ax); line.setAttribute('y1',a.y);
+  line.setAttribute('x2',b.x); line.setAttribute('y2',b.y);
+  line.setAttribute('stroke','var(--gold)');
+  line.setAttribute('stroke-width','1.2');
+  line.setAttribute('stroke-dasharray','4 3');
+  line.setAttribute('opacity','0.75');
+  line.setAttribute('vector-effect','non-scaling-stroke');
+  document.getElementById('pinLayer').appendChild(line);
 }
 
 /* ---------- Rendering ---------- */
@@ -2823,15 +2907,21 @@ function targetCountries(){
   return found.length ? found : [targetCountry()].filter(Boolean);
 }
 
-/* Where the answer is, for distance. A single-country entry is measured to the
-   site itself. A multinational one has no single place -- its stored
-   coordinate is just the first country's centroid -- so it is measured to
-   whichever of its countries the guess is closest to. */
-function answerDistanceKm(country){
+/* How far a dropped pin is from the answer. The site's own coordinates, and
+   for an element inscribed by several countries, whichever of them is nearest
+   as well -- a tradition shared from Morocco to Iraq is not "wrong" because
+   the pin landed on the far side of it. */
+function pointDistanceKm(lat, lng){
   const tg = currentTarget();
+  if(!tg) return 0;
   const answers = targetCountries();
-  if(answers.length <= 1) return haversineKm(country.lat, country.lng, tg.lat, tg.lng);
-  return Math.min(...answers.map(a => haversineKm(country.lat, country.lng, a.lat, a.lng)));
+  let best = haversineKm(lat, lng, tg.lat, tg.lng);
+  if(answers.length > 1){
+    answers.forEach(a => {
+      best = Math.min(best, haversineKm(lat, lng, a.lat, a.lng));
+    });
+  }
+  return best;
 }
 function currentGuesses(){ return state.guesses[state.round]; }
 function roundFinished(){ return state.roundStatus[state.round] !== null; }
@@ -2997,22 +3087,29 @@ function renderClues(target){
   });
 }
 
+/* What a guess is called in the list: the country it was placed in, named in
+   the language being read now, or "open water". Old saves recorded only a
+   country id, so that is still honoured. */
+function guessName(g){
+  if(g.names) return g.names[lang] || g.names.en;
+  const e = COUNTRIES.find(c => c.id === g.id);
+  return e ? (e.names[lang] || e.names.en) : t().openWater;
+}
+
 function renderHistory(){
   const T = t();
   const box = document.getElementById('history'); box.innerHTML = '';
   [...currentGuesses()].reverse().forEach(g=>{
-    const entry = COUNTRIES.find(c=>c.id===g.id);
-    if(!entry) return;  // stored guess from a previous pool
     const row = document.createElement('div'); row.className = 'hist-row';
     const tag = (ok, label) =>
       `<span class="hist-tag ${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${label}</span>`;
     const tags = g.contOk === undefined ? '' :
-      `<span class="hist-tags">${tag(g.bucket === 'correct', T.countryLabel)}`
+      `<span class="hist-tags">${tag(g.bucket === 'correct', T.spotLabel)}`
       + `${tag(g.contOk, T.clueLabels[0])}${tag(g.regionOk, T.clueLabels[3])}</span>`;
     // km before the tags: the tags claim a full row, so anything after them
     // wraps onto a third line.
     row.innerHTML = `<span class="hist-dot" data-glyph="${heatGlyph[g.bucket]||''}" style="background:${heatColorVar[g.bucket]}"></span>
-      <span class="hist-name">${entry.names[lang]}</span>
+      <span class="hist-name">${guessName(g)}</span>
       <span class="hist-km">${g.km} km ${dirLabel(g.bearing)}</span>${tags}`;
     box.appendChild(row);
   });
@@ -3021,16 +3118,34 @@ function renderHistory(){
 function renderMapForRound(){
   buildMap();
   currentGuesses().forEach((g,i)=>{
-    const e = COUNTRIES.find(c=>c.id===g.id);
-    if(e) addPin(e.lat, e.lng, g.bucket, i===currentGuesses().length-1);
+    // The pin stands where the player put it. A guess saved before free
+    // placement carries no coordinates, so it falls back to its country.
+    const at = typeof g.lat === 'number' ? g : COUNTRIES.find(c=>c.id===g.id);
+    if(at) addPin(at.lat, at.lng, g.bucket, i===currentGuesses().length-1);
   });
   // The provisional pin: where the last tap landed, before it is committed.
-  if(pendingCountry && !roundFinished()){
-    addPin(pendingCountry.lat, pendingCountry.lng, 'pending', true);
+  if(pendingGuess && !roundFinished()){
+    addPin(pendingGuess.lat, pendingGuess.lng, 'pending', true);
   }
   // Nothing to spoil any more: the round is scored by the guesses themselves,
   // so the site is marked as soon as the round is over.
-  if(roundFinished()) addTargetPin(currentTarget().lat, currentTarget().lng);
+  if(roundFinished()){
+    const tg = currentTarget();
+    // Four guesses spent and still no idea where it was is the worst way to
+    // leave a round. So the site is not merely pinned: it is marked, named,
+    // and joined by a line to the nearest guess, which turns "wrong" into a
+    // distance you can see.
+    const gs = currentGuesses();
+    const near = gs.reduce((b, g) => {
+      const at = typeof g.lat === 'number' ? g : COUNTRIES.find(c=>c.id===g.id);
+      if(!at) return b;
+      return (!b || g.km < b.km) ? { lat: at.lat, lng: at.lng, km: g.km } : b;
+    }, null);
+    if(near && state.roundStatus[state.round] !== 'solved'){
+      addMissLine(near.lat, near.lng, tg.lat, tg.lng);
+    }
+    addTargetPin(tg.lat, tg.lng, t().siteHere);
+  }
   const T = t();
   const readout = document.getElementById('mapReadout');
   const gs = currentGuesses();
@@ -3052,21 +3167,23 @@ function renderMapForRound(){
     // the continent and region, and the tries are drawn as boxes that fill in
     // -- there is no way to mistake a near miss for an answer.
     const last = gs[gs.length-1];
-    const e = COUNTRIES.find(c => c.id === last.id);
     const right = last.bucket === 'correct';
     const allowed = guessesAllowed(state.round);
     const left = Math.max(0, allowed - gs.length);
     const tag = (ok, label) =>
       `<span class="hist-tag ${ok ? 'ok' : 'no'}">${ok ? '\u2713' : '\u2717'} ${label}</span>`;
     const tags = last.contOk === undefined ? '' :
-      `<span class="hist-tags">${tag(right, T.countryLabel)}`
+      `<span class="hist-tags">${tag(right, T.spotLabel)}`
       + `${tag(last.contOk, T.clueLabels[0])}${tag(last.regionOk, T.clueLabels[3])}</span>`;
     const pips = Array.from({ length: allowed }, (_, i) =>
       `<span class="lg-pip ${i < gs.length ? (right && i === gs.length-1 ? 'hit' : 'used') : 'free'}"
              aria-hidden="true">${i < gs.length ? (right && i === gs.length-1 ? '\u2713' : '\u2717') : ''}</span>`
     ).join('');
+    // Won by proximity rather than by country, the player has to be told so:
+    // "right country" over a pin in the wrong one would read as a bug.
     const verdict = right
-      ? `<span class="lg-verdict ok"><b>\u2713 ${T.rightCountry}</b></span>`
+      ? `<span class="lg-verdict ok"><b>\u2713 ${last.via === 'near'
+           ? T.nearEnough(last.km) : T.rightCountry}</b></span>`
       : `<span class="lg-verdict no"><b>\u2717 ${T.wrongCountry}</b>`
         + `${left > 0 ? ` \u2014 ${T.tryAgain}` : ''}</span>`;
     readout.className = 'map-readout last-guess' + (right ? ' solved' : '');
@@ -3075,7 +3192,7 @@ function renderMapForRound(){
       `${verdict}
        <span class="lg-head">
          <span class="hist-dot" data-glyph="${heatGlyph[last.bucket]||''}" style="background:${heatColorVar[last.bucket]}"></span>
-         <b>${e ? e.names[lang] : ''}</b>
+         <b>${guessName(last)}</b>
        </span>
        ${right ? '' : `<span class="lg-dist">${T.readout(last.km, dirLabel(last.bearing))}</span>`}
        ${tags}
@@ -3110,10 +3227,10 @@ function renderRoundResult(){
   // scored, which is the closest one of the round rather than the last.
   const best = currentGuesses().reduce(
     (b, g) => (b && closeness(b) >= closeness(g) ? b : g), null);
-  const bestName = best && (COUNTRIES.find(c=>c.id===best.id) || {}).names;
+  const bestLabel = best ? guessName(best) : '';
   const pointsBlock = solved
     ? `<p class="pts">${T.pointsSolved(pts, max, currentGuesses().length)}</p>`
-    : `<p class="pts">${T.pointsPartial(pts, max, bestName ? bestName[lang] : '', best ? best.km : 0)}</p>`;
+    : `<p class="pts">${T.pointsPartial(pts, max, bestLabel, best ? best.km : 0)}</p>`;
   box.innerHTML = `
     <span class="tier-badge">${roundPlan(state.round).bonus ? T.bonusBadge : T.tier[target.tier]}</span>
     <h2>${solved ? T.win : T.lose}</h2>
@@ -3629,6 +3746,23 @@ function spinTop(host, img){
   let angle = 0, vel = 0, held = false, raf = null, last = 0;
   let turnedThisSpin = 0;             // degrees since the top started moving
   let pressedAt = 0;
+  // The count, shown once he is properly going. Created here rather than in
+  // the markup because he has moved twice already and takes his parts with him.
+  const readout = document.createElement('span');
+  readout.className = 'spin-turns';
+  readout.setAttribute('aria-hidden', 'true');
+  host.appendChild(readout);
+  const SHOW_FROM = 8;                // turns, before which he is just spinning
+
+  function showTurns(){
+    const turns = Math.floor(turnedThisSpin / 360);
+    if(turns >= SHOW_FROM){
+      readout.textContent = t().turns(turns);
+      readout.classList.add('on');
+    } else {
+      readout.classList.remove('on');
+    }
+  }
 
   function frame(now){
     const dt = Math.min(0.05, (now - last) / 1000) || 0;
@@ -3642,6 +3776,7 @@ function spinTop(host, img){
     angle += step;
     turnedThisSpin += step;
     img.style.transform = `translateZ(0) rotate(${angle}deg)`;
+    showTurns();
     if(turnedThisSpin >= DIZZY_TURNS * 360 && !profile.dizzy && !isPractice){
       // Hidden until it happens, which is the point of it.
       profile.dizzy = true;
@@ -3652,6 +3787,7 @@ function spinTop(host, img){
       raf = null;
       host.classList.remove('spinning');
       turnedThisSpin = 0;             // "in a row" means one continuous spin
+      readout.classList.remove('on');
       return;                         // left at whatever angle it stopped on
     }
     raf = requestAnimationFrame(frame);
@@ -3704,21 +3840,49 @@ document.getElementById('modalClose').addEventListener('click', ()=> document.ge
 document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') e.currentTarget.classList.remove('open'); });
 
 /* ---------- Guessing ---------- */
-function submitGuess(country){
+/* A guess is a point on the map. It may be given as one -- {lat, lng, country}
+   from a tap -- or as a country, which is how the tests and the older saved
+   states speak, and which is taken as its centre. */
+function asSpot(g){
+  if(!g) return null;
+  if(typeof g.lat === 'number' && typeof g.lng === 'number' && !g.names){
+    return g;                                   // already a placement
+  }
+  return { lat: g.lat, lng: g.lng, country: g };  // a country record
+}
+
+function submitGuess(input){
   if(state.round >= N_ROUNDS || roundFinished()) return;
+  const spot = asSpot(input);
+  if(!spot || typeof spot.lat !== 'number') return;
   const guesses = currentGuesses();
-  if(guesses.some(g=>g.id===country.id)) return;
+  // The same pin twice is a double-tap, not a second guess. Anywhere else is
+  // allowed: placing two pins in one country is how a big country gets
+  // narrowed down, which was impossible when a guess was a country.
+  if(guesses.some(g => Math.abs(g.lat - spot.lat) < 0.02
+                    && Math.abs(g.lng - spot.lng) < 0.02)) return;
+  const country = spot.country || null;
   const target = currentTarget(), answers = targetCountries();
-  // Distance runs from the guessed country to the *site*, so the heat keeps
-  // pointing at the real place even once you are in the right country. For a
-  // multinational element it runs to the nearest of its countries instead.
-  const km = Math.round(answerDistanceKm(country));
-  const brg = bearing(country.lat, country.lng, target.lat, target.lng);
-  const isCorrect = answers.length
+  // Distance runs from the pin to the *site*, so the heat points at the real
+  // place rather than at the middle of a country.
+  const km = Math.round(pointDistanceKm(spot.lat, spot.lng));
+  const brg = bearing(spot.lat, spot.lng, target.lat, target.lng);
+  // Right country, or near enough to the site that the country hardly matters.
+  const rightCountry = country && (answers.length
     ? answers.some(a => a.id === country.id)
-    : country.names.en === target.country.en;
-  guesses.push({ id: country.id, km, bearing: brg,
+    : country.names.en === target.country.en);
+  const isCorrect = !!rightCountry || km <= NEAR_KM;
+  guesses.push({ lat: spot.lat, lng: spot.lng,
+                 id: country ? country.id : null,
+                 // A snapshot, so the history still reads if the pool changes
+                 // under a saved game.
+                 names: country ? country.names : null,
+                 km, bearing: brg,
                  bucket: isCorrect ? 'correct' : heatBucket(km),
+                 // How it was won: standing in an answer country, or close
+                 // enough to the site that the border stopped mattering. The
+                 // verdict says which, so "right" is never a surprise.
+                 via: isCorrect ? (rightCountry ? 'country' : 'near') : null,
                  // Distance alone is hard to act on. Saying which of continent
                  // and region a guess already matched turns each try into a
                  // narrowing step rather than a number to interpret.
@@ -3730,12 +3894,12 @@ function submitGuess(country){
                  // site's own position, so a country as large as India could
                  // come back "right country, wrong region" -- which reads as a
                  // bug at exactly the moment the player has just won.
-                 contOk: isCorrect || !!(contCodeOf(country) && (answers.length > 1
+                 contOk: isCorrect || !!(country && contCodeOf(country) && (answers.length > 1
                         ? answers.some(a => contCodeOf(a) === contCodeOf(country))
                         : contCodeOf(country) === contCodeOf(target))),
-                 regionOk: isCorrect || (answers.length > 1
+                 regionOk: isCorrect || !!(country && (answers.length > 1
                         ? answers.some(a => regionOf(a) === regionOf(country))
-                        : regionOf(country) === regionOf(target)) });
+                        : regionOf(country) === regionOf(target))) });
 
   const max = roundPlan(state.round).points;
   if(isCorrect){
@@ -3776,10 +3940,10 @@ function submitGuess(country){
    A tap proposes and the button commits. With three guesses a round and a map
    only 375px wide, a stray tap that spent a guess outright would be the most
    annoying thing in the game. */
-let pendingCountry = null;
+let pendingGuess = null;
 
 function clearPending(){
-  pendingCountry = null;
+  pendingGuess = null;
   const p = document.getElementById('pendingGuess');
   if(p) p.hidden = true;
   renderTapHint();
@@ -3790,13 +3954,24 @@ function renderTapHint(){
   if(!hint) return;
   const T = t();
   if(roundFinished()){ hint.textContent = ''; return; }
-  hint.textContent = pendingCountry ? T.tapAgain : T.tapPrompt;
+  hint.textContent = pendingGuess ? T.tapAgain : T.tapPrompt;
 }
 
-function showPending(country){
-  pendingCountry = country;
+/* What to call the point a pin is standing on: the country it falls in, or
+   "open water" said plainly rather than left blank. Guesses record the name in
+   all three languages at the time they are made, so a guess saved under an
+   older pool still reads correctly. */
+function placeLabel(spot){
+  const names = spot && (spot.names || (spot.country && spot.country.names));
+  return (names && (names[lang] || names.en)) || t().openWater;
+}
+
+function showPending(spot){
+  pendingGuess = spot;
   const box = document.getElementById('pendingGuess');
-  document.getElementById('pendingName').textContent = country.names[lang];
+  // Which country the pin is standing in, so a placement is never a mystery --
+  // and "open water" said plainly rather than a blank.
+  document.getElementById('pendingName').textContent = placeLabel(spot);
   document.getElementById('confirmGuess').textContent = t().confirmGuess;
   box.hidden = false;
   renderTapHint();
@@ -3805,30 +3980,24 @@ function showPending(country){
   box.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-function flashHint(msg){
-  const hint = document.getElementById('tapHint');
-  if(!hint) return;
-  hint.textContent = msg;
-  clearTimeout(flashHint.timer);
-  flashHint.timer = setTimeout(renderTapHint, 2200);
+/* Where on the earth a point on the map is. project() is the forward map; this
+   is its inverse, and it is what makes free placement possible at all. */
+function unproject(x, y){
+  return { lat: 90 - (y / MAP_H) * 180, lng: (x / MAP_W) * 360 - 180 };
 }
 
 function handleMapTap(evt){
   if(roundFinished() || state.round >= N_ROUNDS) return;
   if(panMoved) return;                       // that was a drag, not a tap
   const w = screenToWorld(evt.clientX, evt.clientY);
-  const iso = isoAt(w.x, w.y);
-  let country = countryByIso(iso);
-  // Nothing under the point, or a country the dataset has no entries for:
-  // try the microstate snap before giving up.
+  // The pin goes exactly where the finger went. The country is read off the
+  // same point and reported, but it does not move the pin and it is no longer
+  // required: open water is a placement like any other, and so is a country
+  // the dataset has no entries for.
+  const here = unproject(w.x, w.y);
+  let country = countryByIso(isoAt(w.x, w.y));
   if(!country) country = countryNear(w.x, w.y);
-  if(!country){ flashHint(iso ? t().tapUnknown : t().tapWater); return; }
-  if(currentGuesses().some(g => g.id === country.id)){
-    // Already guessed: say so rather than silently doing nothing.
-    flashHint(country.names[lang] + ' \u2713');
-    return;
-  }
-  showPending(country);
+  showPending({ lat: here.lat, lng: here.lng, country: country || null });
   renderMapForRound();                        // draw the provisional pin
 }
 document.getElementById('mapSvg').addEventListener('click', handleMapTap);
@@ -3844,10 +4013,10 @@ document.getElementById('photoNext').addEventListener('click', e=>{
 });
 
 document.getElementById('confirmGuess').addEventListener('click', ()=>{
-  if(!pendingCountry) return;
-  const c = pendingCountry;
+  if(!pendingGuess) return;
+  const spot = pendingGuess;
   clearPending();
-  submitGuess(c);
+  submitGuess(spot);
 });
 
 /* ---------- Language slider ---------- */

@@ -10,14 +10,20 @@ day, the same four for everybody.
 
 ## How to play
 
-**You guess countries by pointing at them, never by naming the site.** There
-are 2,166 inscriptions in the pool and most of them are places nobody could
-name unprompted, so the name was never a fair thing to ask for. The map is the
+**You place a pin on the map, never name the site.** There are 2,166
+inscriptions in the pool and most of them are places nobody could name
+unprompted, so the name was never a fair thing to ask for. The map is the
 puzzle.
 
-A photograph appears with a ladder of locked clues. Tap the map where you think
-it is — the tap proposes a country, and a second press commits it, so a stray
-touch never costs you a guess.
+A photograph appears with a ladder of locked clues. Tap the map exactly where
+you think it is — the pin goes where your finger went, the bar underneath names
+the country it landed in (or says *open water*), and a second press commits it,
+so a stray touch never costs you a guess.
+
+A guess is right if it is **in one of the answer countries, or within 100 km of
+the site itself**. A border you cannot see on the map should not be the thing
+that fails you, and standing on the site's doorstep from the wrong side of a
+frontier is not a miss.
 
 Every guess tells you how far off you were, in which direction, and whether you
 have the right continent and region. Clues unlock as you go: **Continent →
@@ -25,16 +31,20 @@ Category → Inscribed → Region → Description**. And each wrong guess uncove
 **another photograph** of the same place, because one photo is sometimes a
 plaque or a doorway and that should cost you a guess, not the round.
 
+If all four guesses miss, the map shows where the site actually was, with a
+line drawn from your nearest pin to it. Losing a round should still teach you
+where the place is.
+
 ### Scoring
 
 | | |
 |---|---|
-| Name the country | **full marks**, and the round ends there |
-| Run out of guesses | your **last** guess scores, by how close it was |
+| Right country, or within 100 km | **full marks**, less a little for each guess used |
+| Run out of guesses | your **closest** guess scores, by how close it was |
 
-Only the last guess counts, so a third try is a commitment rather than a free
-extra. A near miss keeps most of the round; the wrong continent keeps almost
-none.
+The closest guess of the round is the one that counts, so narrowing it down and
+then gambling the last try keeps what you found. A near miss keeps most of the
+round; the wrong continent keeps almost none.
 
 ### A day
 
@@ -59,7 +69,8 @@ Everything is drawn from open data and rebuilt by a pipeline, not hand-curated.
   Safeguarding list.
 - **5,871 photographs** from Wikimedia Commons, each carrying its own licence
   and photographer credit, shown in game beside the picture.
-- **186 guessable countries**, every one of which you can actually point at.
+- **186 named countries**, every one of which a pin can land in and be named
+  after — including the microstates too small to draw.
 
 An element inscribed by several countries — Nowruz has 23, falconry 26 —
 accepts any of them.

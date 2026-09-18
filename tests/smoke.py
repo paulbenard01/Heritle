@@ -554,14 +554,34 @@ def play_day(page, base, day, width, label):
     """)
     check(not unwinnable, f"{label}: no entry has an unreachable answer",
           ", ".join(unwinnable[:5]))
-    # Open water is not a guess, and must not spend one.
+    # A guess is a point now, not a country: the pin goes wherever the finger
+    # went, open water included, and the bar names the place rather than
+    # refusing the tap.
     before = page.evaluate("state.guesses[0].length")
     page.evaluate(TAP_JS, {"lat": 0, "lng": -140})
     page.wait_for_timeout(200)
     check(page.evaluate("state.guesses[0].length") == before,
-          f"{label}: tapping open water does not spend a guess")
-    check(page.locator("#pendingGuess").is_hidden(),
-          f"{label}: open water proposes nothing")
+          f"{label}: a tap proposes without spending a guess")
+    check(page.locator("#pendingGuess").is_visible(),
+          f"{label}: open water can be proposed")
+    check(page.evaluate("document.getElementById('pendingName').textContent")
+          == page.evaluate("t().openWater"),
+          f"{label}: and is named open water")
+    placed = page.evaluate("() => ({lat: pendingGuess.lat, lng: pendingGuess.lng})")
+    check(abs(placed["lat"]) < 1 and abs(placed["lng"] + 140) < 1,
+          f"{label}: the pin lands where it was tapped, not on a centroid",
+          str(placed))
+    # A placement inside a country is named after it, which is the whole point
+    # of free placement over a blind pin.
+    named = page.evaluate("""
+      () => { const c = COUNTRIES.find(c => LAND_SHAPES[c.iso]);
+              const p = project(c.lat, c.lng);
+              const got = countryByIso(isoAt(p.x, p.y)) || countryNear(p.x, p.y);
+              return { want: c.names.en, got: got && got.names.en,
+                       label: placeLabel({ lat:c.lat, lng:c.lng, country: got }) }; }
+    """)
+    check(named["got"] is not None and named["label"] == named["got"],
+          f"{label}: a placement on land is named after its country", str(named))
     # The confirm bar sits below the map; on a phone that is off-screen, so a
     # pin would appear with no visible way to commit it.
     pt = page.evaluate("() => { const c = COUNTRIES[0]; return {lat:c.lat, lng:c.lng}; }")
@@ -770,6 +790,20 @@ def play_day(page, base, day, width, label):
           str(page.evaluate("state.roundStatus[1]")))
     check(page.evaluate("state.guesses[1].length") == 4,
           f"{label}: the round ends after its allowance")
+    # Four guesses gone and still no idea where it was is the worst way to
+    # leave a round. So the site is marked, named, and joined by a line to the
+    # nearest guess -- the answer is shown, not merely stated in a sentence.
+    reveal = page.evaluate("""
+      () => ({ rings: document.querySelectorAll('#pinLayer .target-ring').length,
+               lines: document.querySelectorAll('#pinLayer line').length,
+               caption: (document.querySelector('#pinLayer text') || {}).textContent,
+               want: t().siteHere })
+    """)
+    check(reveal["rings"] == 1, f"{label}: a missed round marks the site", str(reveal))
+    check(reveal["caption"] == reveal["want"],
+          f"{label}: and says so in words on the map", str(reveal))
+    check(reveal["lines"] == 1,
+          f"{label}: and draws the gap to the nearest guess", str(reveal))
     # Scored on the closest guess of the round, not the last one: a player who
     # narrowed it down and then gambled the final try keeps what they found.
     expected = page.evaluate("() => ROUND_PLAN[1].points * missCredit(state.guesses[1])")
@@ -1162,6 +1196,19 @@ def main():
         dz = page.locator("#markTop").bounding_box()
         page.mouse.move(dz["x"] + dz["width"] / 2, dz["y"] + dz["height"] / 2)
         page.mouse.down()
+        # Ten seconds of holding with nothing to show for it is what "the
+        # dizzy achievement doesn't work" actually looked like: he spins into a
+        # blur after a second and then nothing changes, so there is no reason
+        # to believe holding on is getting anywhere. Past a few turns he now
+        # counts them out loud.
+        page.wait_for_timeout(5000)
+        turns = page.locator("#markTop .spin-turns")
+        shown = turns.count() == 1 and "on" in (turns.get_attribute("class") or "")
+        check(shown, "holding him counts the turns out loud",
+              turns.text_content() if turns.count() else "no counter at all")
+        check(shown and any(ch.isdigit() for ch in (turns.text_content() or "")),
+              "and the count is a number that climbs",
+              turns.text_content() if turns.count() else "")
         got = False
         for _ in range(40):                      # up to 20s
             page.wait_for_timeout(500)
@@ -1455,6 +1502,83 @@ def main():
         # a third of the first year re-dealt something already shown. These
         # checks run through the game's own dealFor(), one whole cycle at a
         # time, which is only possible because it takes the day as an argument.
+        # ---- free placement ----
+        # A guess is a point on the earth, not a country picked off a list.
+        # Two rules follow from that and neither is obvious from the code:
+        # standing in an answer country is right, and so is standing within
+        # 100 km of the site even in the wrong country -- a border a player
+        # cannot see must not be the thing that fails them.
+        print("\n== free placement ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        # ?practice=1, so nothing a test guesses is written to a profile.
+        page.goto(base + "?practice=1")
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        check(page.evaluate("isPractice"), "the placement checks leave no trace")
+        # Each rule is checked from the same clean slate.
+        page.evaluate("window.RESET = () => { state.round = 0; "
+                      "state.guesses[0] = []; state.roundStatus[0] = null; "
+                      "state.roundScore[0] = 0; }")
+        near = page.evaluate("""
+          () => {
+            RESET();
+            const tg = targets[0];
+            const lat = tg.lat + 0.45;                 // roughly 50 km north
+            const p = project(lat, tg.lng);
+            const c = countryByIso(isoAt(p.x, p.y)) || countryNear(p.x, p.y);
+            submitGuess({ lat, lng: tg.lng, country: c });
+            const g = state.guesses[0][0];
+            return { km: g.km, bucket: g.bucket, via: g.via,
+                     status: state.roundStatus[0], NEAR_KM };
+          }
+        """)
+        check(near["NEAR_KM"] == 100, "the near-enough radius is 100 km",
+              str(near["NEAR_KM"]))
+        check(near["km"] <= 100, "a pin 50 km from the site measures under 100",
+              str(near["km"]))
+        check(near["bucket"] == "correct" and near["status"] == "solved",
+              "and it solves the round", str(near))
+        # Far away in the right country is still right: the country rule did
+        # not quietly become a distance rule.
+        far = page.evaluate("""
+          () => {
+            RESET();
+            const a = targetCountries()[0];
+            if(!a) return null;
+            submitGuess({ lat: a.lat, lng: a.lng, country: a });
+            const g = state.guesses[0][0];
+            return { km: g.km, bucket: g.bucket, via: g.via,
+                     status: state.roundStatus[0] };
+          }
+        """)
+        check(far and far["bucket"] == "correct" and far["via"] == "country",
+              "a pin in the answer country is right however far from the site",
+              str(far))
+        # And a placement that is neither is a miss, however plausible.
+        miss = page.evaluate("""
+          () => {
+            RESET();
+            const tg = targets[0];
+            const answers = new Set(targetCountries().map(c => c.id));
+            const c = COUNTRIES.find(c => !answers.has(c.id)
+                        && haversineKm(c.lat, c.lng, tg.lat, tg.lng) > 1500);
+            if(!c) return null;
+            submitGuess({ lat: c.lat, lng: c.lng, country: c });
+            const g = state.guesses[0][0];
+            return { km: g.km, bucket: g.bucket, via: g.via,
+                     status: state.roundStatus[0] };
+          }
+        """)
+        check(miss and miss["bucket"] != "correct" and miss["via"] is None,
+              "a placement in the wrong country and far from the site is a miss",
+              str(miss))
+        check(not errs, "and placing throws nothing", "; ".join(errs[:2]))
+        ctx.close()
+
         print("\n== the deal ==")
         ctx = browser.new_context(viewport={"width": 375, "height": 812})
         page = ctx.new_page()
