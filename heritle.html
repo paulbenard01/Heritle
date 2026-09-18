@@ -2781,6 +2781,7 @@ function scalePins(force){
   // scaled like the pins rather than growing with the map.
   document.querySelectorAll('#pinLayer text').forEach(el=>{
     el.setAttribute('font-size', el.dataset.fs * k);
+    el.setAttribute('stroke-width', el.dataset.sw * k);
     el.setAttribute('y', Number(el.dataset.y) - Number(el.dataset.dy) * k);
   });
 }
@@ -2851,12 +2852,19 @@ function addTargetPin(lat,lng,label){
     // pin; near the top of the sheet it drops below it instead.
     const above = p.y > 20;
     txt.setAttribute('x',p.x); txt.setAttribute('y',p.y);
-    txt.dataset.y = p.y; txt.dataset.dy = above ? 13 : -12; txt.dataset.fs = 9;
+    txt.dataset.y = p.y; txt.dataset.dy = above ? 15 : -13; txt.dataset.fs = 9;
     txt.setAttribute('text-anchor',anchor);
     txt.setAttribute('fill','var(--gold)');
     txt.setAttribute('paint-order','stroke');
     txt.setAttribute('stroke','var(--navy)');
-    txt.setAttribute('stroke-width','3');
+    // The halo that keeps the caption legible over a coastline is a stroke,
+    // and a stroke in world units grows as the map is zoomed while the glyphs
+    // are counter-scaled to stay the same size. Zoomed in it became a navy
+    // slab wider than the words, sitting over the pin it was meant to point
+    // at. It is counter-scaled like the font rather than left to
+    // vector-effect, which is not reliable on text.
+    txt.dataset.sw = 2;
+    txt.setAttribute('stroke-width','2');
     txt.setAttribute('stroke-linejoin','round');
     txt.setAttribute('font-size',9);
     txt.setAttribute('font-weight','600');
