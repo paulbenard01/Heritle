@@ -1,0 +1,76 @@
+name: Domain report
+
+# Why a network might be refusing the site. Run from a runner because the
+# development sandbox cannot reach the open web, and because the answer is
+# mostly about what the rest of the internet knows about the domain -- its
+# age, where it points, and what it looks like to a filter.
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Which domain to report on'
+        default: 'heritle.org'
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Registration
+        run: |
+          D="${{ inputs.domain || 'heritle.org' }}"
+          echo "=== $D ==="
+          # RDAP is the open replacement for whois and needs no key. The
+          # registration date is the single most useful fact here: filters
+          # block newly registered domains as a class.
+          curl -sS --max-time 25 "https://rdap.org/domain/$D" > /tmp/rdap.json || true
+          python3 - "$D" <<'PY'
+          import json, sys, datetime
+          try:
+              d = json.load(open('/tmp/rdap.json'))
+          except Exception as e:
+              print("  rdap unavailable:", e); raise SystemExit(0)
+          ev = { e.get('eventAction'): e.get('eventDate') for e in d.get('events', []) }
+          reg = ev.get('registration')
+          print("  registered  :", reg)
+          print("  expires     :", ev.get('expiration'))
+          print("  last changed:", ev.get('last changed'))
+          print("  status      :", d.get('status'))
+          for e in d.get('entities', []):
+              if 'registrar' in (e.get('roles') or []):
+                  for item in (e.get('vcardArray') or [None, []])[1]:
+                      if item[0] == 'fn':
+                          print("  registrar   :", item[3])
+          if reg:
+              try:
+                  born = datetime.datetime.fromisoformat(reg.replace('Z', '+00:00'))
+                  age = (datetime.datetime.now(datetime.timezone.utc) - born).days
+                  print(f"  age         : {age} days")
+                  if age < 30:
+                      print("  NOTE: under 30 days old. Most enterprise and campus filters"
+                            " block newly registered domains as a category, on the basis"
+                            " that most malicious domains are new. This ages out.")
+              except Exception as e:
+                  print("  age         : could not parse:", e)
+          PY
+      - name: Where it points
+        run: |
+          D="${{ inputs.domain || 'heritle.org' }}"
+          echo "--- DNS ---"
+          for t in A AAAA CNAME NS TXT; do
+            printf '  %-6s %s\n' "$t" "$(dig +short "$t" "$D" | tr '\n' ' ')"
+          done
+          printf '  %-6s %s\n' "www" "$(dig +short www."$D" | tr '\n' ' ')"
+          echo "  (GitHub Pages apex addresses are 185.199.108-111.153)"
+      - name: What it serves
+        run: |
+          D="${{ inputs.domain || 'heritle.org' }}"
+          echo "--- headers ---"
+          curl -sSI --max-time 25 "https://$D/" | sed 's/^/  /' || true
+          echo "--- http, which is what a link in a bio uses ---"
+          curl -sSI --max-time 25 "http://$D/" | sed 's/^/  /' || true
+          echo "--- robots.txt ---"
+          code=$(curl -sS -o /tmp/robots -w '%{http_code}' --max-time 20 "https://$D/robots.txt" || echo 000)
+          echo "  $code"; sed 's/^/  /' /tmp/robots 2>/dev/null | head -5
