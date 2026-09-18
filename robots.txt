@@ -1,0 +1,7 @@
+# Heritle — a daily game about the World Heritage lists.
+# Everything here is public and crawlable. Nothing is behind a login,
+# because there are no logins.
+User-agent: *
+Allow: /
+
+Sitemap: https://heritle.org/sitemap.xml

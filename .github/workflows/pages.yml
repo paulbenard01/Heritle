@@ -37,6 +37,11 @@ jobs:
           # for.
           [ -d assets ] && cp -r assets _site/ || echo "no assets/ — the header will show the wordmark alone"
           [ -d images ] && cp -r images _site/ || echo "no images/ — photo placeholders will show"
+          # Small signals that a classifier reads: a site that says who may
+          # crawl it and what it contains looks less like a parked domain.
+          for f in robots.txt sitemap.xml; do
+            [ -f "$f" ] && cp "$f" _site/ || echo "no $f"
+          done
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
