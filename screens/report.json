@@ -1,0 +1,42 @@
+{
+  "url": "https://heritle.org/",
+  "shots": [
+    {
+      "name": "phone",
+      "facts": {
+        "pool": 1871,
+        "day": 7,
+        "lang": "en",
+        "title": "Heritle",
+        "pitch": "Guess and Discover the world heritage!",
+        "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Holasovice_-_Eccezionale_esempio_di_tipico_villaggio_in_stile_%22barocco_popolare_della_Boemia%22_Costruito_tra_1848-1880_e_Patrimonio_Unesco_-_panoramio.jpg/1280px-Holasovice_-_Eccezionale_esempio_di_tipico_villaggio_in_stile_%22barocco_popolare_della_Boemia%22_Costruito_tra_1848-1880_e_Patrimonio_Unesco_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "mark": true,
+        "timing": {
+          "loaded": 534,
+          "transferred": 2068264
+        }
+      },
+      "errors": [],
+      "bad": []
+    },
+    {
+      "name": "desktop",
+      "facts": {
+        "pool": 1871,
+        "day": 7,
+        "lang": "en",
+        "title": "Heritle",
+        "pitch": "Guess and Discover the world heritage!",
+        "photo": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/Holasovice_-_Eccezionale_esempio_di_tipico_villaggio_in_stile_%22barocco_popolare_della_Boemia%22_Costruito_tra_1848-1880_e_Patrimonio_Unesco_-_panoramio.jpg/1280px-Holasovice_-_Eccezionale_esempio_di_tipico_villaggio_in_stile_%22barocco_popolare_della_Boemia%22_Costruito_tra_1848-1880_e_Patrimonio_Unesco_-_panoramio.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "mark": true,
+        "timing": {
+          "loaded": 269,
+          "transferred": 2068264
+        }
+      },
+      "errors": [],
+      "bad": []
+    }
+  ],
+  "problems": []
+}
