@@ -25,7 +25,15 @@ jobs:
           # RDAP is the open replacement for whois and needs no key. The
           # registration date is the single most useful fact here: filters
           # block newly registered domains as a class.
-          curl -sS --max-time 25 "https://rdap.org/domain/$D" > /tmp/rdap.json || true
+          # -L: rdap.org answers with a redirect to the registry's own server,
+          # and without following it the body is an empty 302.
+          curl -sSL --max-time 25 -H 'Accept: application/rdap+json' \
+               "https://rdap.org/domain/$D" > /tmp/rdap.json || true
+          if ! head -c 1 /tmp/rdap.json | grep -q '{'; then
+            echo "  (rdap.org gave nothing; asking the .org registry directly)"
+            curl -sSL --max-time 25 -H 'Accept: application/rdap+json' \
+              "https://rdap.publicinterestregistry.org/rdap/domain/$D" > /tmp/rdap.json || true
+          fi
           python3 - "$D" <<'PY'
           import json, sys, datetime
           try:
