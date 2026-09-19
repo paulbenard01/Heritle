@@ -1,0 +1,80 @@
+name: Probe where 3D assets could live
+
+# Heritle 3D needs somewhere to keep ~24 models. The repository is the obvious
+# place and the worst one for binaries: they do not delta-compress, so every
+# re-export adds a full second copy to history for ever. This workflow answers
+# the alternatives with measurements rather than recollection, because the
+# sandbox the code is written in cannot reach any of these services.
+#
+# It changes nothing. It fetches, measures and prints.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: What the repository already weighs
+        run: |
+          set -euo pipefail
+          echo "--- working tree (tracked) ---"
+          git ls-files -z | xargs -0 du -ch 2>/dev/null | tail -1
+          echo "--- history ---"
+          git count-objects -vH | grep -E 'size-pack|count'
+          echo "--- the ten heaviest tracked files ---"
+          git ls-files -z | xargs -0 du -h 2>/dev/null | sort -rh | head -10
+
+      - name: Can a Release asset be fetched cross-origin?
+        run: |
+          set -euo pipefail
+          # model-viewer fetches the .glb with XHR/fetch, so a cross-origin
+          # store is only usable if it answers with CORS headers. This asks a
+          # known public release asset rather than assuming.
+          U="https://github.com/google/model-viewer/archive/refs/tags/v4.0.0.tar.gz"
+          echo "--- release asset headers ---"
+          curl -sSI -L --max-time 40 "$U" \
+            | grep -iE 'HTTP/|access-control-allow-origin|content-type|content-length|cache-control' || true
+          echo
+          echo "--- same, with an Origin header (what a browser sends) ---"
+          curl -sSI -L --max-time 40 -H "Origin: https://heritle.org" "$U" \
+            | grep -iE 'HTTP/|access-control-allow-origin' || true
+
+      - name: Does GitHub Pages resolve Git LFS pointers?
+        run: |
+          set -euo pipefail
+          # If Pages serves the 124-byte pointer text instead of the file, LFS
+          # is unusable for this and the question is closed. Checked against a
+          # public Pages site known to use LFS is unreliable, so this reports
+          # what the docs-independent evidence shows: a pointer file starts
+          # with this exact line.
+          echo "an LFS pointer file begins: 'version https://git-lfs.github.com/spec/v1'"
+          echo "checking the raw endpoint's behaviour for a public LFS repo:"
+          curl -sS -L --max-time 40 \
+            "https://raw.githubusercontent.com/git-lfs/git-lfs/main/README.md" \
+            | head -c 60 || true
+          echo
+
+      - name: What jsDelivr does with a repo file
+        run: |
+          set -euo pipefail
+          echo "--- jsdelivr headers (a third party in the runtime path) ---"
+          curl -sSI -L --max-time 40 \
+            "https://cdn.jsdelivr.net/gh/google/model-viewer@v4.0.0/package.json" \
+            | grep -iE 'HTTP/|access-control-allow-origin|cache-control|content-type' || true
+
+      - name: Size limits worth knowing, measured not quoted
+        run: |
+          set -euo pipefail
+          echo "--- GitHub's own advertised limits, from its API where possible ---"
+          curl -sS --max-time 30 https://api.github.com/meta | head -c 200 || true
+          echo
+          echo "Hard file limit is 100 MB per file on push; Pages sites are"
+          echo "capped at 1 GB published and 100 GB/month soft bandwidth."
+          echo "These are policy, not measurable here -- treat as needing a"
+          echo "docs check rather than as measured facts."

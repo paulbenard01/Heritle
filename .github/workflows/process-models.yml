@@ -1,0 +1,93 @@
+name: Process a 3D model
+
+# The sandbox this code is written in can reach neither npm nor any model host,
+# so the squeezing happens here. Give it a direct download URL for a .glb or
+# .zip you have already licence-checked and eyeballed, and it reports what each
+# step bought before anything is committed.
+#
+# Nothing is committed by default. The processed file comes back as an artifact
+# so the result can be looked at first -- a decimated scan that has lost its
+# carving is worse than no model, and only a person can see that.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Direct download URL for the model (.glb or .zip)'
+        required: true
+      slot:
+        description: 'Which relic slot this fills, e.g. relic-004'
+        required: true
+      forbid:
+        description: 'Words that must not survive in the file (the monument name, comma-separated)'
+        required: true
+      ratio:
+        description: 'Triangles to keep, 0-1'
+        default: '0.35'
+      texture:
+        description: 'Maximum texture edge, px'
+        default: '2048'
+
+permissions:
+  contents: read
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install gltf-transform
+        run: npm install -g @gltf-transform/cli
+
+      - name: Fetch it
+        run: |
+          set -euo pipefail
+          mkdir -p raw
+          curl -sS --fail --max-time 600 -L "${{ inputs.url }}" -o raw/download
+          file raw/download
+          ls -la raw/
+          if file raw/download | grep -qi zip; then
+            unzip -o raw/download -d raw/unpacked
+            find raw/unpacked -type f \( -iname '*.glb' -o -iname '*.gltf' \) -print
+            SRC="$(find raw/unpacked -type f -iname '*.glb' | head -1)"
+            [ -n "$SRC" ] || SRC="$(find raw/unpacked -type f -iname '*.gltf' | head -1)"
+            [ -n "$SRC" ] || { echo "no glTF inside the archive"; exit 1; }
+            cp "$SRC" raw/model.glb 2>/dev/null || gltf-transform copy "$SRC" raw/model.glb
+          else
+            mv raw/download raw/model.glb
+          fi
+          ls -la raw/
+
+      - name: What it is before we touch it
+        run: gltf-transform inspect raw/model.glb || true
+
+      - name: Squeeze it
+        run: |
+          set -euo pipefail
+          python tools/process_model.py raw/model.glb \
+            "assets/relics/${{ inputs.slot }}.glb" \
+            --ratio "${{ inputs.ratio }}" \
+            --texture "${{ inputs.texture }}" \
+            --forbid "${{ inputs.forbid }}"
+
+      - name: What it is afterwards
+        run: |
+          gltf-transform inspect "assets/relics/${{ inputs.slot }}.glb" || true
+          ls -la assets/relics/
+
+      # Not committed: a person has to look at it first. Download the artifact,
+      # open it in any glTF viewer, and only then add it to the repository --
+      # once, at its final size, because binaries do not delta-compress and a
+      # re-export adds a second full copy to history for ever.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.slot }}
+          path: assets/relics/${{ inputs.slot }}.glb
+          retention-days: 14

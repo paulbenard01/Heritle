@@ -1,0 +1,76 @@
+name: Shortlist 3D models
+
+# Trawling Sketchfab for two dozen monuments by hand is a long evening, most of
+# it spent discarding voxel builds and game props. This does the filtering a
+# machine can do -- licence, downloadable, face count, textures -- and leaves
+# the judgement it cannot: whether the thing looks like the monument.
+#
+# Run it, read the log, open the handful of links it kept. Nothing is
+# downloaded and nothing is committed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      monuments:
+        description: 'Comma-separated search terms (blank = the default list)'
+        default: ''
+      min_faces:
+        description: 'Below this a model is decoration, not a scan'
+        default: '40000'
+
+permissions:
+  contents: read
+
+jobs:
+  shortlist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Search
+        env:
+          MONUMENTS: ${{ inputs.monuments }}
+          MIN_FACES: ${{ inputs.min_faces }}
+        run: |
+          set -uo pipefail
+          # Written to a file rather than a shell string: a line-continued
+          # string inside a YAML block scalar is a trap, and this one sprang.
+          cat > /tmp/monuments.txt <<'EOF'
+          Stonehenge
+          Colosseum Rome
+          Leaning Tower of Pisa
+          Sagrada Familia
+          Parthenon Acropolis
+          Eiffel Tower
+          Mont Saint-Michel
+          Notre-Dame de Paris
+          Hagia Sophia
+          Neuschwanstein
+          Statue of Liberty
+          Christ the Redeemer
+          Machu Picchu
+          Chichen Itza El Castillo
+          Mesa Verde cliff palace
+          Tikal temple
+          Great Sphinx of Giza
+          Petra Al-Khazneh
+          Taj Mahal
+          Angkor Wat
+          Borobudur
+          Forbidden City
+          Great Wall Badaling
+          Bagan temple
+          Sydney Opera House
+          EOF
+          sed -i 's/^ *//' /tmp/monuments.txt
+          if [ -n "${MONUMENTS}" ]; then
+            printf '%s' "${MONUMENTS}" | tr ',' '\n' | sed 's/^ *//; s/ *$//' > /tmp/monuments.txt
+          fi
+          while read -r q; do
+            [ -n "$q" ] || continue
+            python tools/shortlist_models.py "$q" --min-faces "${MIN_FACES:-40000}" || true
+            sleep 1          # a public API used politely
+          done < /tmp/monuments.txt
