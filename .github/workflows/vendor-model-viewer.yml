@@ -1,0 +1,52 @@
+name: Vendor the 3D viewer
+
+# The sandbox this code is written in cannot reach npm or a CDN, and the site
+# deliberately runs no third-party code fetched at runtime. So a runner
+# downloads a pinned build of <model-viewer> once and commits it, exactly the
+# way the dataset and the map geometry are built.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'model-viewer version to pin'
+        default: '4.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the pinned build
+        run: |
+          set -euo pipefail
+          V="${{ inputs.version || '4.0.0' }}"
+          mkdir -p assets/vendor
+          curl -sS --fail --max-time 120 -L \
+            "https://cdn.jsdelivr.net/npm/@google/model-viewer@${V}/dist/model-viewer.min.js" \
+            -o assets/vendor/model-viewer.min.js
+          # It is a module bundle; a 404 page would also be "a file", so check
+          # it looks like one before committing it.
+          head -c 200 assets/vendor/model-viewer.min.js | grep -q "export\|import\|customElements" \
+            || { echo "not a module bundle"; exit 1; }
+          printf '%s\n' \
+            "@google/model-viewer ${V}" \
+            "Apache-2.0, Google LLC" \
+            "https://github.com/google/model-viewer" \
+            "Vendored by .github/workflows/vendor-model-viewer.yml" \
+            > assets/vendor/README.txt
+          ls -la assets/vendor/
+      - name: Commit it
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # relics.json names the bundle; until this key exists the page makes
+          # no request for it at all, so an un-vendored build never 404s.
+          python3 -c "import json; p='data/relics.json'; d=json.load(open(p,encoding='utf-8')); d['viewer']='assets/vendor/model-viewer.min.js'; f=open(p,'w',encoding='utf-8'); json.dump(d,f,ensure_ascii=False,indent=2); f.write(chr(10))"
+          git add assets/vendor data/relics.json
+          git diff --cached --quiet && { echo "already current"; exit 0; }
+          git commit -m "Vendor the 3D viewer, pinned"
+          git push

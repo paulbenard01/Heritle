@@ -605,7 +605,7 @@ def play_day(page, base, day, width, label):
     r_world, r_zoom = page.evaluate("""
       () => {
         addPin(0, 0, 'far', false);
-        const c = document.querySelector('#pinLayer circle');
+        const c = document.querySelector('.pin-layer circle');
         const a = parseFloat(c.getAttribute('r'));
         mapView.w = MAP_W / 8; applyView();
         const b = parseFloat(c.getAttribute('r'));
@@ -794,9 +794,9 @@ def play_day(page, base, day, width, label):
     # leave a round. So the site is marked, named, and joined by a line to the
     # nearest guess -- the answer is shown, not merely stated in a sentence.
     reveal = page.evaluate("""
-      () => ({ rings: document.querySelectorAll('#pinLayer .target-ring').length,
-               lines: document.querySelectorAll('#pinLayer line').length,
-               caption: (document.querySelector('#pinLayer text') || {}).textContent,
+      () => ({ rings: document.querySelectorAll('.pin-layer .target-ring').length,
+               lines: document.querySelectorAll('.pin-layer line').length,
+               caption: (document.querySelector('.pin-layer text') || {}).textContent,
                want: t().siteHere })
     """)
     check(reveal["rings"] == 1, f"{label}: a missed round marks the site", str(reveal))
@@ -930,6 +930,10 @@ def main():
             # The map geometry is real either way -- it is independent of the
             # dataset, and without it the run reports a missing-file failure
             # that says nothing about the game.
+            # Heritle 3D reads its own file; without it the tab is empty and
+            # its section would pass by testing nothing.
+            shutil.copy(os.path.join(REPO, "data", "relics.json"),
+                        os.path.join(root, "data", "relics.json"))
             land = os.path.join(REPO, "data", "land.json")
             if os.path.exists(land):
                 shutil.copy(land, os.path.join(root, "data", "land.json"))
@@ -1680,6 +1684,139 @@ def main():
         check(aim["km"] == aim["nearestKm"],
               "and the kilometres are to the nearest of its countries", str(aim))
         check(not errs, "and placing throws nothing", "; ".join(errs[:2]))
+        ctx.close()
+
+        # ---- Heritle 3D ----
+        # A separate game: its own pool, its own scoring, its own key in
+        # storage. The checks that matter are that it reuses the daily game's
+        # pin-drop rather than a copy of it, that the three-clue ladder opens
+        # in order, and that nothing on the page names the monument before the
+        # player has earned it.
+        print("\n== Heritle 3D ==")
+        ctx = browser.new_context(viewport={"width": 375, "height": 812})
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        try:
+            page.wait_for_function("typeof RELICS !== 'undefined' && RELICS.length > 0",
+                                   timeout=10000)
+            got_relics = True
+        except Exception:
+            got_relics = False
+        check(got_relics, "the 3D repertoire loads")
+        if got_relics:
+            labels = page.locator("#nav button").all_inner_texts()
+            check(any("3D" in l for l in labels),
+                  "it is reachable from the navigation", str(labels))
+            page.evaluate("showView('Relics')")
+            page.wait_for_timeout(400)
+            check(page.locator(".relic-group").count() >= 1,
+                  "the repertoire is grouped by theme")
+            # Unlocking: only the first of each group is open at the start.
+            opened = page.evaluate("""
+              () => ({ open: RELICS.filter(r => relicUnlocked(r.id)).map(r => r.id),
+                       groups: RELIC_GROUPS.map(g => g.relics[0]) })
+            """)
+            check(sorted(opened["open"]) == sorted(opened["groups"]),
+                  "only the first monument of each group is open", str(opened))
+            # Nothing names the monument before it has been played -- the
+            # photograph is the first clue and the name is the answer.
+            check(not page.evaluate("""
+              () => { const txt = document.getElementById('viewRelics').innerText;
+                      return RELICS.some(r => txt.includes(r.names.en)); }
+            """), "and no monument is named in the repertoire")
+            # The assets give nothing away either: that is the whole point of
+            # renaming them.
+            leaks = page.evaluate("""
+              () => RELICS.filter(r => {
+                const n = (r.names.en || '').toLowerCase().replace(/[^a-z]/g, '');
+                const paths = (r.model + ' ' + r.image).toLowerCase().replace(/[^a-z]/g, '');
+                return n.length > 3 && paths.includes(n);
+              }).map(r => r.names.en)
+            """)
+            check(not leaks, "and no asset filename carries the answer", str(leaks))
+
+            page.locator(".relic-card:not(.locked)").first.click()
+            page.wait_for_timeout(400)
+            check(page.locator("#relicPlay").is_visible(), "a monument opens")
+            check(not page.locator("#relicModelBox").is_visible(),
+                  "the first clue is the photograph alone")
+            # The ladder: model on the second guess, hint on the third.
+            tap = """(pt) => {
+              const p = project(pt.lat, pt.lng);
+              const svg = document.getElementById('relicMap');
+              const r = svg.getBoundingClientRect();
+              svg.dispatchEvent(new MouseEvent('click', {
+                clientX: r.left + ((p.x - mapView.x) / mapView.w) * r.width,
+                clientY: r.top  + ((p.y - mapView.y) / mapView.h) * r.height,
+                bubbles: true }));
+            }"""
+            page.evaluate(tap, {"lat": -35, "lng": -65})
+            page.wait_for_timeout(200)
+            check(page.locator("#relicPending").is_visible(),
+                  "a tap proposes a placement, as on the daily board")
+            page.click("#relicConfirm")
+            page.wait_for_timeout(350)
+            check(page.locator("#relicModelBox").is_visible(),
+                  "the second clue adds the model")
+            check(not page.locator("#relicHint").is_visible(),
+                  "and the hint is still held back")
+            page.evaluate(tap, {"lat": 5, "lng": 25})
+            page.wait_for_timeout(200)
+            page.click("#relicConfirm")
+            page.wait_for_timeout(350)
+            check(page.locator("#relicHint").is_visible(),
+                  "the third clue adds the hint")
+            check(not page.evaluate("""
+              () => document.getElementById('relicHint').innerText
+                      .includes(relicTarget().names.en)
+            """), "which never contains the name")
+            # Third guess, on the monument: solved, and scored on the curve.
+            page.evaluate(tap, page.evaluate(
+                "() => { const t = relicTarget(); return {lat:t.lat, lng:t.lng}; }"))
+            page.wait_for_timeout(200)
+            page.click("#relicConfirm")
+            page.wait_for_timeout(400)
+            out = page.evaluate("""
+              () => ({ status: relicRound.status, score: Math.round(relicRound.score),
+                       n: relicRound.guesses.length,
+                       want: Math.round(RELIC_POINTS * RELIC_CREDIT[2]),
+                       saved: relicProgress[relicRound.id] || null })
+            """)
+            check(out["status"] == "solved", "landing on it solves the monument", str(out))
+            check(out["score"] == out["want"],
+                  "scored on the third-guess credit, not a parallel formula", str(out))
+            check(page.locator("#relicResult").is_visible(), "and the reveal is shown")
+            named = page.locator("#relicResult").inner_text()
+            check(page.evaluate("relicTarget().names.en") in named,
+                  "which finally names it", named.replace("\n", " | ")[:90])
+            check(bool(out["saved"]) and out["saved"]["done"],
+                  "progress is written only once the attempt is over", str(out["saved"]))
+            # Separate game, separate storage: the daily score is untouched.
+            check(page.evaluate("totalScore()") == 0,
+                  "and the daily score is untouched")
+            check(page.evaluate("!!localStorage.getItem('heritle-relics')"),
+                  "under a key of its own")
+            page.click("#relicNext")
+            page.wait_for_timeout(300)
+            check(page.evaluate("""
+              () => { const g = RELIC_GROUPS.find(g => g.relics.length > 1);
+                      return !g || relicUnlocked(g.relics[1]); }
+            """), "finishing one opens the next in its group")
+            # Both boards keep their own zoom, which is the reason a surface
+            # exists at all rather than one global view.
+            check(page.evaluate("""
+              () => { showView('Relics'); mapView.w = MAP_W / 4; applyView();
+                      showView('Game');   const daily = mapView.w;
+                      showView('Relics'); const relic = mapView.w;
+                      showView('Game');
+                      return daily === MAP_W && Math.abs(relic - MAP_W / 4) < 0.01; }
+            """), "each board keeps its own zoom")
+        check(not errs, "and the 3D mode throws nothing", "; ".join(errs[:2]))
         ctx.close()
 
         print("\n== the deal ==")

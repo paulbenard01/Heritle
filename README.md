@@ -107,6 +107,9 @@ python tools/build_land.py                       # Natural Earth -> data/land.js
 | `tools/find_ich.py` | works out how the intangible lists are modelled |
 | `data/dataset.json` | 2,166 entries (4.4 MB) |
 | `data/land.json` | country polygons (2.3 MB) |
+| `data/relics.json` | the Heritle 3D repertoire |
+| `assets/relics/` | its models and photographs, with the sourcing log |
+| `tools/make_placeholder_glb.py` | the stand-in model used while that is built |
 
 `data/land.json` carries 238 countries as rings keyed by ISO code. The game
 draws its map from those same rings and hit-tests taps against them, so what

@@ -163,7 +163,7 @@ def main():
                 txt = page.locator(".hist-row").first.inner_text()
                 check("✓" in txt or "✗" in txt, "verdicts render a tick or cross", txt)
                 check("km" in page.locator("#mapReadout").inner_text(), "distance readout")
-                check(page.evaluate("document.querySelectorAll('#pinLayer circle').length") >= 1, "map pin drawn")
+                check(page.evaluate("document.querySelectorAll('.pin-layer circle').length") >= 1, "map pin drawn")
                 check(page.locator(".clue.unlocked").count() >= 1, "a clue unlocked")
 
                 # Solve by naming the right country.

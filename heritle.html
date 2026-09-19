@@ -764,6 +764,68 @@
   @keyframes toast-in{ from{ opacity:0; transform:translate(-50%,14px); }
                        to{ opacity:1; transform:translate(-50%,0); } }
 
+  /* ---------- Heritle 3D ----------
+     Same navy/cream/gold as everything else; nothing new is introduced. */
+  .relic-intro{margin:0 0 14px;color:var(--ink-dim);font-size:0.86rem;
+    line-height:1.5;max-width:56ch;}
+  .relic-group{margin:0 0 18px;}
+  .relic-group h3{font-family:'JetBrains Mono',monospace;font-size:0.68rem;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);
+    margin:0 0 9px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .relic-group h3 span{color:var(--ink-dim);letter-spacing:0.06em;}
+  .relic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;}
+  .relic-card{position:relative;display:flex;flex-direction:column;gap:0;
+    padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:var(--navy-2);cursor:pointer;text-align:left;color:inherit;
+    font:inherit;transition:border-color 0.18s ease;}
+  .relic-card:hover:not(.locked){border-color:var(--gold);}
+  .relic-card img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;}
+  .relic-card .relic-face{padding:9px 11px 11px;display:flex;flex-direction:column;gap:4px;}
+  .relic-card .relic-name{font-size:0.86rem;color:var(--cream);}
+  .relic-card .relic-state{font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-dim);}
+  .relic-card.solved .relic-state{color:var(--correct);}
+  .relic-card.locked{cursor:not-allowed;opacity:0.55;}
+  /* A locked card must not show the photograph: it is the first clue. */
+  .relic-card.locked img{filter:grayscale(1) brightness(0.35);}
+  .relic-card.locked .relic-name{color:var(--ink-dim);}
+  .relic-back{background:none;border:none;color:var(--gold);cursor:pointer;
+    font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.08em;
+    padding:0 0 10px;text-decoration:underline;text-underline-offset:3px;}
+  .relic-stageline{font-family:'JetBrains Mono',monospace;font-size:0.63rem;
+    letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);
+    margin-bottom:8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;}
+  .relic-stageline b{color:var(--gold);font-weight:600;}
+  .relic-stage{position:relative;border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;background:var(--navy-2);margin-bottom:10px;}
+  .relic-stage img{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;}
+  .relic-model{width:100%;aspect-ratio:3/2;background:var(--navy-3);
+    border-top:1px solid var(--line);position:relative;}
+  .relic-model model-viewer{width:100%;height:100%;
+    --poster-color:transparent;background-color:var(--navy-3);}
+  /* With no viewer there is nothing to frame, so the box collapses to its
+     sentence rather than leaving a large empty panel on the page. */
+  .relic-model.off{aspect-ratio:auto;}
+  .relic-model .relic-modeloff{display:flex;
+    align-items:center;justify-content:center;text-align:center;padding:14px 18px;
+    color:var(--ink-dim);font-size:0.78rem;line-height:1.5;}
+  .relic-modelhint{position:absolute;left:10px;bottom:8px;
+    font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--ink-dim);
+    background:rgba(5,8,18,0.6);padding:3px 7px;border-radius:6px;pointer-events:none;}
+  .relic-hint{margin:0 0 10px;padding:10px 12px;border:1px dashed var(--line);
+    border-radius:10px;color:var(--cream);font-size:0.85rem;line-height:1.5;}
+  .relic-hint b{color:var(--gold);font-family:'JetBrains Mono',monospace;
+    font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;display:block;
+    margin-bottom:4px;font-weight:600;}
+  .relic-result{margin-top:12px;padding:14px 16px;border:1px solid var(--gold);
+    border-radius:12px;background:var(--navy-2);text-align:center;}
+  .relic-result h3{font-family:'Playfair Display',serif;color:var(--gold);
+    margin:0 0 6px;font-size:1.1rem;}
+  .relic-result p{margin:0 0 8px;font-size:0.86rem;line-height:1.5;}
+  .relic-result .relic-credit{font-family:'JetBrains Mono',monospace;
+    font-size:0.58rem;color:var(--ink-dim);margin:10px 0 0;line-height:1.6;}
+  .relic-result .relic-credit a{color:var(--ink-dim);}
+
   .arch-item{display:flex;flex-direction:column;}
   .arch-peek{background:none;border:1px solid var(--gold-dim);color:var(--gold-dim);
     border-radius:6px;padding:6px 9px;cursor:pointer;
@@ -949,6 +1011,41 @@
   <div class="view" id="viewCollection"></div>
   <div class="view" id="viewPassport"></div>
   <div class="view" id="viewArchive"></div>
+
+  <!-- Heritle 3D. The play screen is written here rather than rendered into,
+       because the board carries gesture listeners and a pin layer that a
+       redraw of its parent would throw away. -->
+  <div class="view" id="viewRelics">
+    <p class="relic-intro" id="relicIntro"></p>
+    <div class="relic-index" id="relicIndex"></div>
+
+    <div class="relic-play" id="relicPlay" hidden>
+      <button class="relic-back" id="relicBack"></button>
+      <div class="relic-stageline" id="relicStageLine"></div>
+      <div class="relic-stage">
+        <img id="relicImg" alt="">
+        <div class="relic-model" id="relicModelBox" hidden></div>
+      </div>
+      <p class="relic-hint" id="relicHint" hidden></p>
+      <div class="map-wrap">
+        <svg id="relicMap" viewBox="0 0 440 220"></svg>
+        <div class="map-zoom">
+          <button id="relicZoomIn" aria-label="Zoom in">+</button>
+          <button id="relicZoomOut" aria-label="Zoom out">−</button>
+          <button id="relicZoomReset" aria-label="Reset view">⤢</button>
+        </div>
+        <div class="map-readout" id="relicReadout"></div>
+      </div>
+      <div class="guess-row">
+        <div class="tap-hint" id="relicTapHint"></div>
+        <div class="pending" id="relicPending" hidden>
+          <span class="pending-name" id="relicPendingName"></span>
+          <button class="btn" id="relicConfirm"></button>
+        </div>
+      </div>
+      <div class="relic-result" id="relicResult" hidden></div>
+    </div>
+  </div>
 
   <!-- Outside the views, because terms and privacy are not part of today's
        puzzle: inside the game view they showed on Today alone, and on a wide
@@ -1160,6 +1257,23 @@ const UI = {
        categories:{cultural:'Cultural site',natural:'Natural site',mixed:'Mixed site',site:'Heritage site',intangible:'Living tradition'},
        unknown:'Unknown',
        navGame:'Today', navCollection:'Collection', navPassport:'Passport', navArchive:'Archive',
+       navRelics:'Heritle 3D',
+       relic:{ intro:'Monuments in three dimensions. Three guesses each, and each one you finish opens the next.',
+               locked:'Locked', solved:'Found', missed:'Finished',
+               open:'Open', start:'Begin', back:'All monuments',
+               lockedHint:'Finish the one before it to open this',
+               stage:(n)=>`Clue ${n} of 3`,
+               stageName:['Photograph','Photograph and model','Photograph, model and a hint'],
+               hintLabel:'Hint', tries:(n,max)=>`Guess ${n} of ${max}`,
+               solvedIn:(n)=>`Found in ${n} guess${n===1?'':'es'}.`,
+               missedTitle:'Out of guesses', solvedTitle:'Found it',
+               points:(p)=>`${p} points`,
+               answerWas:'It was:', within:(km)=>`${km} km away`,
+               modelOff:'The 3D view could not load here \u2014 the photograph and the map still work.',
+               modelHint:'Drag to turn it, scroll to zoom',
+               credit:'Model', licence:'Licence',
+               progress:(a,b)=>`${a} of ${b} found`,
+               replay:'Try again' },
        collectionTitle:'My Collection', collectionSub:(n)=>`${n} entries catalogued`,
        collectionRest:'Everything else', favTitle:'Favourites',
        favSub:(n)=>`${n} kept on the shelf`, favAdd:'Favourite', favRemove:'Favourited',
@@ -1329,6 +1443,23 @@ const UI = {
        categories:{cultural:'Site culturel',natural:'Site naturel',mixed:'Site mixte',site:'Site patrimonial',intangible:'Tradition vivante'},
        unknown:'Inconnu',
        navGame:'Aujourd’hui', navCollection:'Collection', navPassport:'Passeport', navArchive:'Archives',
+       navRelics:'Heritle 3D',
+       relic:{ intro:'Des monuments en trois dimensions. Trois essais chacun, et chaque monument achevé ouvre le suivant.',
+               locked:'Verrouillé', solved:'Trouvé', missed:'Terminé',
+               open:'Ouvrir', start:'Commencer', back:'Tous les monuments',
+               lockedHint:'Terminez le précédent pour ouvrir celui-ci',
+               stage:(n)=>`Indice ${n} sur 3`,
+               stageName:['Photographie','Photographie et modèle','Photographie, modèle et indice'],
+               hintLabel:'Indice', tries:(n,max)=>`Essai ${n} sur ${max}`,
+               solvedIn:(n)=>`Trouvé en ${n} essai${n===1?'':'s'}.`,
+               missedTitle:'Essais épuisés', solvedTitle:'Trouvé',
+               points:(p)=>`${p} points`,
+               answerWas:'C’était :', within:(km)=>`à ${km} km`,
+               modelOff:'La vue 3D n’a pas pu se charger ici \u2014 la photographie et la carte fonctionnent toujours.',
+               modelHint:'Faites glisser pour tourner, molette pour zoomer',
+               credit:'Modèle', licence:'Licence',
+               progress:(a,b)=>`${a} trouvés sur ${b}`,
+               replay:'Réessayer' },
        collectionTitle:'Ma collection', collectionSub:(n)=>`${n} entrées cataloguées`,
        collectionRest:'Tout le reste', favTitle:'Favoris',
        favSub:(n)=>`${n} gardés en réserve`, favAdd:'Ajouter aux favoris', favRemove:'En favoris',
@@ -1498,6 +1629,23 @@ const UI = {
        categories:{cultural:'Sitio cultural',natural:'Sitio natural',mixed:'Sitio mixto',site:'Sitio patrimonial',intangible:'Tradición viva'},
        unknown:'Desconocido',
        navGame:'Hoy', navCollection:'Colección', navPassport:'Pasaporte', navArchive:'Archivo',
+       navRelics:'Heritle 3D',
+       relic:{ intro:'Monumentos en tres dimensiones. Tres intentos cada uno, y cada monumento terminado abre el siguiente.',
+               locked:'Bloqueado', solved:'Encontrado', missed:'Terminado',
+               open:'Abrir', start:'Empezar', back:'Todos los monumentos',
+               lockedHint:'Termina el anterior para abrir este',
+               stage:(n)=>`Pista ${n} de 3`,
+               stageName:['Fotografía','Fotografía y modelo','Fotografía, modelo y pista'],
+               hintLabel:'Pista', tries:(n,max)=>`Intento ${n} de ${max}`,
+               solvedIn:(n)=>`Encontrado en ${n} intento${n===1?'':'s'}.`,
+               missedTitle:'Sin intentos', solvedTitle:'Encontrado',
+               points:(p)=>`${p} puntos`,
+               answerWas:'Era:', within:(km)=>`a ${km} km`,
+               modelOff:'La vista 3D no pudo cargarse aquí \u2014 la fotografía y el mapa siguen funcionando.',
+               modelHint:'Arrastra para girar, rueda para acercar',
+               credit:'Modelo', licence:'Licencia',
+               progress:(a,b)=>`${a} de ${b} encontrados`,
+               replay:'Reintentar' },
        collectionTitle:'Mi colección', collectionSub:(n)=>`${n} entradas catalogadas`,
        collectionRest:'Todo lo demás', favTitle:'Favoritos',
        favSub:(n)=>`${n} guardados en la vitrina`, favAdd:'Añadir a favoritos', favRemove:'En favoritos',
@@ -2726,8 +2874,10 @@ function buildMap(){
     `<path d="${d}" fill="var(--navy-3)" fill-rule="evenodd"
            stroke="rgba(201,162,75,${alpha})" stroke-width="0.6"
            vector-effect="non-scaling-stroke"/>`).join('') + '</g>';
-  svg += `<g id="pinLayer"></g>`;
-  document.getElementById('mapSvg').innerHTML = svg;
+  svg += `<g class="pin-layer"></g>`;
+  const host = surfaceSvg();
+  if(!host) return;
+  host.innerHTML = svg;
   applyView();   // buildMap wipes the SVG; restore the current zoom
 }
 /* ---------- Map zoom / pan ----------
@@ -2735,7 +2885,36 @@ function buildMap(){
    read, which matters now that the map is the puzzle. The viewBox is the
    single source of truth for the view, so screen->world conversion (used by
    the bonus pin) stays correct at any zoom. */
+/* ---------- Map surfaces ----------
+   A board is an <svg>, its pin layer and its own zoom. The daily game has one;
+   Heritle 3D has another. Rather than thread a board through fifteen
+   functions, everything below works on whichever board is current -- so there
+   is one pin-drop in the codebase instead of two that drift apart within a
+   month. The pin layer is a class, not an id, because two boards cannot both
+   be #pinLayer. */
+const SURFACES = {};
+let surfaceId = 'mapSvg';
 let mapView = { x:0, y:0, w:MAP_W, h:MAP_H };
+SURFACES[surfaceId] = { view: mapView, pinScale: null };
+
+function surfaceSvg(){ return document.getElementById(surfaceId); }
+function surfacePins(){
+  const svg = surfaceSvg();
+  return svg ? svg.querySelector('.pin-layer') : null;
+}
+
+/* Park the outgoing board's zoom and pick up the incoming one's, so leaving a
+   board zoomed in does not drag that zoom onto the other one. */
+function useSurface(id){
+  SURFACES[surfaceId].view = mapView;
+  SURFACES[surfaceId].pinScale = pinScale;
+  surfaceId = id;
+  const s = SURFACES[id] ||
+    (SURFACES[id] = { view: { x:0, y:0, w:MAP_W, h:MAP_H }, pinScale: null });
+  mapView = s.view;
+  pinScale = s.pinScale;
+  return s;
+}
 // Must match tools/build_land.py: the geometry is simplified to half a pixel
 // at this zoom, so zooming past it shows the simplification rather than the
 // coast. 10m Natural Earth supports forty.
@@ -2753,8 +2932,9 @@ function clampView(){
 
 function applyView(){
   clampView();
-  document.getElementById('mapSvg')
-    .setAttribute('viewBox', `${mapView.x} ${mapView.y} ${mapView.w} ${mapView.h}`);
+  const svg = surfaceSvg();
+  if(!svg) return;
+  svg.setAttribute('viewBox', `${mapView.x} ${mapView.y} ${mapView.w} ${mapView.h}`);
   scalePins();
 }
 
@@ -2777,12 +2957,14 @@ function scalePins(force){
   // Panning does not change the scale, so there is nothing to counter.
   if(!force && k === pinScale) return;
   pinScale = k;
-  document.querySelectorAll('#pinLayer circle').forEach(c=>{
+  const layer = surfacePins();
+  if(!layer) return;
+  layer.querySelectorAll('circle').forEach(c=>{
     c.setAttribute('r', c.dataset.r * k);
   });
   // The reveal's caption has to stay legible at every zoom, so it is counter-
   // scaled like the pins rather than growing with the map.
-  document.querySelectorAll('#pinLayer text').forEach(el=>{
+  layer.querySelectorAll('text').forEach(el=>{
     el.setAttribute('font-size', el.dataset.fs * k);
     el.setAttribute('stroke-width', el.dataset.sw * k);
     el.setAttribute('y', Number(el.dataset.y) - Number(el.dataset.dy) * k);
@@ -2791,7 +2973,7 @@ function scalePins(force){
 
 /* Screen point -> world coordinate, honouring the current zoom. */
 function screenToWorld(clientX, clientY){
-  const svg = document.getElementById('mapSvg');
+  const svg = surfaceSvg();
   const rect = svg.getBoundingClientRect();
   return {
     x: mapView.x + ((clientX - rect.left) / rect.width) * mapView.w,
@@ -2812,7 +2994,7 @@ function zoomBy(factor, centreX, centreY){
 
 function addPin(lat,lng,bucket,big){
   const p = project(lat,lng);
-  const layer = document.getElementById('pinLayer');
+  const layer = surfacePins();
   const r = big ? 7 : 5;
   const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
   circle.setAttribute('cx',p.x); circle.setAttribute('cy',p.y); circle.setAttribute('r',r);
@@ -2828,7 +3010,7 @@ function addPin(lat,lng,bucket,big){
    is now a filled gold point inside a halo, captioned. */
 function addTargetPin(lat,lng,label){
   const p = project(lat,lng);
-  const layer = document.getElementById('pinLayer');
+  const layer = surfacePins();
   const ns = 'http://www.w3.org/2000/svg';
   const ring = document.createElementNS(ns,'circle');
   ring.setAttribute('cx',p.x); ring.setAttribute('cy',p.y); ring.setAttribute('r',10);
@@ -2854,7 +3036,7 @@ function addTargetPin(lat,lng,label){
 function addMapCaption(px, py, label){
   const ns = 'http://www.w3.org/2000/svg';
   const p = { x: px, y: py };
-  const layer = document.getElementById('pinLayer');
+  const layer = surfacePins();
   {
     const txt = document.createElementNS(ns, 'text');
     // Near an edge the caption would be cut off by the sheet -- a site on the
@@ -2902,7 +3084,7 @@ function addAnswerRing(lat,lng){
   ring.setAttribute('opacity','0.8');
   ring.setAttribute('vector-effect','non-scaling-stroke');
   ring.setAttribute('class','answer-ring');
-  document.getElementById('pinLayer').appendChild(ring);
+  surfacePins().appendChild(ring);
   scalePins(true);
 }
 
@@ -2921,7 +3103,7 @@ function addMissLine(fromLat, fromLng, toLat, toLng){
   line.setAttribute('stroke-dasharray','4 3');
   line.setAttribute('opacity','0.75');
   line.setAttribute('vector-effect','non-scaling-stroke');
-  document.getElementById('pinLayer').appendChild(line);
+  surfacePins().appendChild(line);
 }
 
 /* ---------- Rendering ---------- */
@@ -3172,6 +3354,7 @@ function renderHistory(){
 }
 
 function renderMapForRound(){
+  useBoard(dailyBoard);
   buildMap();
   currentGuesses().forEach((g,i)=>{
     // The pin stands where the player put it. A guess saved before free
@@ -3403,7 +3586,7 @@ function isoAt(x, y){
    pixels, which is tight enough that it never hijacks a tap on open sea. */
 const SNAP_PX = 10;
 function countryNear(x, y){
-  const perPx = mapView.w / (document.getElementById('mapSvg').getBoundingClientRect().width || 1);
+  const perPx = mapView.w / (surfaceSvg().getBoundingClientRect().width || 1);
   const limit = SNAP_PX * perPx;
   let best = null, bestD = Infinity;
   for(const c of COUNTRIES){
@@ -3427,8 +3610,12 @@ function countryByIso(iso){
 /* Pan by dragging, zoom by wheel or pinch. panMoved distinguishes a drag from
    a tap, so a drag is never mistaken for a click on the map. */
 let panMoved = false;
-(function setupMapGestures(){
-  const svg = document.getElementById('mapSvg');
+function setupMapGestures(svgId, zoomIds){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  // Every gesture acts on the board it happened on, whichever board the rest
+  // of the app last drew to.
+  const on = (fn)=> (...a)=>{ useSurface(svgId); return fn(...a); };
   const pointers = new Map();
   let last = null, pinchStart = 0, startW = 0;
   // Measured once per gesture. getBoundingClientRect forces the browser to
@@ -3437,7 +3624,7 @@ let panMoved = false;
   let rect = null;
   const svgRect = ()=> (rect || (rect = svg.getBoundingClientRect()));
 
-  svg.addEventListener('pointerdown', e=>{
+  svg.addEventListener('pointerdown', on(e=>{
     pointers.set(e.pointerId, e);
     panMoved = false;
     rect = null;
@@ -3448,9 +3635,9 @@ let panMoved = false;
       startW = mapView.w;
     }
     svg.setPointerCapture(e.pointerId);
-  });
+  }));
 
-  svg.addEventListener('pointermove', e=>{
+  svg.addEventListener('pointermove', on(e=>{
     if(!pointers.has(e.pointerId)) return;
     pointers.set(e.pointerId, e);
     if(pointers.size === 2 && pinchStart){
@@ -3481,28 +3668,28 @@ let panMoved = false;
       }
       last = { x:e.clientX, y:e.clientY };
     }
-  });
+  }));
 
-  const release = e=>{
+  const release = on(e=>{
     pointers.delete(e.pointerId);
     if(pointers.size < 2) pinchStart = 0;
     if(pointers.size === 0){ last = null; rect = null; applyView(); }
-  };
+  });
   svg.addEventListener('pointerup', release);
   svg.addEventListener('pointercancel', release);
 
-  svg.addEventListener('wheel', e=>{
+  svg.addEventListener('wheel', on(e=>{
     e.preventDefault();
     const w = screenToWorld(e.clientX, e.clientY);
     zoomBy(e.deltaY < 0 ? 1.25 : 1/1.25, w.x, w.y);
-  }, { passive:false });
+  }), { passive:false });
 
-  document.getElementById('zoomIn').onclick  = ()=> zoomBy(1.6);
-  document.getElementById('zoomOut').onclick = ()=> zoomBy(1/1.6);
-  document.getElementById('zoomReset').onclick = ()=>{
-    mapView = { x:0, y:0, w:MAP_W, h:MAP_H }; applyView();
-  };
-})();
+  const btn = (id, fn)=>{ const b = document.getElementById(id); if(b) b.onclick = on(fn); };
+  btn(zoomIds[0], ()=> zoomBy(1.6));
+  btn(zoomIds[1], ()=> zoomBy(1/1.6));
+  btn(zoomIds[2], ()=>{ mapView = { x:0, y:0, w:MAP_W, h:MAP_H }; applyView(); });
+}
+setupMapGestures('mapSvg', ['zoomIn', 'zoomOut', 'zoomReset']);
 
 function renderFinal(){
   const T = t();
@@ -4022,20 +4209,44 @@ function submitGuess(input){
    A tap proposes and the button commits. With three guesses a round and a map
    only 375px wide, a stray tap that spent a guess outright would be the most
    annoying thing in the game. */
-let pendingGuess = null;
+/* ---------- Boards ----------
+   Pointing at the map is the same act in the daily game and in Heritle 3D, so
+   it is the same code. A board says which <svg> to draw on, which confirm bar
+   belongs to it, whether it is still taking guesses, and what to do with one.
+   Two pin-drops would have drifted apart within a month. */
+const dailyBoard = {
+  surface: 'mapSvg',
+  pending: null,
+  els: { pending:'pendingGuess', name:'pendingName',
+         confirm:'confirmGuess', hint:'tapHint' },
+  finished: ()=> roundFinished() || state.round >= N_ROUNDS,
+  submit:   (spot)=> submitGuess(spot),
+  redraw:   ()=> renderMapForRound()
+};
+let board = dailyBoard;
+let pendingGuess = null;          // the current board's, parked on a swap
+
+function useBoard(b){
+  if(b === board) return b;
+  board.pending = pendingGuess;
+  board = b;
+  pendingGuess = b.pending || null;
+  useSurface(b.surface);
+  return b;
+}
 
 function clearPending(){
   pendingGuess = null;
-  const p = document.getElementById('pendingGuess');
+  const p = document.getElementById(board.els.pending);
   if(p) p.hidden = true;
   renderTapHint();
 }
 
 function renderTapHint(){
-  const hint = document.getElementById('tapHint');
+  const hint = document.getElementById(board.els.hint);
   if(!hint) return;
   const T = t();
-  if(roundFinished()){ hint.textContent = ''; return; }
+  if(board.finished()){ hint.textContent = ''; return; }
   hint.textContent = pendingGuess ? T.tapAgain : T.tapPrompt;
 }
 
@@ -4050,11 +4261,11 @@ function placeLabel(spot){
 
 function showPending(spot){
   pendingGuess = spot;
-  const box = document.getElementById('pendingGuess');
+  const box = document.getElementById(board.els.pending);
   // Which country the pin is standing in, so a placement is never a mystery --
   // and "open water" said plainly rather than a blank.
-  document.getElementById('pendingName').textContent = placeLabel(spot);
-  document.getElementById('confirmGuess').textContent = t().confirmGuess;
+  document.getElementById(board.els.name).textContent = placeLabel(spot);
+  document.getElementById(board.els.confirm).textContent = t().confirmGuess;
   box.hidden = false;
   renderTapHint();
   // On a phone the confirm bar sits below the map, off the bottom of the
@@ -4069,7 +4280,7 @@ function unproject(x, y){
 }
 
 function handleMapTap(evt){
-  if(roundFinished() || state.round >= N_ROUNDS) return;
+  if(board.finished()) return;
   if(panMoved) return;                       // that was a drag, not a tap
   const w = screenToWorld(evt.clientX, evt.clientY);
   // The pin goes exactly where the finger went. The country is read off the
@@ -4080,9 +4291,25 @@ function handleMapTap(evt){
   let country = countryByIso(isoAt(w.x, w.y));
   if(!country) country = countryNear(w.x, w.y);
   showPending({ lat: here.lat, lng: here.lng, country: country || null });
-  renderMapForRound();                        // draw the provisional pin
+  board.redraw();                             // draw the provisional pin
 }
-document.getElementById('mapSvg').addEventListener('click', handleMapTap);
+
+/* Both boards are wired the same way: name the board, then the shared flow. A
+   synthetic click carries no pointerdown before it, so the board is named here
+   as well as in the gesture handlers. */
+function wireBoard(b, svgId){
+  const svg = document.getElementById(svgId);
+  if(svg) svg.addEventListener('click', (e)=>{ useBoard(b); handleMapTap(e); });
+  const go = document.getElementById(b.els.confirm);
+  if(go) go.addEventListener('click', ()=>{
+    useBoard(b);
+    if(!pendingGuess) return;
+    const spot = pendingGuess;
+    clearPending();
+    b.submit(spot);
+  });
+}
+wireBoard(dailyBoard, 'mapSvg');
 
 // stopPropagation, or the click carries on to the photo box behind them and
 // opens the lightbox -- which is what paging through the photographs on a
@@ -4092,13 +4319,6 @@ document.getElementById('photoPrev').addEventListener('click', e=>{
 });
 document.getElementById('photoNext').addEventListener('click', e=>{
   e.stopPropagation(); stepPhoto(1);
-});
-
-document.getElementById('confirmGuess').addEventListener('click', ()=>{
-  if(!pendingGuess) return;
-  const spot = pendingGuess;
-  clearPending();
-  submitGuess(spot);
 });
 
 /* ---------- Language slider ---------- */
@@ -4126,8 +4346,11 @@ function renderNav(){
   const T = t();
   const nav = document.getElementById('nav');
   nav.innerHTML = '';
+  // Heritle 3D sits at the end and is not announced anywhere else: it is
+  // reachable, not promoted, until it has been lived with for a while.
   [['Game',T.navGame],['Collection',T.navCollection],
-   ['Passport',T.navPassport],['Archive',T.navArchive]].forEach(([id,label])=>{
+   ['Passport',T.navPassport],['Archive',T.navArchive],
+   ['Relics',T.navRelics]].forEach(([id,label])=>{
     const b = document.createElement('button');
     b.textContent = label;
     if(id === currentView) b.classList.add('active');
@@ -4138,13 +4361,17 @@ function renderNav(){
 
 function showView(id){
   currentView = id;
-  ['Game','Collection','Passport','Archive'].forEach(v=>{
+  // Each board keeps its own zoom and its own half-made guess, so leaving one
+  // tab and coming back finds it as it was left.
+  useBoard(id === 'Relics' ? relicBoard : dailyBoard);
+  ['Game','Collection','Passport','Archive','Relics'].forEach(v=>{
     document.getElementById('view'+v).classList.toggle('active', v===id);
   });
   renderNav();
   if(id==='Collection') renderCollection();
   if(id==='Passport')   renderPassport();
   if(id==='Archive')    renderArchive();
+  if(id==='Relics')     renderRelics();
 }
 
 /* One catalogue card. Clickable, because the card is the only place a player
@@ -4572,6 +4799,382 @@ function renderArchive(){
   });
 }
 
+/* ---------- Heritle 3D ----------
+   A separate game from the daily one, and separate in every way that matters:
+   its own pool, its own scoring, its own progress, its own key in storage. It
+   never touches the day's score or the passport. Monuments here stand in their
+   own right rather than as inscriptions -- the Eiffel Tower is not inscribed
+   and belongs anyway, because this mode is about looking at a building in
+   three dimensions, not about the lists.
+
+   One monument is three guesses on the same monument: the photograph, then the
+   model, then the model with a hint. Finishing one opens the next in its
+   group, so the repertoire is walked rather than dealt.
+
+   On anonymity: the asset filenames, the mesh names inside every .glb and the
+   markup before the reveal all avoid the monument's name, so nothing gives the
+   answer away in passing. It is not secrecy -- the coordinates have to reach
+   the browser for the game to work at all, exactly as they do in the daily
+   game -- but a player is never shown the answer before they have earned it. */
+const RELIC_GUESSES = 3;
+const RELIC_POINTS = 100;
+// The daily game's curve, truncated to three: a monument found on the first
+// look is worth more than one cornered on the third.
+const RELIC_CREDIT = [1, 0.85, 0.72];
+const RELIC_KEY = 'heritle-relics';
+
+let RELICS = [];          // in repertoire order
+let RELIC_GROUPS = [];
+let relicProgress = lsJSON(RELIC_KEY, {}) || {};
+/* The 3D viewer is vendored rather than fetched from a CDN, so the site keeps
+   its property of running no third-party code it did not ship. It is loaded on
+   demand, the first time a monument is opened, so the daily game never pays
+   for a component it does not use -- and only when relics.json names it, so a
+   build where the bundle has not been vendored yet makes no request at all
+   rather than 404ing on every page load. */
+let RELIC_VIEWER = null;
+let viewerState = 'none';          // none | loading | ready | absent
+function loadViewer(){
+  if(!RELIC_VIEWER || viewerState !== 'none') return;
+  viewerState = 'loading';
+  const el = document.createElement('script');
+  el.type = 'module';
+  el.src = RELIC_VIEWER;
+  el.onerror = ()=>{ viewerState = 'absent'; if(relicRound) relicRenderPlay(); };
+  el.onload  = ()=>{
+    viewerState = 'ready';
+    // The custom element is defined by the module, which runs after onload.
+    if(window.customElements){
+      customElements.whenDefined('model-viewer')
+        .then(()=>{ if(relicRound) relicRenderPlay(); });
+    }
+  };
+  document.head.appendChild(el);
+}
+if(typeof relicProgress !== 'object' || Array.isArray(relicProgress)) relicProgress = {};
+
+/* The monument being played, held in memory only. Progress is written on the
+   round's last guess, not before, so an abandoned attempt costs nothing. */
+let relicRound = null;
+
+function saveRelics(){ lsSet(RELIC_KEY, JSON.stringify(relicProgress)); }
+function relicById(id){ return RELICS.find(r => r.id === id) || null; }
+function relicDone(id){ return !!(relicProgress[id] && relicProgress[id].done); }
+
+/* Unlocked means: the first of its group, or the one before it is finished.
+   Groups are all open from the start -- a player who wants Asia should not
+   have to grind through Europe to reach it. */
+function relicUnlocked(id){
+  for(const g of RELIC_GROUPS){
+    const i = g.relics.indexOf(id);
+    if(i < 0) continue;
+    return i === 0 || relicDone(g.relics[i - 1]);
+  }
+  return false;
+}
+
+async function loadRelics(){
+  try{
+    const res = await fetch('data/relics.json', { cache:'no-store' });
+    if(!res.ok) throw new Error('relics ' + res.status);
+    const data = await res.json();
+    RELIC_VIEWER = typeof data.viewer === 'string' ? data.viewer : null;
+    const byId = new Map((data.relics || []).map(r => [r.id, r]));
+    RELIC_GROUPS = (data.groups || [])
+      .map(g => ({ ...g, relics: (g.relics || []).filter(id => byId.has(id)) }))
+      .filter(g => g.relics.length);
+    // Repertoire order is group order, so "the next one" means the same thing
+    // to the code and to the player.
+    RELICS = RELIC_GROUPS.flatMap(g => g.relics.map(id => byId.get(id)));
+  }catch(e){
+    // The tab simply says there is nothing here yet rather than throwing: this
+    // mode is a soft launch and must never break the daily game.
+    RELICS = []; RELIC_GROUPS = [];
+    console.warn('Heritle 3D: no repertoire loaded (' + e.message + ')');
+  }
+  if(currentView === 'Relics') renderRelics();
+}
+
+/* ---- the board ---- */
+const relicBoard = {
+  surface: 'relicMap',
+  pending: null,
+  els: { pending:'relicPending', name:'relicPendingName',
+         confirm:'relicConfirm', hint:'relicTapHint' },
+  finished: ()=> !relicRound || relicRound.status !== null,
+  submit:   (spot)=> relicGuess(spot),
+  redraw:   ()=> relicDrawMap()
+};
+
+function relicTarget(){ return relicRound && relicById(relicRound.id); }
+
+function relicDrawMap(){
+  useBoard(relicBoard);
+  buildMap();
+  const tg = relicTarget();
+  if(!tg) return;
+  (relicRound.guesses || []).forEach((g, i) =>
+    addPin(g.lat, g.lng, g.bucket, i === relicRound.guesses.length - 1));
+  if(pendingGuess && relicRound.status === null){
+    addPin(pendingGuess.lat, pendingGuess.lng, 'pending', true);
+  }
+  if(relicRound.status !== null){
+    const near = (relicRound.guesses || []).reduce(
+      (b, g) => (!b || g.km < b.km) ? g : b, null);
+    if(near && relicRound.status !== 'solved'){
+      addMissLine(near.lat, near.lng, tg.lat, tg.lng);
+    }
+    addTargetPin(tg.lat, tg.lng, t().siteHere);
+  }
+  relicReadout();
+}
+
+function relicReadout(){
+  const T = t(), el = document.getElementById('relicReadout');
+  if(!el) return;
+  const gs = (relicRound && relicRound.guesses) || [];
+  if(!gs.length){
+    el.className = 'map-readout';
+    el.style.removeProperty('--lg-accent');
+    el.textContent = T.readoutStart;
+    return;
+  }
+  const last = gs[gs.length - 1];
+  const right = last.bucket === 'correct';
+  const left = Math.max(0, RELIC_GUESSES - gs.length);
+  const tag = (ok, label) =>
+    `<span class="hist-tag ${ok ? 'ok' : 'no'}">${ok ? '✓' : '✗'} ${label}</span>`;
+  const pips = Array.from({ length: RELIC_GUESSES }, (_, i) =>
+    `<span class="lg-pip ${i < gs.length ? (right && i === gs.length-1 ? 'hit' : 'used') : 'free'}"
+           aria-hidden="true">${i < gs.length ? (right && i === gs.length-1 ? '✓' : '✗') : ''}</span>`
+  ).join('');
+  el.className = 'map-readout last-guess' + (right ? ' solved' : '');
+  el.style.setProperty('--lg-accent', heatColorVar[last.bucket]);
+  el.innerHTML =
+    `<span class="lg-verdict ${right ? 'ok' : 'no'}"><b>${right
+       ? '✓ ' + (last.via === 'near' ? T.nearEnough(last.km) : T.rightCountry)
+       : '✗ ' + T.wrongCountry + (left > 0 ? ' — ' + T.tryAgain : '')}</b></span>
+     <span class="lg-head">
+       <span class="hist-dot" data-glyph="${heatGlyph[last.bucket]||''}"
+             style="background:${heatColorVar[last.bucket]}"></span>
+       <b>${guessName(last)}</b>
+     </span>
+     ${right ? '' : `<span class="lg-dist">${T.readout(last.km, dirLabel(last.bearing))}</span>`}
+     <span class="hist-tags">${tag(right, T.spotLabel)}${tag(last.contOk, T.clueLabels[0])}</span>
+     <span class="lg-tries"><span class="lg-pips">${pips}</span>
+       <span>${T.relic.tries(gs.length, RELIC_GUESSES)}</span></span>`;
+}
+
+/* Same rule as the daily game: the right country, or near enough to the
+   monument that the border stopped mattering. */
+function relicGuess(spot){
+  const tg = relicTarget();
+  if(!tg || relicRound.status !== null) return;
+  if(relicRound.guesses.some(g => Math.abs(g.lat - spot.lat) < 0.02
+                               && Math.abs(g.lng - spot.lng) < 0.02)) return;
+  const country = spot.country || null;
+  const km = Math.round(haversineKm(spot.lat, spot.lng, tg.lat, tg.lng));
+  const right = !!(country && tg.iso && country.iso === tg.iso);
+  const ok = right || km <= NEAR_KM;
+  relicRound.guesses.push({
+    lat: spot.lat, lng: spot.lng,
+    names: country ? country.names : null,
+    km, bearing: bearing(spot.lat, spot.lng, tg.lat, tg.lng),
+    bucket: ok ? 'correct' : heatBucket(km),
+    via: ok ? (right ? 'country' : 'near') : null,
+    contOk: ok || !!(country && contCodeOf(country) === tg.cont),
+    regionOk: ok
+  });
+  if(ok){
+    relicRound.status = 'solved';
+    relicRound.score = RELIC_POINTS * RELIC_CREDIT[
+      Math.min(relicRound.guesses.length, RELIC_CREDIT.length) - 1];
+  } else if(relicRound.guesses.length >= RELIC_GUESSES){
+    relicRound.status = 'failed';
+    relicRound.score = RELIC_POINTS * MISS_CEILING *
+      relicRound.guesses.reduce((b, g) => Math.max(b, closeness(g)), 0);
+  }
+  if(relicRound.status !== null) relicFinish();
+  relicRenderPlay();
+}
+
+/* Only a finished attempt is written, and a later attempt never lowers what
+   was already earned -- replaying to see the model again should not cost
+   anything. */
+function relicFinish(){
+  const prev = relicProgress[relicRound.id] || {};
+  const score = Math.round(relicRound.score);
+  relicProgress[relicRound.id] = {
+    done: true,
+    solved: relicRound.status === 'solved' || !!prev.solved,
+    guesses: relicRound.guesses.length,
+    km: relicRound.guesses.reduce((b, g) => Math.min(b, g.km), Infinity),
+    score: Math.max(score, prev.score || 0),
+    at: prev.at || Date.now()
+  };
+  saveRelics();
+}
+
+/* ---- rendering ---- */
+function relicStage(){
+  return Math.min((relicRound ? relicRound.guesses.length : 0) + 1, RELIC_GUESSES);
+}
+
+function relicOpen(id){
+  if(!relicUnlocked(id)) return;
+  loadViewer();                    // on demand, and only if there is one
+  relicRound = { id, guesses: [], status: null, score: 0 };
+  relicBoard.pending = null;
+  useBoard(relicBoard);
+  pendingGuess = null;
+  document.getElementById('relicIndex').hidden = true;
+  document.getElementById('relicIntro').hidden = true;
+  document.getElementById('relicPlay').hidden = false;
+  relicRenderPlay();
+}
+
+function relicClose(){
+  relicRound = null;
+  relicBoard.pending = null;
+  pendingGuess = null;
+  document.getElementById('relicPlay').hidden = true;
+  document.getElementById('relicIndex').hidden = false;
+  document.getElementById('relicIntro').hidden = false;
+  renderRelics();
+}
+
+/* The 3D view, if the component is here. The bundle is vendored rather than
+   fetched from a CDN, and if it is missing the mode degrades to photograph and
+   map rather than showing a blank frame. */
+function relicModel(tg, free){
+  const box = document.getElementById('relicModelBox');
+  if(!box) return;
+  box.hidden = false;
+  const T = t();
+  if(!window.customElements || !customElements.get('model-viewer')){
+    box.classList.add('off');
+    box.dataset.relic = '';
+    box.innerHTML = `<div class="relic-modeloff">${T.relic.modelOff}</div>`;
+    return;
+  }
+  box.classList.remove('off');
+  // Rebuilt only when the monument changes, or every redraw would restart the
+  // load and throw away however the player had turned it.
+  if(box.dataset.relic !== tg.id){
+    box.dataset.relic = tg.id;
+    box.innerHTML =
+      `<model-viewer src="${tg.model}" alt="" camera-controls touch-action="pan-y"
+                     shadow-intensity="0.7" exposure="0.9" loading="eager"></model-viewer>
+       <span class="relic-modelhint">${T.relic.modelHint}</span>`;
+  }
+  const mv = box.querySelector('model-viewer');
+  if(mv){
+    // Held back until the reveal: a free orbit under the monument gives away
+    // more than the puzzle means to.
+    if(free) mv.removeAttribute('max-camera-orbit');
+    else mv.setAttribute('max-camera-orbit', 'Infinity 90deg auto');
+  }
+}
+
+function relicRenderPlay(){
+  const tg = relicTarget();
+  if(!tg) return;
+  const T = t();
+  useBoard(relicBoard);
+  const stage = relicStage();
+  const over = relicRound.status !== null;
+
+  document.getElementById('relicBack').textContent = '← ' + T.relic.back;
+  document.getElementById('relicStageLine').innerHTML = over ? '' :
+    `<b>${T.relic.stage(stage)}</b><span>${T.relic.stageName[stage-1]}</span>`;
+
+  const img = document.getElementById('relicImg');
+  img.src = tg.image;
+  img.alt = '';                       // never the name, not even to a reader
+
+  const box = document.getElementById('relicModelBox');
+  if(stage >= 2 || over) relicModel(tg, over);
+  else { box.hidden = true; box.innerHTML = ''; box.dataset.relic = ''; }
+
+  const hint = document.getElementById('relicHint');
+  if(stage >= 3 && !over){
+    hint.hidden = false;
+    hint.innerHTML = `<b>${T.relic.hintLabel}</b>${(tg.hint && (tg.hint[lang] || tg.hint.en)) || ''}`;
+  } else hint.hidden = true;
+
+  relicDrawMap();
+  renderTapHint();
+  relicResult();
+}
+
+function relicResult(){
+  const el = document.getElementById('relicResult');
+  const tg = relicTarget();
+  if(!el || !tg) return;
+  if(!relicRound || relicRound.status === null){ el.hidden = true; return; }
+  const T = t();
+  const solved = relicRound.status === 'solved';
+  const best = relicRound.guesses.reduce((b, g) => (!b || g.km < b.km) ? g : b, null);
+  const cr = tg.credit || {};
+  const line = (what, c) => !c || !c.author ? '' :
+    `${what}: ${c.source_url ? `<a href="${c.source_url}" target="_blank" rel="noopener noreferrer">${c.author}</a>` : c.author}`
+    + (c.license ? ` · ${c.license}` : '');
+  el.hidden = false;
+  el.innerHTML = `
+    <h3>${solved ? T.relic.solvedTitle : T.relic.missedTitle}</h3>
+    <p>${T.relic.answerWas} <b>${tg.names[lang] || tg.names.en}</b><br>
+       <span style="color:var(--ink-dim)">${(tg.country && (tg.country[lang] || tg.country.en)) || ''}</span></p>
+    <p>${solved ? T.relic.solvedIn(relicRound.guesses.length)
+                : T.relic.within(best ? best.km : 0)}
+       · <b>${T.relic.points(Math.round(relicRound.score))}</b></p>
+    <p>${(tg.blurb && (tg.blurb[lang] || tg.blurb.en)) || ''}</p>
+    <p class="relic-credit">${line(T.relic.credit, cr.model)}${
+      cr.model && cr.image ? '<br>' : ''}${line('Photo', cr.image)}</p>
+    <button class="btn" id="relicNext">${T.relic.back}</button>`;
+  const btn = document.getElementById('relicNext');
+  if(btn) btn.onclick = relicClose;
+}
+
+function renderRelics(){
+  const T = t();
+  document.getElementById('relicIntro').textContent = T.relic.intro;
+  const host = document.getElementById('relicIndex');
+  if(relicRound){ relicRenderPlay(); return; }
+  if(!RELICS.length){ host.innerHTML = ''; return; }
+  host.innerHTML = RELIC_GROUPS.map(g => {
+    const done = g.relics.filter(relicDone).length;
+    const cards = g.relics.map(id => {
+      const r = relicById(id);
+      const open = relicUnlocked(id), fin = relicDone(id);
+      const p = relicProgress[id];
+      const state = !open ? T.relic.locked
+                  : fin ? (p && p.solved ? T.relic.solved : T.relic.missed)
+                  : T.relic.open;
+      // A locked card shows no photograph worth reading and no name: both are
+      // clues, and the first of them is the whole of guess one.
+      return `<button class="relic-card${open ? '' : ' locked'}${
+                fin && p && p.solved ? ' solved' : ''}"
+                data-relic="${id}"${open ? '' : ` title="${T.relic.lockedHint}" disabled`}>
+        <img src="${r.image}" alt="" loading="lazy">
+        <span class="relic-face">
+          <span class="relic-name">${fin ? (r.names[lang] || r.names.en) : '—'}</span>
+          <span class="relic-state">${state}${
+            fin && p ? ` · ${T.relic.points(p.score)}` : ''}</span>
+        </span></button>`;
+    }).join('');
+    return `<section class="relic-group">
+      <h3>${g.names[lang] || g.names.en}<span>${T.relic.progress(done, g.relics.length)}</span></h3>
+      <div class="relic-grid">${cards}</div></section>`;
+  }).join('');
+  host.querySelectorAll('[data-relic]').forEach(b => {
+    b.onclick = ()=> relicOpen(b.dataset.relic);
+  });
+}
+
+wireBoard(relicBoard, 'relicMap');
+setupMapGestures('relicMap', ['relicZoomIn', 'relicZoomOut', 'relicZoomReset']);
+document.getElementById('relicBack').addEventListener('click', relicClose);
+
 /* ---------- Another app's browser ----------
    Instagram, Facebook and the rest open links in a webview of their own, with
    its own storage. So a player who taps the link in a bio is not in the
@@ -4706,6 +5309,10 @@ function pruneUnreachable(){
 // Both in parallel: the map geometry is independent of the dataset, and
 // neither blocks the other. loadLand never rejects -- a missing file falls
 // back to the built-in outline -- so the game still starts if it is absent.
+// The 3D repertoire loads on its own and is never awaited: it is a separate
+// game, and a slow or missing relics.json must not hold up the daily one.
+loadRelics();
+
 Promise.all([loadDataset(), loadLand()]).then(()=>{
   pruneUnreachable();
   applyColorblind();
