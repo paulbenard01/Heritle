@@ -32,7 +32,13 @@ def read(urls, timeout_ms=60_000):
             print(f"  {url}")
             print("=" * 68)
             try:
-                page.goto(url, wait_until="networkidle", timeout=timeout_ms)
+                # Not networkidle. A help centre that keeps a connection open
+                # never goes idle, so waiting for idle waits for the timeout
+                # and then reports the page as unreadable -- which is a
+                # different thing from a page that would not load.
+                page.goto(url, wait_until="domcontentloaded",
+                          timeout=timeout_ms)
+                page.wait_for_timeout(3000)         # let the text render
                 text = page.inner_text("body")
             except Exception as exc:                        # noqa: BLE001
                 print(f"  !! could not read: {exc}")
