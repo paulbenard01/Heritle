@@ -1,0 +1,41 @@
+name: Survey 360 panoramas
+
+# Does Commons actually hold 360 panoramas of heritage sites, and for how many
+# of them? That decides whether Heritle 3D becomes Heritle 360 and whether it
+# can reach two hundred places. The sandbox this is written in cannot reach
+# Commons, so a runner asks.
+#
+# Nothing is downloaded and nothing is committed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: 'How many sites to survey (spread across fame tiers)'
+        default: '45'
+      names:
+        description: 'Or: comma-separated site names, instead of a sample'
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ask Commons
+        env:
+          SAMPLE: ${{ inputs.sample }}
+          NAMES: ${{ inputs.names }}
+        run: |
+          set -uo pipefail
+          if [ -n "${NAMES}" ]; then
+            python tools/survey_panoramas.py --names "${NAMES}"
+          else
+            python tools/survey_panoramas.py --sample "${SAMPLE:-45}"
+          fi
