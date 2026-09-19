@@ -31,20 +31,52 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Is the token there at all
+      # A secret that arrives empty is the commonest way this fails, and
+      # "not set" does not say which of the four usual causes it was. So each
+      # likely place is probed by name and reported present or absent. A
+      # missing secret reference is an empty string rather than an error, so
+      # probing costs nothing. Only lengths and first characters are printed.
+      - name: Where is the token
         env:
-          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+          A: ${{ secrets.MAPILLARY_TOKEN }}
+          B: ${{ secrets.MAPILLARY_ACCESS_TOKEN }}
+          C: ${{ secrets.MAPILLARY }}
+          D: ${{ vars.MAPILLARY_TOKEN }}
+          E: ${{ secrets.MAPILARY_TOKEN }}
         run: |
           set -uo pipefail
-          if [ -z "${MAPILLARY_TOKEN:-}" ]; then
-            echo "MAPILLARY_TOKEN is not set as a repository secret."
-            echo "Add the Mapillary *access token* (it begins MLY|) under"
-            echo "Settings -> Secrets and variables -> Actions."
+          show () {
+            if [ -n "${2:-}" ]; then
+              echo "  FOUND  $1  (${#2} chars, starts '${2:0:4}')"
+            else
+              echo "  empty  $1"
+            fi
+          }
+          echo "looking for the token:"
+          show "secrets.MAPILLARY_TOKEN        " "${A:-}"
+          show "secrets.MAPILLARY_ACCESS_TOKEN " "${B:-}"
+          show "secrets.MAPILLARY              " "${C:-}"
+          show "vars.MAPILLARY_TOKEN           " "${D:-}"
+          show "secrets.MAPILARY_TOKEN (typo)  " "${E:-}"
+          if [ -z "${A:-}" ]; then
+            echo
+            echo "Nothing under secrets.MAPILLARY_TOKEN. The usual causes:"
+            echo "  1. it went under the Variables tab, not Secrets"
+            echo "  2. it went under Dependabot or Codespaces secrets, not Actions"
+            echo "  3. the name differs (see which line above says FOUND)"
+            echo "  4. it was added to a different repository"
+            echo
+            echo "The right place is:"
+            echo "  Settings -> Secrets and variables -> Actions"
+            echo "  -> Repository secrets -> New repository secret"
+            echo "  Name: MAPILLARY_TOKEN   Value: the access token, begins MLY|"
             exit 1
           fi
-          # Never the value, only its shape: enough to tell an access token
-          # from a client secret pasted by mistake.
-          echo "token present, ${#MAPILLARY_TOKEN} characters, starts '${MAPILLARY_TOKEN:0:4}'"
+          case "${A}" in
+            MLY*) echo "shape looks like an access token" ;;
+            *)    echo "warning: does not begin MLY|. If this is the client"
+                  echo "secret, the survey will return nothing." ;;
+          esac
 
       - name: What a response actually contains
         env:
