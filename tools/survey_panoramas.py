@@ -43,13 +43,33 @@ REFUSE = ("noncommercial", "nonderiv", "noderiv")
 STOP = {"the", "of", "and", "national", "park", "historic", "centre", "center",
         "city", "town", "old", "site", "sites", "cathedral", "church", "castle",
         "palace", "temple", "monastery", "area", "region", "valley", "island",
-        "islands", "great", "new", "saint", "st", "de", "la", "le", "du", "des"}
+        "islands", "great", "new", "saint", "st", "de", "la", "le", "du", "des",
+        # Geographic generics. "Omo River" reduced to "river", which matches
+        # every river on Commons; a word that names a kind of place cannot
+        # identify one.
+        "river", "mountain", "mountains", "lake", "lakes", "forest", "forests",
+        "bay", "coast", "rock", "rocks", "stone", "hill", "hills", "sea",
+        "desert", "reserve", "ruins", "tomb", "tombs", "fort", "fortress",
+        "bridge", "museum", "history", "historical", "garden", "gardens",
+        "landscape", "cultural", "ancient", "kingdom", "country"}
 
 
 def keywords(name):
-    """The distinctive words in a site's name."""
+    """The distinctive words in a site's name.
+
+    Long words first, and short ones as a fallback rather than not at all.
+    "M'zab" cleans to "m zab", both under four letters, so the first version
+    returned no keywords -- and an empty list turned the guard off entirely.
+    Commons duly offered M'zab a 1.3 GB panorama of the Pfaffen and another of
+    the Bälmeten, both Swiss mountains, and the survey counted them as
+    Algerian.
+    """
     cleaned = "".join(c if c.isalnum() or c.isspace() else " " for c in name.lower())
-    return [w for w in cleaned.split() if len(w) > 3 and w not in STOP]
+    words = cleaned.split()
+    keys = [w for w in words if len(w) > 3 and w not in STOP]
+    if keys:
+        return keys
+    return [w for w in words if len(w) > 1 and w not in STOP]
 
 
 def about(title, name):
@@ -65,7 +85,12 @@ def about(title, name):
     """
     keys = keywords(name)
     if not keys:
-        return True                     # nothing distinctive to test against
+        # Fail closed. "Nothing distinctive to test against" is a reason to
+        # refuse a match, not to wave it through -- the guard exists precisely
+        # for the cases it cannot check. This undercounts a handful of sites
+        # whose names are entirely generic, and undercounting is the safe
+        # direction for a number a decision rests on.
+        return False
     low = title.lower()
     return any(k in low for k in keys)
 
