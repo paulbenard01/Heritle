@@ -34,10 +34,12 @@ first image is cached, not after.
 """
 import argparse
 import json
+import math
 import os
 import random
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -54,26 +56,73 @@ def bbox(lat, lng, metres=RADIUS_M):
     with the cosine of the latitude, which matters for a site in Svalbard and
     not at all for one in Kenya. Cheap to do properly, so do it properly.
     """
-    import math
     dlat = metres / 111_000.0
     dlng = metres / (111_000.0 * max(0.05, math.cos(math.radians(lat))))
     return f"{lng - dlng},{lat - dlat},{lng + dlng},{lat + dlat}"
 
 
-def fetch(token, lat, lng, limit=PER_SITE, fields=FIELDS):
+class ApiError(Exception):
+    """Carries what the server said, not just the status line.
+
+    A bare "HTTP Error 500" is the least useful thing a client can report: the
+    body normally names the offending parameter. Throwing it away turns a
+    two-minute fix into guesswork.
+    """
+
+
+def fetch(token, lat, lng, limit=PER_SITE, fields=FIELDS, metres=RADIUS_M):
     params = {"access_token": token, "fields": fields,
-              "bbox": bbox(lat, lng), "limit": str(limit)}
+              "bbox": bbox(lat, lng, metres), "limit": str(limit)}
     url = GRAPH + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "heritle-survey"})
-    with urllib.request.urlopen(req, timeout=60) as fh:
-        return json.load(fh)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as fh:
+            return json.load(fh)
+    except urllib.error.HTTPError as exc:
+        try:
+            body = exc.read().decode("utf-8", "replace")[:400]
+        except Exception:                           # noqa: BLE001
+            body = "(no body)"
+        # The token is in the query string, so the URL never gets printed.
+        raise ApiError(f"HTTP {exc.code}: {body}") from None
 
 
 def dump_schema(token):
-    """What a response really looks like, before anything is filtered on it."""
+    """What a response really looks like, before anything is filtered on it.
+
+    Fields are added one at a time. Mapillary answers an unknown or
+    wrongly-shaped field with a 500 rather than a 400, so the only way to find
+    which one it dislikes is to walk up from a request that certainly works.
+    """
+    probes = ["id", "id,is_pano", "id,is_pano,geometry",
+              "id,is_pano,geometry,captured_at",
+              "id,is_pano,geometry,captured_at,compass_angle",
+              "id,is_pano,geometry,captured_at,compass_angle,thumb_2048_url",
+              FIELDS]
+    good = None
+    print("--- which fields the API accepts ---")
+    for fields in probes:
+        try:
+            fetch(token, 51.5080, -0.1281, limit=1, fields=fields)
+            good = fields
+            print(f"  ok    {fields}")
+        except ApiError as exc:
+            print(f"  FAILS {fields}")
+            print(f"        {exc}")
+            break
+        except Exception as exc:                    # noqa: BLE001
+            print(f"  FAILS {fields}  ({exc})")
+            break
+        time.sleep(0.3)
+    if not good:
+        print("\n  even the id-only request failed. That is the token or the"
+              " bbox, not a field.", file=sys.stderr)
+        return 1
+    print(f"\n  widest working field set: {good}\n")
+
     # Trafalgar Square: dense coverage, so a response is guaranteed.
     try:
-        data = fetch(token, 51.5080, -0.1281, limit=3)
+        data = fetch(token, 51.5080, -0.1281, limit=3, fields=good)
     except Exception as exc:                        # noqa: BLE001
         print(f"schema fetch failed: {exc}", file=sys.stderr)
         return 1
@@ -133,7 +182,8 @@ def main():
     for e in chosen:
         name = e["names"]["en"]
         try:
-            data = fetch(token, e["lat"], e["lng"], limit=PER_SITE)
+            data = fetch(token, e["lat"], e["lng"], limit=PER_SITE,
+                         metres=args.radius)
         except Exception as exc:                    # noqa: BLE001
             print(f"  t{e['tier']} {name[:42]:<42}  ! {str(exc)[:40]}")
             time.sleep(0.4)
