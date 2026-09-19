@@ -270,7 +270,7 @@ def poly_haven_hit(name, index):
     return None
 
 
-def by_continent(dataset, per, seed, verify):
+def by_continent(dataset, per, seed, verify, only=None):
     """Per-continent coverage, which is the only question left that matters.
 
     Mapillary is out: its terms require the Mapillary logo on any page that
@@ -283,10 +283,14 @@ def by_continent(dataset, per, seed, verify):
     sites = [e for e in entries if e.get("type") == "material"]
     random.Random(seed).shuffle(sites)
 
-    buckets = {c: [] for c in CONTINENTS}
+    wanted = {c: CONTINENTS[c] for c in CONTINENTS if not only or c in only}
+    buckets = {c: [] for c in wanted}
     for e in sites:
         c = e.get("continent")
-        if c in buckets and len(buckets[c]) < per:
+        # per=0 means every site in the continent: a census rather than a
+        # sample. The thin rows are the ones the pool shape depends on and the
+        # ones a sample measures worst, so they are worth counting outright.
+        if c in buckets and (per <= 0 or len(buckets[c]) < per):
             buckets[c].append(e)
 
     index = poly_haven_index()
@@ -296,7 +300,7 @@ def by_continent(dataset, per, seed, verify):
           + "\n")
 
     totals, unverifiable, candidates = {}, 0, 0
-    for code, label in CONTINENTS.items():
+    for code, label in wanted.items():
         group = buckets[code]
         if not group:
             print(f"  {label:<15} no sites in the pool")
@@ -374,6 +378,8 @@ def main():
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--by-continent", action="store_true",
                     help="coverage per continent rather than per fame tier")
+    ap.add_argument("--continents", default="",
+                    help="comma-separated codes, e.g. AF,OC (blank = all)")
     ap.add_argument("--per", type=int, default=25,
                     help="sites per continent for --by-continent")
     ap.add_argument("--no-verify", action="store_true",
@@ -382,9 +388,10 @@ def main():
                     help="print every panorama found, not just the best")
     args = ap.parse_args()
 
+    only = {c.strip().upper() for c in args.continents.split(",") if c.strip()}
     if args.by_continent:
         return by_continent(args.dataset, args.per, args.seed,
-                            not args.no_verify)
+                            not args.no_verify, only)
 
     if args.names:
         names = [n.strip() for n in args.names.split(",") if n.strip()]

@@ -19,8 +19,11 @@ on:
       by_continent:
         description: 'Coverage per continent -- the pool size, now Mapillary is out'
         default: 'false'
+      continents:
+        description: 'Limit to these codes, e.g. AF,OC (blank = all)'
+        default: ''
       per:
-        description: 'Sites per continent'
+        description: '0 for a census of every site. Sites per continent'
         default: '25'
       seed:
         description: 'Which sites get drawn. Change it to check a result held'
@@ -41,10 +44,12 @@ jobs:
         if: ${{ inputs.by_continent == 'true' }}
         env:
           PER: ${{ inputs.per }}
+          CONTINENTS: ${{ inputs.continents }}
           SEED: ${{ inputs.seed }}
         run: |
           python tools/survey_panoramas.py --by-continent \
-            --per "${PER:-25}" --seed "${SEED:-7}"
+            --per "${PER:-25}" --seed "${SEED:-7}" \
+            --continents "${CONTINENTS}"
 
       - name: Ask Commons
         if: ${{ inputs.by_continent != 'true' }}

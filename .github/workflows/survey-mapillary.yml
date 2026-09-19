@@ -24,8 +24,11 @@ on:
       by_continent:
         description: 'Hit rate per continent, to see whether spread is possible'
         default: 'false'
+      continents:
+        description: 'Limit to these codes, e.g. AF,OC (blank = all)'
+        default: ''
       per:
-        description: 'Sites per continent for the spread survey'
+        description: '0 for a census of every site. Sites per continent for the spread survey'
         default: '14'
       seed:
         description: 'Which sites get drawn. Change it to check a result held'
@@ -128,11 +131,13 @@ jobs:
         env:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
           PER: ${{ inputs.per }}
+          CONTINENTS: ${{ inputs.continents }}
           RADIUS: ${{ inputs.radius }}
           SEED: ${{ inputs.seed }}
         run: |
           python tools/survey_mapillary.py --by-continent \
-            --per "${PER:-14}" --radius "${RADIUS:-150}" --seed "${SEED:-7}"
+            --per "${PER:-14}" --radius "${RADIUS:-150}" --seed "${SEED:-7}" \
+            --continents "${CONTINENTS}"
 
       - name: Survey
         if: ${{ inputs.resolution != 'true' && inputs.by_continent != 'true' }}

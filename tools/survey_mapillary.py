@@ -284,7 +284,7 @@ CONTINENTS = {"EU": "Europe", "AS": "Asia", "AF": "Africa",
               "NA": "North America", "SA": "South America", "OC": "Oceania"}
 
 
-def by_continent(token, dataset, per, radius, seed):
+def by_continent(token, dataset, per, radius, seed, only=None):
     """Hit rate per continent, which is the question spread actually asks.
 
     The fame-tier survey said 11% overall, but an overall rate hides whether
@@ -299,15 +299,19 @@ def by_continent(token, dataset, per, radius, seed):
              if e.get("type") == "material" and e.get("lat") is not None]
     random.Random(seed).shuffle(sites)
 
-    buckets = {c: [] for c in CONTINENTS}
+    wanted = {c: CONTINENTS[c] for c in CONTINENTS if not only or c in only}
+    buckets = {c: [] for c in wanted}
     for e in sites:
         c = e.get("continent")
-        if c in buckets and len(buckets[c]) < per:
+        # per=0 means every site in the continent: a census rather than a
+        # sample. The thin rows are the ones the pool shape depends on and the
+        # ones a sample measures worst, so they are worth counting outright.
+        if c in buckets and (per <= 0 or len(buckets[c]) < per):
             buckets[c].append(e)
 
     print(f"{per} sites per continent, {radius} m around each\n")
     totals = {}
-    for code, label in CONTINENTS.items():
+    for code, label in wanted.items():
         group = buckets[code]
         if not group:
             print(f"  {label:<15} no sites in the pool")
@@ -352,6 +356,8 @@ def main():
     ap.add_argument("--schema", action="store_true")
     ap.add_argument("--by-continent", action="store_true",
                     help="hit rate per continent rather than per fame tier")
+    ap.add_argument("--continents", default="",
+                    help="comma-separated codes, e.g. AF,OC (blank = all)")
     ap.add_argument("--per", type=int, default=14,
                     help="sites per continent for --by-continent")
     ap.add_argument("--resolution", action="store_true",
@@ -370,12 +376,14 @@ def main():
               "If this is the client secret, the survey will return nothing.",
               file=sys.stderr)
 
+    only = {c.strip().upper() for c in args.continents.split(",") if c.strip()}
     if args.schema:
         return dump_schema(token)
     if args.resolution:
         return resolutions(token, args.dataset)
     if args.by_continent:
-        return by_continent(token, args.dataset, args.per, args.radius, args.seed)
+        return by_continent(token, args.dataset, args.per, args.radius,
+                            args.seed, only)
 
     with open(args.dataset, encoding="utf-8") as fh:
         entries = json.load(fh)["entries"]
