@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: What the API actually returns
+        run: python tools/shortlist_models.py "Stonehenge" --schema || true
+
       - name: Search
         env:
           MONUMENTS: ${{ inputs.monuments }}
