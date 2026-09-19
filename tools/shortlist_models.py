@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """Search Sketchfab for usable scans of a monument and print a shortlist.
 
-Searching a famous monument on Sketchfab returns a great deal of low-poly fan
-art, voxel builds and game props alongside the genuine photogrammetry, and
-trawling that by hand for two dozen monuments is a long evening. This does the
-filtering that a machine can do -- licence, downloadable, face count, textures,
-provenance -- and leaves the judgement that it cannot: whether the thing
-actually looks like the monument.
+Searching a famous monument returns a great deal of low-poly fan art, voxel
+builds and game props alongside the genuine photogrammetry, and trawling that
+for two dozen monuments is a long evening. This does the filtering a machine
+can do and leaves the judgement it cannot: whether the thing actually looks
+like the monument.
 
-Search needs no credentials. Downloading does, so the shortlist gives you links
-to open rather than files; see .github/workflows/process-models.yml for what to
-do with one once you have picked it.
+Written against the fields the API really returns, printed by --schema, after a
+first version filtered on `license.slug` and `textureCount` -- neither of which
+exists -- and rejected every candidate for all twenty-five monuments. A filter
+that cannot pass is the same mistake as a test that cannot fail.
 
-    python tools/shortlist_models.py "Petra Al-Khazneh" --min-faces 50000
+What is actually there:
+    license          {"uid": ..., "label": "CC Attribution"}   <- label, not slug
+    archives.glb     {"size": ..., "textureCount": ..., "textureMaxResolution": ...}
+    staffpickedAt    Sketchfab's own curation, when present
+    faceCount, vertexCount, likeCount, viewCount, user, viewerUrl
 
-Licences: CC0 and CC-BY only. Anything else cannot ship, however good it looks.
+Search needs no credentials. Downloading does, so this prints links to open.
+
+    python tools/shortlist_models.py "Petra Al-Khazneh"
+    python tools/shortlist_models.py "Stonehenge" --schema
 """
 import argparse
 import json
@@ -23,63 +30,79 @@ import urllib.parse
 import urllib.request
 
 API = "https://api.sketchfab.com/v3/search"
-# Sketchfab's licence slugs. by = CC-BY, cc0 = public domain. The -sa, -nc and
-# -nd variants are deliberately absent: share-alike would bind the game, and
-# non-commercial and no-derivatives both forbid what this does to the file.
-OK_LICENCES = {"cc0", "by"}
+
+# Only these two can ship. Share-alike would bind the game; non-commercial and
+# no-derivatives both forbid exactly what the pipeline does to the file. The
+# API gives a human label rather than a slug, so the test is on the words --
+# and note that "CC Attribution-ShareAlike" contains "CC Attribution", which is
+# why the refusals are checked first.
+REFUSE = ("noncommercial", "noderiv", "sharealike")
+ACCEPT = ("cc0", "public domain", "cc attribution")
+
 MIN_FACES = 40_000          # below this it is decoration, not a scan
+MIN_TEXTURE = 1024          # an untextured or low-textured scan reads as clay
 
 
-def search(query, limit=24, licences=None):
+def search(query, limit=24):
     params = {
         "type": "models",
         "q": query,
         "downloadable": "true",
-        "archives_flavours": "false",
         "count": str(limit),
         "sort_by": "-likeCount",
     }
-    # Licence is filtered server-side. The search response carries no licence
-    # object at all -- the first version of this filtered on one and rejected
-    # every candidate for all twenty-five monuments, which read as an empty
-    # catalogue and was an empty field.
-    if licences:
-        params["licenses"] = licences
     url = API + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "heritle-shortlist"})
     with urllib.request.urlopen(req, timeout=60) as fh:
         return json.load(fh).get("results", [])
 
 
-def licence_slug(model):
-    lic = model.get("license") or {}
-    return (lic.get("slug") or "").lower()
+def glb(model):
+    return ((model.get("archives") or {}).get("glb") or {})
 
 
-def faces(model):
-    return model.get("faceCount") or 0
+def licence(model):
+    return ((model.get("license") or {}).get("label") or "").strip()
+
+
+def licence_ok(model):
+    low = licence(model).lower()
+    if not low:
+        return False
+    if any(word in low for word in REFUSE):
+        return False
+    return any(word in low for word in ACCEPT)
 
 
 def assess(model, min_faces):
-    """Why this one is or is not worth opening."""
+    """Why this one is, or is not, worth opening."""
     notes = []
-    slug = licence_slug(model)
-    if slug not in OK_LICENCES:
-        notes.append(f"licence {slug or '?'}")
-    n = faces(model)
-    if n < min_faces:
-        notes.append(f"{n:,} faces")
+    if not licence_ok(model):
+        notes.append(licence(model) or "no licence given")
+    if (model.get("faceCount") or 0) < min_faces:
+        notes.append(f"{model.get('faceCount') or 0:,} faces")
     if not model.get("isDownloadable"):
         notes.append("not downloadable")
-    # A scan carries textures; an untextured mesh of a monument is a model of
-    # its shape only, which is a much weaker photograph to look at.
-    if not (model.get("textureCount") or 0):
-        notes.append("no textures")
+    a = glb(model)
+    if not a:
+        notes.append("no glb")
+    else:
+        if not (a.get("textureCount") or 0):
+            notes.append("untextured")
+        elif (a.get("textureMaxResolution") or 0) < MIN_TEXTURE:
+            notes.append(f"{a.get('textureMaxResolution')}px textures")
     return notes
 
 
+def quality(model):
+    """Rank what survives. Staff picks first -- Sketchfab curates those, and it
+    is the only external judgement of quality available without looking."""
+    return (1 if model.get("staffpickedAt") else 0,
+            model.get("likeCount") or 0,
+            model.get("faceCount") or 0)
+
+
 def dump_schema(query):
-    """Print what the API actually returns, rather than what was assumed."""
     results = search(query, 3)
     if not results:
         print("  no results to inspect")
@@ -106,7 +129,7 @@ def main():
         dump_schema(query)
         return 0
     try:
-        results = search(query, args.limit, licences="cc0,by")
+        results = search(query, args.limit)
     except Exception as exc:                       # noqa: BLE001
         print(f"search failed for {query!r}: {exc}", file=sys.stderr)
         return 1
@@ -114,20 +137,29 @@ def main():
     keep, reject = [], []
     for m in results:
         (reject if assess(m, args.min_faces) else keep).append(m)
+    keep.sort(key=quality, reverse=True)
 
     print(f"\n=== {query} — {len(results)} results, {len(keep)} worth opening ===")
     if not keep:
         print("  nothing passes. Try another phrasing, or fall back to")
         print("  Smithsonian Open Access 3D / Europeana 3D / Commons.")
     for m in keep:
-        user = (m.get("user") or {}).get("displayName", "?")
-        print(f"  {faces(m):>9,} faces  {licence_slug(m):<4}  {user[:22]:<22} "
-              f"{(m.get('name') or '')[:40]}")
-        print(f"             {m.get('viewerUrl') or m.get('uri')}")
+        a = glb(m)
+        mb = (a.get("size") or 0) / 1_000_000
+        user = (m.get("user") or {}).get("displayName") or "?"
+        # The evidence for the pick, printed next to it, because "this one is
+        # good" is not a reason anyone can check.
+        print(f"  {'STAFF PICK  ' if m.get('staffpickedAt') else '            '}"
+              f"{m.get('faceCount') or 0:>9,} faces  "
+              f"{a.get('textureMaxResolution') or 0:>5}px x{a.get('textureCount') or 0}  "
+              f"{mb:>6.1f} MB raw  {m.get('likeCount') or 0:>5} likes")
+        print(f"    {licence(m)}  by {user}")
+        print(f"    {m.get('viewerUrl') or m.get('uri')}")
     if reject:
         print(f"  --- {len(reject)} set aside ---")
-        for m in reject[:8]:
-            print(f"    {(m.get('name') or '')[:38]:<38} {'; '.join(assess(m, args.min_faces))}")
+        for m in reject[:10]:
+            print(f"    {(m.get('name') or '')[:40]:<40} "
+                  f"{'; '.join(assess(m, args.min_faces))}")
     return 0
 
 
