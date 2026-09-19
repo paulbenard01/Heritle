@@ -27,6 +27,9 @@ on:
       per:
         description: 'Sites per continent for the spread survey'
         default: '14'
+      seed:
+        description: 'Which sites get drawn. Change it to check a result held'
+        default: '7'
 
 permissions:
   contents: read
@@ -126,9 +129,10 @@ jobs:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
           PER: ${{ inputs.per }}
           RADIUS: ${{ inputs.radius }}
+          SEED: ${{ inputs.seed }}
         run: |
           python tools/survey_mapillary.py --by-continent \
-            --per "${PER:-14}" --radius "${RADIUS:-150}"
+            --per "${PER:-14}" --radius "${RADIUS:-150}" --seed "${SEED:-7}"
 
       - name: Survey
         if: ${{ inputs.resolution != 'true' && inputs.by_continent != 'true' }}
