@@ -12,25 +12,57 @@ Measured 19 September 2026, against the real dataset, by
 | Panoramas found in total | 34 |
 | Extrapolated to the whole pool | ~208 of 1,872 entries |
 
-## The finding that matters: coverage is street-shaped
+## Spread: the answer to "more of the world, less of Europe"
 
-The five hits were not scattered. They were **Rjukan–Notodden (12 panoramas),
-Grand-Bassam (13), Røros (5), Pienza (3), Speyer Cathedral (1)** — and four of
-the five are inhabited historic *towns*, not single monuments.
+Two draws, 14 and then 40 sites per continent, 312 sites in all. The second
+was run because the first returned zero for three continents, and a zero out
+of fourteen is as easily a fact about the shuffle as a fact about Mapillary.
+It was worth running: **Asia went from 0/14 to 6/40**, so the first draw was
+partly bad luck.
 
-That is what street-level imagery is. Someone drives or walks a route with a
-360 rig, so a historic town centre gets dozens and a temple on a hill gets
-none. The zeroes are the tell: Konark Sun Temple, Tsodilo, Mount Kumgang,
-Jiuzhaigou Valley, the Rice Terraces of the Philippine Cordilleras, Lake
-Turkana, Djenné, the Sacred Mijikenda Kaya Forests — nothing at all.
+| Continent | Draw 1 | Draw 2 | Combined | Sites in pool | Reachable |
+|---|---|---|---|---|---|
+| Europe | 5/14 | 12/40 | **17/54 (31%)** | 515 | ~160 |
+| Asia | 0/14 | 6/40 | **6/54 (11%)** | 332 | ~37 |
+| North America | 0/14 | 3/40 | **3/54 (6%)** | 112 | ~7 |
+| South America | 2/14 | 1/40 | **3/54 (6%)** | 79 | ~5 |
+| Africa | 1/14 | 1/40 | **2/54 (4%)** | 151 | ~6 |
+| Oceania | 0/14 | 0/28 | **0/42 (0%)** | 28 | 0 |
+| | | | 31/312 (10%) | | **~215** |
 
-So 200 places is reachable in principle, but the 200 you would reach are
-biased towards **European historic town centres**. Four of the five hits here
-were European. A game built on this pool would ask the player to place a
-cobbled street in Norway rather more often than it asked about Angkor.
+Oceania is not a sample. The pool holds 28 material sites in Oceania and the
+second draw took all 28. Zero of them have a 360 within 150 m. That row is a
+census, and it is empty.
 
-Only 11% have a 360 while 49% have *some* imagery, which says most Mapillary
-contributions are flat phone and dashcam frames rather than spherical rigs.
+### So two hundred is reachable, and spread is not
+
+Mapillary can supply roughly 215 places, which clears the two hundred. But
+**three quarters of them are European**, and the constraint is not Europe's
+abundance — it is that Africa, South America and Oceania together offer about
+eleven sites. Cap any continent at a third of the pool and the whole thing
+comes out around ninety.
+
+Two hundred places and an even spread cannot both come from Mapillary. That is
+the decision, and it is not a technical one.
+
+## What the first draw got wrong
+
+Draw 1's five hits were four historic towns and a cathedral, and this file
+previously concluded from that that Mapillary coverage is *only* street-shaped.
+Draw 2 says otherwise: **Tiwanaku (24), Itsukushima Shrine (6), Liberty Island
+(7), Kew Gardens (5), Jelling (21), Kathmandu Valley (46)** are an archaeo-
+logical site, a shrine, a monument, a botanical garden, a burial mound complex
+and a valley. The bias towards inhabited places is real but it is a tilt, not
+a rule — five hits was too few to tell the two apart.
+
+What holds is the shape of the zeroes: remote, roadless and mountain sites get
+nothing. Konark, Tsodilo, Mount Kumgang, Jiuzhaigou, the Philippine Cordilleras,
+Lake Turkana, Djenné, the Mijikenda Kaya Forests — all empty. Someone has to
+have carried a rig there, and for most of Africa and all of Oceania nobody has.
+
+Only 10% have a 360 while about half have *some* imagery, which says most
+Mapillary contributions are flat phone and dashcam frames rather than spherical
+rigs.
 
 ## Wikimedia Commons — thin, and easy to overcount
 
@@ -85,5 +117,9 @@ number to plan with.
    terms place conditions on bulk download and redistribution that a Creative
    Commons licence does not settle. To be read before the first image is
    cached.
-2. **Whether a street-biased pool is the game you want.** This is the real
-   question, the only one left, and it is not a technical one.
+2. **Whether a Europe-heavy pool is the game you want**, or whether the pool
+   shrinks to roughly ninety for the sake of spread. Measured above; the
+   choice is not a technical one.
+3. **Where the thin rows get filled from**, if neither answer is acceptable.
+   Commons and Poly Haven are the candidates and neither has been surveyed
+   per continent.
