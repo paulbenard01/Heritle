@@ -142,6 +142,7 @@ def panoramas_for(name, limit=50):
             "licence": lic,
             "author": author[:38],
             "url": info.get("descriptionurl") or info.get("url"),
+            "file": info.get("url") or "",
         })
     out.sort(key=lambda p: -p["w"])
     return out
@@ -152,15 +153,196 @@ def usable(p):
     return not any(w in low for w in REFUSE)
 
 
+# --- the projection test, finally implemented ------------------------------
+#
+# A 2:1 aspect ratio is necessary and nowhere near sufficient. It matched a
+# church in Cusco for "Sagrada Familia" and a cropped wide photograph for
+# "Angkor Wat", and a survey built on it counts panoramas that are not
+# panoramas. The real test is the GPano XMP tag the stitcher writes into the
+# file, so this reads the file.
+#
+# Only the head of it. XMP lives in an APP1 segment near the start of a JPEG,
+# so 128 KB of an 80 MB image answers the question -- which is what makes
+# checking every candidate affordable rather than a download of the whole of
+# Commons.
+
+XMP_HEAD = 131_072
+PANO_MARKS = (b"GPano:ProjectionType", b"equirectangular",
+              b"UsePanoramaViewer", b"FullPanoWidthPixels")
+
+
+def projection_ok(url, timeout=45):
+    """Does the file itself say it is a sphere?
+
+    Returns True, False, or None when the question could not be put -- which
+    is a third answer, not a no. Counting an unreachable file as "not a
+    panorama" would quietly turn a network problem into a finding.
+    """
+    if not url:
+        return None
+    req = urllib.request.Request(url, headers={
+        "User-Agent": UA,
+        "Range": f"bytes=0-{XMP_HEAD - 1}",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as fh:
+            head = fh.read(XMP_HEAD)
+    except Exception:                                   # noqa: BLE001
+        return None
+    low = head.lower()
+    return any(m.lower() in low for m in PANO_MARKS)
+
+
+CONTINENTS = {"EU": "Europe", "AS": "Asia", "AF": "Africa",
+              "NA": "North America", "SA": "South America", "OC": "Oceania"}
+
+POLY_HAVEN = "https://api.polyhaven.com/assets?t=hdris"
+
+
+def poly_haven_index():
+    """Poly Haven's whole HDRI catalogue, as {lowercased name: slug}.
+
+    CC0, no key, and small enough to hold in memory. Worth asking because its
+    HDRIs are genuine equirectangular spheres with no licence conditions at
+    all -- but it is a library for lighting 3D renders, not a heritage
+    archive, so the expectation is a handful of hits at most.
+    """
+    req = urllib.request.Request(POLY_HAVEN, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as fh:
+            data = json.load(fh)
+    except Exception as exc:                            # noqa: BLE001
+        print(f"  ! Poly Haven unreachable: {exc}", file=sys.stderr)
+        return {}
+    out = {}
+    for slug, asset in data.items():
+        name = (asset.get("name") or slug).lower()
+        out[name] = slug
+        for tag in asset.get("tags") or []:
+            out.setdefault(str(tag).lower(), slug)
+    return out
+
+
+def poly_haven_hit(name, index):
+    keys = keywords(name)
+    if not keys:
+        return None
+    for label, slug in index.items():
+        if all(k in label for k in keys[:2]):
+            return slug
+    return None
+
+
+def by_continent(dataset, per, seed, verify):
+    """Per-continent coverage, which is the only question left that matters.
+
+    Mapillary is out: its terms require the Mapillary logo on any page that
+    serves its images from its own servers, and that was refused. So these two
+    sources are not filling gaps in a pool any more -- they are the pool, and
+    this number is the pool's size.
+    """
+    with open(dataset, encoding="utf-8") as fh:
+        entries = json.load(fh)["entries"]
+    sites = [e for e in entries if e.get("type") == "material"]
+    random.Random(seed).shuffle(sites)
+
+    buckets = {c: [] for c in CONTINENTS}
+    for e in sites:
+        c = e.get("continent")
+        if c in buckets and len(buckets[c]) < per:
+            buckets[c].append(e)
+
+    index = poly_haven_index()
+    print(f"Poly Haven: {len(index)} catalogue keys\n")
+    print(f"{per} sites per continent"
+          + (", projection verified by reading each file" if verify else "")
+          + "\n")
+
+    totals, unverifiable = {}, 0
+    for code, label in CONTINENTS.items():
+        group = buckets[code]
+        if not group:
+            print(f"  {label:<15} no sites in the pool")
+            continue
+        hits = 0
+        for e in group:
+            name = e["names"]["en"]
+            pans = [p for p in panoramas_for(name) if usable(p)]
+            kept, unsure = [], 0
+            for p in pans[:4]:
+                if not verify:
+                    kept.append(p)
+                    continue
+                ok = projection_ok(p["file"])
+                if ok:
+                    kept.append(p)
+                elif ok is None:
+                    unsure += 1
+            unverifiable += unsure
+            slug = poly_haven_hit(name, index)
+            if kept or slug:
+                hits += 1
+                if kept:
+                    best = kept[0]
+                    print(f"    {code}  {name[:42]:<42} {best['w']}x{best['h']}"
+                          f"  {best['bytes'] / 1_000_000:>5.1f} MB  "
+                          f"{best['licence'][:16]}")
+                if slug:
+                    print(f"    {code}  {name[:42]:<42} Poly Haven CC0: {slug}")
+            elif pans and not kept:
+                # Worth printing: these are the ones 2:1 alone would have
+                # counted, and the reason this survey reads the files.
+                print(f"    {code}  {name[:42]:<42} "
+                      f"{len(pans)} looked 2:1, none were spheres")
+            time.sleep(0.25)
+        totals[label] = (hits, len(group))
+        print(f"  {label:<15} {hits:>2} of {len(group):<3} "
+              f"({hits * 100 // max(1, len(group)):>3}%)\n")
+
+    print("=== spread ===")
+    reachable = 0
+    pool = {"EU": 515, "AS": 332, "AF": 151, "NA": 112, "SA": 79, "OC": 28}
+    for code, label in CONTINENTS.items():
+        if label not in totals:
+            continue
+        hits, n = totals[label]
+        rate = hits / max(1, n)
+        est = int(rate * pool.get(code, 0))
+        reachable += est
+        print(f"  {label:<15} {hits:>2}/{n:<3} {'#' * (hits * 20 // max(1, n)):<20}"
+              f" ~{est} of {pool.get(code, 0)} reachable")
+    got = sum(h for h, _ in totals.values())
+    tot = sum(n for _, n in totals.values())
+    print(f"\n  overall {got} of {tot} ({got * 100 // max(1, tot)}%)"
+          f"  ->  about {reachable} places in the whole pool")
+    if unverifiable:
+        print(f"  {unverifiable} candidates could not be read, so are counted "
+              f"as neither yes nor no")
+    thin = min((h / max(1, n) for h, n in totals.values()), default=0)
+    print(f"\n  A pool balanced across continents is capped by the thinnest "
+          f"row, at {thin * 100:.0f}%.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="data/dataset.json")
     ap.add_argument("--sample", type=int, default=40)
     ap.add_argument("--names", default="", help="comma-separated, instead of a sample")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--by-continent", action="store_true",
+                    help="coverage per continent rather than per fame tier")
+    ap.add_argument("--per", type=int, default=25,
+                    help="sites per continent for --by-continent")
+    ap.add_argument("--no-verify", action="store_true",
+                    help="trust the 2:1 ratio instead of reading the files")
     ap.add_argument("--titles", action="store_true",
                     help="print every panorama found, not just the best")
     args = ap.parse_args()
+
+    if args.by_continent:
+        return by_continent(args.dataset, args.per, args.seed,
+                            not args.no_verify)
 
     if args.names:
         names = [n.strip() for n in args.names.split(",") if n.strip()]
