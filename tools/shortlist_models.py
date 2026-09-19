@@ -30,7 +30,7 @@ OK_LICENCES = {"cc0", "by"}
 MIN_FACES = 40_000          # below this it is decoration, not a scan
 
 
-def search(query, limit=24):
+def search(query, limit=24, licences=None):
     params = {
         "type": "models",
         "q": query,
@@ -39,6 +39,12 @@ def search(query, limit=24):
         "count": str(limit),
         "sort_by": "-likeCount",
     }
+    # Licence is filtered server-side. The search response carries no licence
+    # object at all -- the first version of this filtered on one and rejected
+    # every candidate for all twenty-five monuments, which read as an empty
+    # catalogue and was an empty field.
+    if licences:
+        params["licenses"] = licences
     url = API + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "heritle-shortlist"})
     with urllib.request.urlopen(req, timeout=60) as fh:
@@ -72,16 +78,35 @@ def assess(model, min_faces):
     return notes
 
 
+def dump_schema(query):
+    """Print what the API actually returns, rather than what was assumed."""
+    results = search(query, 3)
+    if not results:
+        print("  no results to inspect")
+        return
+    print(f"--- fields on a search result, {query!r} ---")
+    for k in sorted(results[0].keys()):
+        v = results[0][k]
+        flat = (repr(v)[:88] if isinstance(v, (str, int, float, bool, type(None)))
+                else json.dumps(v)[:88])
+        print(f"  {k:22} {flat}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("query", nargs="+")
+    ap.add_argument("--schema", action="store_true",
+                    help="print the fields the API returns, and stop")
     ap.add_argument("--min-faces", type=int, default=MIN_FACES)
     ap.add_argument("--limit", type=int, default=24)
     args = ap.parse_args()
 
     query = " ".join(args.query)
+    if args.schema:
+        dump_schema(query)
+        return 0
     try:
-        results = search(query, args.limit)
+        results = search(query, args.limit, licences="cc0,by")
     except Exception as exc:                       # noqa: BLE001
         print(f"search failed for {query!r}: {exc}", file=sys.stderr)
         return 1
