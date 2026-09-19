@@ -18,6 +18,9 @@ on:
       radius:
         description: 'Metres around each site'
         default: '150'
+      resolution:
+        description: 'Measure real pixel sizes instead of surveying coverage'
+        default: 'false'
 
 permissions:
   contents: read
@@ -99,7 +102,16 @@ jobs:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
         run: python tools/survey_mapillary.py --schema
 
+      - name: How big are the panoramas really
+        if: ${{ inputs.resolution == 'true' }}
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+        run: |
+          pip install --quiet Pillow
+          python tools/survey_mapillary.py --resolution
+
       - name: Survey
+        if: ${{ inputs.resolution != 'true' }}
         env:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
           SAMPLE: ${{ inputs.sample }}

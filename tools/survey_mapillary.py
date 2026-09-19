@@ -174,12 +174,103 @@ def dump_schema(token):
     return 0
 
 
+# Sites the 45-site survey found panoramas at. Measuring resolution anywhere
+# else would mean measuring nothing.
+KNOWN_HITS = ["Rjukan", "Grand-Bassam", "Røros", "Pienza", "Speyer"]
+
+# Candidates for "how big is it". Probed rather than assumed, and then checked
+# against the real file anyway.
+SIZE_FIELDS = ["width", "height", "thumb_original_url", "thumb_2048_url",
+               "thumb_1024_url"]
+
+
+def measure(url, timeout=90):
+    """Download and measure. The only answer that cannot be wrong.
+
+    Every field in this survey so far has been either absent, differently
+    named or differently shaped from what was assumed, so the resolution
+    question gets settled by opening the image rather than by reading a
+    number beside it.
+    """
+    from PIL import Image
+    import io as _io
+    req = urllib.request.Request(url, headers={"User-Agent": "heritle-survey"})
+    with urllib.request.urlopen(req, timeout=timeout) as fh:
+        blob = fh.read()
+    im = Image.open(_io.BytesIO(blob))
+    return im.width, im.height, len(blob)
+
+
+def resolutions(token, dataset):
+    """What the panoramas at the known hits are actually worth looking at."""
+    with open(dataset, encoding="utf-8") as fh:
+        entries = json.load(fh)["entries"]
+
+    # Which size fields the API will give us, established the same careful way.
+    base = "id,is_pano"
+    good = base
+    for extra in SIZE_FIELDS:
+        trial = good + "," + extra
+        try:
+            fetch_adaptive(token, 48.8584, 2.2945, limit=1, fields=trial)
+            good = trial
+            print(f"  field ok      {extra}")
+        except Exception:                           # noqa: BLE001
+            print(f"  field refused {extra}")
+        time.sleep(0.3)
+    print(f"\n  using: {good}\n")
+
+    shown = 0
+    for needle in KNOWN_HITS:
+        site = next((e for e in entries
+                     if needle.lower() in e["names"]["en"].lower()), None)
+        if not site:
+            print(f"  {needle}: not in the dataset")
+            continue
+        try:
+            data, used = fetch_adaptive(token, site["lat"], site["lng"],
+                                        limit=50, fields=good)
+        except Exception as exc:                    # noqa: BLE001
+            print(f"  {needle}: {str(exc)[:60]}")
+            continue
+        panos = [i for i in (data.get("data") or []) if i.get("is_pano")]
+        print(f"  {site['names']['en'][:40]:<40} {len(panos)} panoramas "
+              f"within {used} m")
+        if panos and not shown:
+            print(f"    every field on one of them:")
+            for k, v in sorted(panos[0].items()):
+                flat = (repr(v)[:70] if isinstance(v, (str, int, float, bool, type(None)))
+                        else json.dumps(v)[:70])
+                print(f"      {k:20} {flat}")
+            shown = 1
+        for pano in panos[:2]:
+            url = (pano.get("thumb_original_url") or pano.get("thumb_2048_url")
+                   or pano.get("thumb_1024_url"))
+            if not url:
+                print("      (no thumbnail url returned)")
+                continue
+            try:
+                w, h, n = measure(url)
+            except Exception as exc:                # noqa: BLE001
+                print(f"      measure failed: {str(exc)[:50]}")
+                continue
+            ratio = w / h if h else 0
+            verdict = ("equirectangular" if 1.97 <= ratio <= 2.03
+                       else f"ratio {ratio:.2f}, not 2:1")
+            print(f"      measured {w}x{h}  {n/1_000_000:.1f} MB  {verdict}")
+        time.sleep(0.4)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="data/dataset.json")
     ap.add_argument("--sample", type=int, default=45)
     ap.add_argument("--radius", type=int, default=RADIUS_M)
     ap.add_argument("--schema", action="store_true")
+    ap.add_argument("--resolution", action="store_true",
+                    help="measure the real pixel size of panoramas at the "
+                         "sites the survey found them")
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
 
@@ -195,6 +286,8 @@ def main():
 
     if args.schema:
         return dump_schema(token)
+    if args.resolution:
+        return resolutions(token, args.dataset)
 
     with open(args.dataset, encoding="utf-8") as fh:
         entries = json.load(fh)["entries"]
