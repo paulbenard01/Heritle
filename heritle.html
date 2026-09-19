@@ -1142,6 +1142,7 @@ const UI = {
   en:{ pitch:'Guess and Discover the world heritage!', tagline:'three sites and a tradition each day', tapPrompt:'Tap the map to place your guess', tapAgain:'Tap again to move it',
        confirmGuess:'Guess', openWater:'Open water',
        siteHere:'The site is here',
+       inscribedBy:(n)=>`Inscribed by ${n} countries`,
        modeMaterial:'WORLD HERITAGE SITE', modeImmaterial:'INTANGIBLE HERITAGE',
        readoutStart:'Make your first guess', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} guesses this round`, clueLabels:['Continent','Category','Inscribed','Region','Description'],
@@ -1310,6 +1311,7 @@ const UI = {
   fr:{ pitch:'Devinez et découvrez le patrimoine mondial !', tagline:'trois sites et une tradition chaque jour', tapPrompt:'Touchez la carte pour placer votre proposition', tapAgain:'Touchez à nouveau pour la déplacer',
        confirmGuess:'Proposer', openWater:'Pleine mer',
        siteHere:'Le site est ici',
+       inscribedBy:(n)=>`Inscrit par ${n} pays`,
        modeMaterial:'PATRIMOINE MONDIAL', modeImmaterial:'PATRIMOINE IMMATÉRIEL',
        readoutStart:'Faites votre première proposition', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} essais cette manche`, clueLabels:['Continent','Catégorie','Inscription','Région','Description'],
@@ -1478,6 +1480,7 @@ const UI = {
   es:{ pitch:'¡Adivina y descubre el patrimonio mundial!', tagline:'tres sitios y una tradición cada día', tapPrompt:'Toca el mapa para colocar tu propuesta', tapAgain:'Toca otra vez para moverla',
        confirmGuess:'Proponer', openWater:'Mar abierto',
        siteHere:'El sitio está aquí',
+       inscribedBy:(n)=>`Inscrito por ${n} países`,
        modeMaterial:'PATRIMONIO MUNDIAL', modeImmaterial:'PATRIMONIO INMATERIAL',
        readoutStart:'Haz tu primera propuesta', readout:(km,dir)=>`<b>${km} km</b> ${dir}`,
        guessCount:(n,max)=>`${n} / ${max} intentos esta ronda`, clueLabels:['Continente','Categoría','Inscrito','Región','Descripción'],
@@ -2842,8 +2845,18 @@ function addTargetPin(lat,lng,label){
   dot.setAttribute('stroke-width','1.5');
   dot.setAttribute('vector-effect','non-scaling-stroke');
   layer.appendChild(dot);
-  if(label){
-    const txt = document.createElementNS(ns,'text');
+  if(label) addMapCaption(p.x, p.y, label);
+  scalePins(true);
+}
+
+/* A word on the map, counter-scaled so it neither grows with the zoom nor
+   drifts off the pin it belongs to. */
+function addMapCaption(px, py, label){
+  const ns = 'http://www.w3.org/2000/svg';
+  const p = { x: px, y: py };
+  const layer = document.getElementById('pinLayer');
+  {
+    const txt = document.createElementNS(ns, 'text');
     // Near an edge the caption would be cut off by the sheet -- a site on the
     // Pacific coast read "he site is here". So it anchors away from whichever
     // edge it is close to, and drops below the pin at the top of the map.
@@ -2871,6 +2884,25 @@ function addTargetPin(lat,lng,label){
     txt.textContent = label;
     layer.appendChild(txt);
   }
+  scalePins(true);
+}
+
+/* A country that would also have been right. Thinner and unfilled, so it
+   reads as "this one counted too" rather than as the site itself. */
+function addAnswerRing(lat,lng){
+  const p = project(lat,lng);
+  const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  // Small: twenty-five of these at world zoom is already a thicket over
+  // Europe, and they are meant to be countable, not decorative.
+  ring.setAttribute('cx',p.x); ring.setAttribute('cy',p.y); ring.setAttribute('r',4.5);
+  ring.dataset.r = 4.5; ring.dataset.sw = 1;
+  ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--gold)');
+  ring.setAttribute('stroke-width','1');
+  ring.setAttribute('stroke-dasharray','2.5 2');
+  ring.setAttribute('opacity','0.8');
+  ring.setAttribute('vector-effect','non-scaling-stroke');
+  ring.setAttribute('class','answer-ring');
+  document.getElementById('pinLayer').appendChild(ring);
   scalePins(true);
 }
 
@@ -2919,17 +2951,33 @@ function targetCountries(){
    for an element inscribed by several countries, whichever of them is nearest
    as well -- a tradition shared from Morocco to Iraq is not "wrong" because
    the pin landed on the far side of it. */
-function pointDistanceKm(lat, lng){
+/* The point the distance is actually measured to: the site itself, or -- for
+   an element inscribed by several states -- whichever of their centres the pin
+   came closest to. Falconry is held by twenty-five countries and is no more
+   "in" one of them than another, so the nearest is the only honest reading.
+
+   Everything that points somewhere uses this one answer: the kilometres, the
+   compass bearing and the line drawn at the end of a lost round. Measuring to
+   the nearest country while pointing at the stored coordinate would have the
+   game say 1,200 km north-east and then draw a line six thousand the other
+   way. */
+function nearestAnswerPoint(lat, lng){
   const tg = currentTarget();
-  if(!tg) return 0;
+  if(!tg) return null;
+  let best = { lat: tg.lat, lng: tg.lng, km: haversineKm(lat, lng, tg.lat, tg.lng) };
   const answers = targetCountries();
-  let best = haversineKm(lat, lng, tg.lat, tg.lng);
   if(answers.length > 1){
     answers.forEach(a => {
-      best = Math.min(best, haversineKm(lat, lng, a.lat, a.lng));
+      const km = haversineKm(lat, lng, a.lat, a.lng);
+      if(km < best.km) best = { lat: a.lat, lng: a.lng, km };
     });
   }
   return best;
+}
+
+function pointDistanceKm(lat, lng){
+  const aim = nearestAnswerPoint(lat, lng);
+  return aim ? aim.km : 0;
 }
 function currentGuesses(){ return state.guesses[state.round]; }
 function roundFinished(){ return state.roundStatus[state.round] !== null; }
@@ -3149,10 +3197,35 @@ function renderMapForRound(){
       if(!at) return b;
       return (!b || g.km < b.km) ? { lat: at.lat, lng: at.lng, km: g.km } : b;
     }, null);
+    // An element inscribed by several states has no single answer to reveal.
+    // Marking one of them and calling it "the site" would teach the wrong
+    // thing about the very entries where the answer is most interesting:
+    // falconry is held by twenty-five countries, Nowruz by thirteen. So every
+    // country that would have counted is ringed, and the caption says how many
+    // there were rather than claiming a place.
+    const answers = targetCountries();
+    const several = answers.length > 1;
     if(near && state.roundStatus[state.round] !== 'solved'){
-      addMissLine(near.lat, near.lng, tg.lat, tg.lng);
+      // To the point the kilometres were measured to, not to the stored
+      // coordinate: on a multinational element those are different places.
+      const aim = nearestAnswerPoint(near.lat, near.lng);
+      addMissLine(near.lat, near.lng, aim.lat, aim.lng);
     }
-    addTargetPin(tg.lat, tg.lng, t().siteHere);
+    if(several){
+      // Every one of them equally, and no filled point singling one out: the
+      // stored coordinate of a tradition is just whichever country the
+      // pipeline listed first, and drawing it as "the site" would invent a
+      // home for something that does not have one.
+      answers.forEach(a => addAnswerRing(a.lat, a.lng));
+      // Over the northernmost of them, so the caption clears the cluster
+      // instead of landing in the middle of it -- the stored coordinate is
+      // usually somewhere in the thick of it.
+      const top = answers.reduce((b, a) => (!b || a.lat > b.lat) ? a : b, null);
+      const p = project(top.lat, top.lng);
+      addMapCaption(p.x, p.y, t().inscribedBy(answers.length));
+    } else {
+      addTargetPin(tg.lat, tg.lng, t().siteHere);
+    }
   }
   const T = t();
   const readout = document.getElementById('mapReadout');
@@ -3873,8 +3946,9 @@ function submitGuess(input){
   const target = currentTarget(), answers = targetCountries();
   // Distance runs from the pin to the *site*, so the heat points at the real
   // place rather than at the middle of a country.
-  const km = Math.round(pointDistanceKm(spot.lat, spot.lng));
-  const brg = bearing(spot.lat, spot.lng, target.lat, target.lng);
+  const aim = nearestAnswerPoint(spot.lat, spot.lng);
+  const km = Math.round(aim.km);
+  const brg = bearing(spot.lat, spot.lng, aim.lat, aim.lng);
   // Right country, or near enough to the site that the country hardly matters.
   const rightCountry = country && (answers.length
     ? answers.some(a => a.id === country.id)

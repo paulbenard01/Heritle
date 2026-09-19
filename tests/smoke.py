@@ -1240,12 +1240,44 @@ def main():
             check(str(expected_ach) in head,
                   "and the count includes it once it exists",
                   f"{head} against {expected_ach} shown")
+            # A secret nobody has found is not on the page and not in the
+            # denominator. This used to lean on some secret happening to be
+            # unearned, which is a property of the clock rather than of the
+            # code: Night owl is earned by playing between midnight and five,
+            # so a suite that ran past midnight earned all three and the check
+            # failed with nothing wrong. It now takes one back out and looks.
+            hidden = page.evaluate("""
+              () => {
+                const id = ACHIEVEMENTS.filter(a => a.secret)
+                             .map(a => a.id)
+                             .find(id => profile.achievements.includes(id));
+                if(!id) return null;
+                const before = visibleAchievements().length;
+                const kept = profile.achievements.slice();
+                profile.achievements = kept.filter(x => x !== id);
+                const after = visibleAchievements().length;
+                const name = t().ach[id][0];
+                showView('Passport');
+                const onPage = document.getElementById('viewPassport').innerText;
+                profile.achievements = kept;             // put it back
+                showView('Passport');
+                return { id, name, before, after, total: ACHIEVEMENTS.length,
+                         listed: onPage.includes(name) };
+              }
+            """)
+            check(hidden is not None, "a secret can be taken back out to look")
+            if hidden:
+                check(hidden["after"] == hidden["before"] - 1,
+                      "and the secrets nobody has found yet stay out of the count",
+                      str(hidden))
+                check(not hidden["listed"],
+                      "and stay off the page entirely", str(hidden))
             still_hidden = page.evaluate("""
               () => ACHIEVEMENTS.filter(a => a.secret
                       && !profile.achievements.includes(a.id)).length
             """)
-            check(still_hidden >= 1 and expected_ach == total_ach - still_hidden,
-                  "and the secrets nobody has found yet stay out of the count",
+            check(expected_ach == total_ach - still_hidden,
+                  "the heading counts every distinction but the unfound secrets",
                   f"{expected_ach} shown, {total_ach} defined, {still_hidden} hidden")
             # Generically: whatever secrets this run happens not to have
             # earned -- playing through it in three languages earns one of
@@ -1576,6 +1608,77 @@ def main():
         check(miss and miss["bucket"] != "correct" and miss["via"] is None,
               "a placement in the wrong country and far from the site is a miss",
               str(miss))
+        # ---- an element inscribed by several states ----
+        # Falconry is held by twenty-five countries, Nowruz by thirteen. Every
+        # one of them is the answer; marking twenty-four of them wrong would be
+        # a bug, not a hard round.
+        wide = page.evaluate("""
+          () => {
+            const wide = POOL.filter(e => (e.countryIds || []).length > 1)
+                             .sort((a, b) => b.countryIds.length - a.countryIds.length)[0];
+            if(!wide) return null;
+            targets[0] = wide;
+            const answers = targetCountries();
+            const out = [];
+            for(const a of answers){
+              RESET();
+              submitGuess({ lat: a.lat, lng: a.lng, country: a });
+              const g = state.guesses[0][0];
+              out.push([a.names.en, g && g.bucket, g && g.via, state.roundStatus[0]]);
+            }
+            return { name: wide.names.en, ids: wide.countryIds.length,
+                     resolved: answers.length,
+                     wrong: out.filter(r => r[1] !== 'correct' || r[3] !== 'solved') };
+          }
+        """)
+        check(wide is not None, "the pool carries multinational elements")
+        if wide:
+            check(wide["resolved"] == wide["ids"],
+                  "every state that inscribed it is a guessable answer",
+                  f"{wide['name']}: {wide['resolved']} of {wide['ids']}")
+            check(not wide["wrong"],
+                  "and a pin in any one of them wins the round",
+                  str(wide["wrong"][:3]))
+        # No entry anywhere in the pool may have an answer the map cannot name,
+        # or that country silently stops counting.
+        orphans = page.evaluate("""
+          () => { const byName = new Set(COUNTRIES.map(c => c.names.en));
+                  return POOL.filter(e => (e.countryNames || [])
+                          .some(n => !byName.has(n.en)))
+                             .map(e => e.names.en).slice(0, 5); }
+        """)
+        check(not orphans, "no entry carries an answer the map cannot name",
+              ", ".join(orphans))
+        # The kilometres, the bearing and the line drawn at the end of a lost
+        # round all have to point at the same place. On a multinational element
+        # the distance is measured to the nearest of its countries while the
+        # stored coordinate is whichever one the pipeline listed first, so
+        # taking the bearing from the stored coordinate had the game say one
+        # direction and draw a line in another.
+        aim = page.evaluate("""
+          () => {
+            const wide = POOL.filter(e => (e.countryIds || []).length > 1)
+                             .sort((a, b) => b.countryIds.length - a.countryIds.length)[0];
+            targets[0] = wide; RESET();
+            const answers = targetCountries();
+            // Somewhere far from the stored coordinate but near another answer.
+            const far = answers.reduce((b, a) =>
+              (!b || haversineKm(a.lat, a.lng, wide.lat, wide.lng)
+                   > haversineKm(b.lat, b.lng, wide.lat, wide.lng)) ? a : b, null);
+            const from = { lat: far.lat + 12, lng: far.lng };
+            submitGuess(from);
+            const g = state.guesses[0][0];
+            const p = nearestAnswerPoint(from.lat, from.lng);
+            return { km: g.km, bearing: Math.round(g.bearing),
+                     toNearest: Math.round(bearing(from.lat, from.lng, p.lat, p.lng)),
+                     toStored: Math.round(bearing(from.lat, from.lng, wide.lat, wide.lng)),
+                     nearestKm: Math.round(p.km) };
+          }
+        """)
+        check(aim["bearing"] == aim["toNearest"],
+              "the compass points where the kilometres were measured", str(aim))
+        check(aim["km"] == aim["nearestKm"],
+              "and the kilometres are to the nearest of its countries", str(aim))
         check(not errs, "and placing throws nothing", "; ".join(errs[:2]))
         ctx.close()
 
