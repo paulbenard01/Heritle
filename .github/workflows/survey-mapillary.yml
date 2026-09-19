@@ -43,6 +43,11 @@ jobs:
           C: ${{ secrets.MAPILLARY }}
           D: ${{ vars.MAPILLARY_TOKEN }}
           E: ${{ secrets.MAPILARY_TOKEN }}
+          # The control. If the Sketchfab token added earlier is visible and
+          # this one is not, the problem is this secret. If neither is visible,
+          # the secrets are not reaching this repository at all -- most likely
+          # they went to heritle-assets, which was created in the same sitting.
+          S: ${{ secrets.SKETCHFAB_TOKEN }}
         run: |
           set -uo pipefail
           show () {
@@ -58,13 +63,24 @@ jobs:
           show "secrets.MAPILLARY              " "${C:-}"
           show "vars.MAPILLARY_TOKEN           " "${D:-}"
           show "secrets.MAPILARY_TOKEN (typo)  " "${E:-}"
+          echo "  --- control ---"
+          show "secrets.SKETCHFAB_TOKEN        " "${S:-}"
           if [ -z "${A:-}" ]; then
             echo
             echo "Nothing under secrets.MAPILLARY_TOKEN. The usual causes:"
             echo "  1. it went under the Variables tab, not Secrets"
             echo "  2. it went under Dependabot or Codespaces secrets, not Actions"
             echo "  3. the name differs (see which line above says FOUND)"
-            echo "  4. it was added to a different repository"
+            echo "  4. it was added to a different repository -- note that"
+            echo "     heritle-assets was created in the same sitting"
+            echo
+            if [ -n "${S:-}" ]; then
+              echo "SKETCHFAB_TOKEN *is* visible here, so this repository's"
+              echo "Actions secrets work and it is this one secret that is off."
+            else
+              echo "SKETCHFAB_TOKEN is not visible either, so no Actions secret"
+              echo "is reaching this repository -- check which repo you were in."
+            fi
             echo
             echo "The right place is:"
             echo "  Settings -> Secrets and variables -> Actions"
