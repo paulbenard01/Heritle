@@ -48,13 +48,42 @@ not the shape. That has not been implemented yet.
 **Google Street View** — the terms forbid downloading and self-hosting. Worth
 recording so nobody spends a week discovering it.
 
+## Resolution: measured by opening the files
+
+Not read off a field. Downloaded and measured with Pillow, because every field
+in this survey has at some point been absent, differently named or differently
+shaped from what was assumed.
+
+| Site | Measured | File |
+|---|---|---|
+| Grand-Bassam | 11000 × 5500 | 5.8–6.0 MB |
+| Speyer Cathedral | 7680 × 3840 | 3.1–3.6 MB |
+| Rjukan–Notodden | 5760 × 2880 | 1.5–1.6 MB |
+| Røros | 5760 × 2880 | 1.3–1.7 MB |
+
+All exactly 2:1, all genuine equirectangular. These are proper 360 rigs rather
+than dashcam frames — the quality worry was unfounded, and the resolutions are
+*higher* than the game needs. At 4096 × 2048 WebP these land in the low
+hundreds of kilobytes, so two hundred places is well under 100 MB.
+
+## What varies between identical runs
+
+Asking for fewer fields returns more rows: Mapillary meters the amount of data
+in a response, so `id,is_pano` alone found 89 panoramas across the sample where
+`id,is_pano,geometry,compass_angle,thumb_2048_url,creator` found 34.
+
+But the per-site counts move a great deal between runs even so — Røros 5 then
+41, Grand-Bassam 13 then 0. So a single query answers **"does this site have a
+360"** reliably and **"how many"** not at all.
+
+The site-level rate reproduced exactly: 5 of 45 on both runs. That is the
+number to plan with.
+
 ## Open questions before committing to this
 
-1. **Resolution.** Nothing here measured how large the Mapillary panoramas are.
-   A dashcam sphere from 2014 is not worth looking at.
-2. **Mapillary's API terms.** The imagery is CC-BY-SA, but Mapillary's own
+1. **Mapillary's API terms.** The imagery is CC-BY-SA, but Mapillary's own
    terms place conditions on bulk download and redistribution that a Creative
    Commons licence does not settle. To be read before the first image is
    cached.
-3. **Whether a street-biased pool is the game you want.** This is the real
-   question, and it is not a technical one.
+2. **Whether a street-biased pool is the game you want.** This is the real
+   question, the only one left, and it is not a technical one.
