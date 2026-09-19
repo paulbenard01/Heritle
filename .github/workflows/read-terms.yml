@@ -1,0 +1,50 @@
+name: Read the terms
+
+# The sandbox cannot reach mapillary.com, and a decision about whether two
+# hundred panoramas may be downloaded, adapted and re-hosted is not one to take
+# from a search-result summary. So the pages are fetched here, in full, and
+# printed to a log a person can read.
+#
+# Nothing is downloaded into the repository and nothing is committed. This is a
+# reading room, not a pipeline.
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'Comma-separated pages to read (blank = the licence set)'
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch
+        env:
+          URLS: ${{ inputs.urls }}
+        run: |
+          set -uo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq lynx
+          cat > /tmp/urls.txt <<'EOF'
+          https://www.mapillary.com/terms
+          https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data
+          https://help.mapillary.com/hc/en-us/articles/360010234680-Accessing-imagery-and-data-through-the-Mapillary-API
+          EOF
+          sed -i 's/^ *//' /tmp/urls.txt
+          if [ -n "${URLS}" ]; then
+            printf '%s' "${URLS}" | tr ',' '\n' | sed 's/^ *//; s/ *$//' > /tmp/urls.txt
+          fi
+          while read -r u; do
+            [ -n "$u" ] || continue
+            echo ""
+            echo "================================================================"
+            echo "  $u"
+            echo "================================================================"
+            # -dump renders the page as a person would read it, which matters
+            # for terms: the clause is the text, not the markup around it.
+            lynx -dump -nolist -width=100 "$u" || echo "  !! could not fetch"
+            sleep 1
+          done < /tmp/urls.txt
