@@ -238,41 +238,35 @@ def poly_haven_index():
 
 
 def poly_haven_hit(name, index):
-    """Does Poly Haven hold a sphere of *this place*?
+    """Poly Haven assets whose name matches this site, for a person to check.
 
-    The first version of this matched on a substring of a single distinctive
-    word and reported three hits, all of them false: "Museum Island" matched
-    an air museum playground, "National History Park" matched a museum of
-    history, and "K'gari" matched viale_giuseppe_GARIbaldi. Each one had been
-    reduced to a single generic key first, because the stop list eats "island"
-    and "national park".
+    Never counted, only reported, and that is a design decision rather than
+    caution. Three filters were tried and each failed differently: substring
+    matching gave viale_giuseppe_GARIbaldi for "K\'gari"; requiring whole
+    tokens still gave a museum of history for "National History Park";
+    requiring the lone word to be rare in the catalogue passed it anyway,
+    because "history" is rare in a library of render lighting and generic
+    everywhere else.
 
-    So: whole tokens, never substrings; every distinctive word must appear,
-    not the first two; and a single short word is not enough on its own. The
-    same mistake as the Sketchfab licence filter, and it deserves the same
-    answer -- a filter that matches one generic word is not a filter.
+    The fourth idea was to count a match only when two distinctive words
+    agreed -- and that rule could almost never fire, because heritage names
+    collapse to one key once the stop list has taken "temple", "park" and
+    every word under four letters. "Angkor Wat Temple" reduces to "angkor".
+    A test that cannot pass is the same bug as a test that cannot fail, and
+    this file has now produced one of each.
+
+    So Poly Haven contributes candidates, not counts. It is a library for
+    lighting 3D renders holding a few hundred spheres, so the honest
+    expectation is that it contributes nothing, and a handful of links for
+    someone to open costs less than a number nobody can trust.
     """
     keys = keywords(name)
     if not keys:
         return None
     for label, slug in index.items():
         tokens = set(label.replace("_", " ").replace("-", " ").split())
-        if not all(k in tokens for k in keys):
-            continue
-        # A single word carries the whole match, so it has to be a word that
-        # could only mean this place. Length does not say that -- "museum" and
-        # "history" are both long and both generic. Rarity in the catalogue
-        # does, and it is measured rather than guessed: a lone word has to be
-        # unique in the catalogue. "stonehenge" appears once; "museum" and
-        # "history" do not. Names like "National History Park" have no
-        # distinctive word left after the stop list at all, and refusing them
-        # is the right answer rather than a missed one.
-        #
-        # Still a heuristic. Poly Haven hits are few enough to eyeball, and
-        # they should be.
-        if len(keys) == 1 and index.freq.get(keys[0], 0) > 1:
-            continue
-        return slug
+        if all(k in tokens for k in keys):
+            return slug
     return None
 
 
@@ -301,7 +295,7 @@ def by_continent(dataset, per, seed, verify):
           + (", projection verified by reading each file" if verify else "")
           + "\n")
 
-    totals, unverifiable = {}, 0
+    totals, unverifiable, candidates = {}, 0, 0
     for code, label in CONTINENTS.items():
         group = buckets[code]
         if not group:
@@ -323,15 +317,17 @@ def by_continent(dataset, per, seed, verify):
                     unsure += 1
             unverifiable += unsure
             slug = poly_haven_hit(name, index)
-            if kept or slug:
+            if slug:
+                # Printed, never counted. See poly_haven_hit.
+                print(f"    {code}  {name[:42]:<42} "
+                      f"Poly Haven candidate, for a person: {slug}")
+                candidates += 1
+            if kept:
                 hits += 1
-                if kept:
-                    best = kept[0]
-                    print(f"    {code}  {name[:42]:<42} {best['w']}x{best['h']}"
-                          f"  {best['bytes'] / 1_000_000:>5.1f} MB  "
-                          f"{best['licence'][:16]}")
-                if slug:
-                    print(f"    {code}  {name[:42]:<42} Poly Haven CC0: {slug}")
+                best = kept[0]
+                print(f"    {code}  {name[:42]:<42} {best['w']}x{best['h']}"
+                      f"  {best['bytes'] / 1_000_000:>5.1f} MB  "
+                      f"{best['licence'][:16]}")
             elif pans and not kept:
                 # Worth printing: these are the ones 2:1 alone would have
                 # counted, and the reason this survey reads the files.
@@ -358,6 +354,9 @@ def by_continent(dataset, per, seed, verify):
     tot = sum(n for _, n in totals.values())
     print(f"\n  overall {got} of {tot} ({got * 100 // max(1, tot)}%)"
           f"  ->  about {reachable} places in the whole pool")
+    if candidates:
+        print(f"  {candidates} Poly Haven name-matches are reported but not "
+              f"counted; open them and look")
     if unverifiable:
         print(f"  {unverifiable} candidates could not be read, so are counted "
               f"as neither yes nor no")
