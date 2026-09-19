@@ -45,7 +45,13 @@ import urllib.request
 
 GRAPH = "https://graph.mapillary.com/images"
 RADIUS_M = 150          # a box this big around a site is still that site
-FIELDS = "id,is_pano,captured_at,geometry,compass_angle,thumb_2048_url,creator"
+# Lean on purpose. The coverage survey asked for geometry, compass_angle and
+# creator as well, and Speyer Cathedral reported one panorama; asking for
+# id,is_pano alone at the same radius and limit found twenty. Mapillary meters
+# the *amount of data* in a response, so a fat field set quietly returns fewer
+# rows -- which made the coverage figure a lower bound rather than a count.
+# Nothing here needs more than whether each image is a sphere.
+FIELDS = "id,is_pano"
 PER_SITE = 50
 
 
