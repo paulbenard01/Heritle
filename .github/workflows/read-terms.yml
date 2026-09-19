@@ -22,29 +22,29 @@ jobs:
   read:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Which pages
         env:
           URLS: ${{ inputs.urls }}
         run: |
           set -uo pipefail
-          sudo apt-get update -qq && sudo apt-get install -y -qq lynx
           cat > /tmp/urls.txt <<'EOF'
           https://www.mapillary.com/terms
+          https://www.mapillary.com/developer/api-documentation
           https://help.mapillary.com/hc/en-us/articles/115001770409-CC-BY-SA-license-for-open-data
-          https://help.mapillary.com/hc/en-us/articles/360010234680-Accessing-imagery-and-data-through-the-Mapillary-API
           EOF
           sed -i 's/^ *//' /tmp/urls.txt
           if [ -n "${URLS}" ]; then
             printf '%s' "${URLS}" | tr ',' '\n' | sed 's/^ *//; s/ *$//' > /tmp/urls.txt
           fi
-          while read -r u; do
-            [ -n "$u" ] || continue
-            echo ""
-            echo "================================================================"
-            echo "  $u"
-            echo "================================================================"
-            # -dump renders the page as a person would read it, which matters
-            # for terms: the clause is the text, not the markup around it.
-            lynx -dump -nolist -width=100 "$u" || echo "  !! could not fetch"
-            sleep 1
-          done < /tmp/urls.txt
+          cat /tmp/urls.txt
+
+      - name: Read
+        run: |
+          pip install --quiet playwright
+          playwright install --with-deps chromium
+          python tools/read_pages.py --file /tmp/urls.txt
