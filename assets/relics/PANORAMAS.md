@@ -111,15 +111,102 @@ But the per-site counts move a great deal between runs even so — Røros 5 then
 The site-level rate reproduced exactly: 5 of 45 on both runs. That is the
 number to plan with.
 
+## The terms, read in full
+
+Read 19 September 2026 by `tools/read_pages.py` via the `Read the terms`
+workflow, from mapillary.com/terms, effective 15 February 2024. The sandbox
+cannot reach the page and a text browser was bounced to a Facebook "update
+your browser" interstitial, so it was rendered with a real engine. The
+quotations below are verbatim.
+
+### Self-hosting is permitted, and named
+
+Section 11 does not merely fail to forbid downloading and re-hosting — it
+contemplates it directly:
+
+> "If you are **downloading individual images and serving them from your own
+> servers**, you must attribute the image(s) by visibly displaying the
+> Mapillary logo and linking back to the Mapillary homepage or corresponding
+> Mapillary image page."
+
+So the blocker is lifted. It comes with three conditions.
+
+**One: the Mapillary logo must be visibly displayed.** Not a text credit — the
+logo. This is a design constraint on the reveal screen, and it is not
+negotiable, so it decides the direction as much as any coverage number does.
+Section 7 says the logo "may not be copied, imitated or used... without our
+prior written permission"; Section 11 is that permission, for this use.
+
+**Two: the application must be registered** for a `client_id`, and
+
+> "must be designed to provide products or services that materially supplement
+> those provided via the Mapillary Services (and not to merely redistribute
+> Content or create applications that substantially replicate the
+> functionality of Mapillary Services)."
+
+A guessing game that hides the location and asks the player to find it is not
+a street-level imagery browser. It supplements rather than replicates. Worth
+recording that this is a reading, not a ruling.
+
+**Three: the API must be used as published.** Section 5 forbids "data mining,
+robots or similar data gathering or extraction methods not approved by
+Mapillary" and requires access "through the currently available, published
+interfaces". The Graph API with a token is exactly that. The published rate
+limits are generous: 60,000 requests per minute to entity endpoints, 10,000
+to search endpoints, 50,000 per day to tiles.
+
+### The licence is not uniformly CC-BY-SA
+
+Section 3 is more careful than the help centre article:
+
+> "Your use of any User Content provided by other users is subject to the
+> Creative Commons Share Alike (CC BY-SA) license, **unless we indicate
+> otherwise**. For instance, we may provide access to certain User Content...
+> under a separate set of license terms (such as the Creative Commons
+> Attribution NonCommercial Share Alike (CC BY-NC-SA) license)."
+
+So per-image licence has to be checked rather than assumed. NonCommercial is
+refused everywhere else in this project and has to be refused here too.
+
+### ShareAlike binds the panoramas, not the game
+
+`tools/shortlist_models.py` refuses ShareAlike outright, on the reasoning that
+"share-alike would bind the game". That reasoning does not carry over, and the
+difference is worth stating because the two look identical from a distance.
+
+Resizing a panorama to 4096 × 2048 and re-encoding it as WebP makes an
+adaptation, so **the adapted panorama must itself be published under
+CC-BY-SA**. That is a cost Heritle can pay: the files are derived from someone
+else's work and passing the licence on with them is the deal. It does not
+reach the surrounding page. A collection of separately-licensed works is not a
+derivative of each of them.
+
+A 3D model is different only in that it would arrive as a mesh baked into the
+same file the game ships, which is why that tool draws the line where it does.
+Neither position needs changing.
+
+### What each panorama must carry
+
+Both licences apply at once, so the reveal screen needs all of:
+
+- the Mapillary logo, visibly displayed
+- a link to the Mapillary homepage or that image's page
+- the contributor's username, linked to their profile
+- the licence name
+- the adapted file published under CC-BY-SA in turn
+
+Mapillary's own model: *"Madeira, Portugal by nunocaldeira, licensed under
+CC-BY-SA."*
+
 ## Open questions before committing to this
 
-1. **Mapillary's API terms.** The imagery is CC-BY-SA, but Mapillary's own
-   terms place conditions on bulk download and redistribution that a Creative
-   Commons licence does not settle. To be read before the first image is
-   cached.
-2. **Whether a Europe-heavy pool is the game you want**, or whether the pool
+1. **Whether a Europe-heavy pool is the game you want**, or whether the pool
    shrinks to roughly ninety for the sake of spread. Measured above; the
    choice is not a technical one.
-3. **Where the thin rows get filled from**, if neither answer is acceptable.
-   Commons and Poly Haven are the candidates and neither has been surveyed
-   per continent.
+2. **Whether the Mapillary logo belongs on the reveal screen.** Required by
+   the terms, so it is accept-or-abandon rather than a preference.
+3. **Where the thin rows get filled from**, if neither pool size is
+   acceptable. Commons and Poly Haven are the candidates and neither has been
+   surveyed per continent.
+4. **Per-image licence**, once images are actually fetched: CC-BY-SA is the
+   default and not the guarantee.
