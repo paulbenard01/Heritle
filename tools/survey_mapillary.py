@@ -87,6 +87,36 @@ def fetch(token, lat, lng, limit=PER_SITE, fields=FIELDS, metres=RADIUS_M):
         raise ApiError(f"HTTP {exc.code}: {body}") from None
 
 
+TOO_MUCH = "reduce the amount of data"
+
+
+def fetch_adaptive(token, lat, lng, limit=PER_SITE, fields=FIELDS,
+                   metres=RADIUS_M):
+    """Fetch, shrinking the box when Mapillary says the ask is too big.
+
+    A 150 m box over Trafalgar Square is refused outright -- "please reduce the
+    amount of data you're asking for" -- even for a single id, because the
+    square is one of the most photographed places on earth. Heritage sites in
+    dense cities (Notre-Dame, the Colosseum) will hit the same wall, so the
+    right response is to narrow the box rather than to give up on the site.
+
+    Returns the data and the radius that actually worked, because a hit found
+    at 25 m is a different claim from one found at 150 m.
+    """
+    tried = []
+    for m in (metres, metres // 2, metres // 4, 25):
+        m = max(15, int(m))
+        if m in tried:
+            continue
+        tried.append(m)
+        try:
+            return fetch(token, lat, lng, limit, fields, m), m
+        except ApiError as exc:
+            if TOO_MUCH not in str(exc):
+                raise
+    raise ApiError(f"too dense even at {tried[-1]} m")
+
+
 def dump_schema(token):
     """What a response really looks like, before anything is filtered on it.
 
@@ -94,6 +124,10 @@ def dump_schema(token):
     wrongly-shaped field with a 500 rather than a 400, so the only way to find
     which one it dislikes is to walk up from a request that certainly works.
     """
+    # Not Trafalgar Square. The first version of this probed there precisely
+    # because the coverage is dense, which turned out to be why every request
+    # was refused. A quieter place with real coverage proves the same thing.
+    lat, lng = 48.8584, 2.2945          # the Eiffel Tower's own coordinates
     probes = ["id", "id,is_pano", "id,is_pano,geometry",
               "id,is_pano,geometry,captured_at",
               "id,is_pano,geometry,captured_at,compass_angle",
@@ -103,9 +137,9 @@ def dump_schema(token):
     print("--- which fields the API accepts ---")
     for fields in probes:
         try:
-            fetch(token, 51.5080, -0.1281, limit=1, fields=fields)
+            _, used = fetch_adaptive(token, lat, lng, limit=1, fields=fields)
             good = fields
-            print(f"  ok    {fields}")
+            print(f"  ok    {fields}   (at {used} m)")
         except ApiError as exc:
             print(f"  FAILS {fields}")
             print(f"        {exc}")
@@ -120,14 +154,13 @@ def dump_schema(token):
         return 1
     print(f"\n  widest working field set: {good}\n")
 
-    # Trafalgar Square: dense coverage, so a response is guaranteed.
     try:
-        data = fetch(token, 51.5080, -0.1281, limit=3, fields=good)
+        data, used = fetch_adaptive(token, lat, lng, limit=3, fields=good)
     except Exception as exc:                        # noqa: BLE001
         print(f"schema fetch failed: {exc}", file=sys.stderr)
         return 1
     items = data.get("data") or []
-    print(f"--- {len(items)} images near Trafalgar Square ---")
+    print(f"--- {len(items)} images within {used} m of the Eiffel Tower ---")
     if not items:
         print("  empty. Either the token lacks scope or the bbox is wrong.")
         print(f"  raw: {json.dumps(data)[:300]}")
@@ -182,10 +215,10 @@ def main():
     for e in chosen:
         name = e["names"]["en"]
         try:
-            data = fetch(token, e["lat"], e["lng"], limit=PER_SITE,
-                         metres=args.radius)
+            data, used = fetch_adaptive(token, e["lat"], e["lng"],
+                                        limit=PER_SITE, metres=args.radius)
         except Exception as exc:                    # noqa: BLE001
-            print(f"  t{e['tier']} {name[:42]:<42}  ! {str(exc)[:40]}")
+            print(f"  t{e['tier']} {name[:42]:<42}  ! {str(exc)[:46]}")
             time.sleep(0.4)
             continue
         items = data.get("data") or []
@@ -200,8 +233,9 @@ def main():
         if e.get("approx"):
             approx += 1
         flag = " ~" if e.get("approx") else "  "
+        narrowed = f"  ({used} m)" if used != args.radius else ""
         print(f"  t{e['tier']}{flag}{name[:42]:<42} "
-              f"{len(items):>3} images  {len(panos):>3} are 360")
+              f"{len(items):>3} images  {len(panos):>3} are 360{narrowed}")
         time.sleep(0.4)
 
     n = len(chosen)
