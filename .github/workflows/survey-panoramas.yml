@@ -35,7 +35,7 @@ jobs:
         run: |
           set -uo pipefail
           if [ -n "${NAMES}" ]; then
-            python tools/survey_panoramas.py --names "${NAMES}"
+            python tools/survey_panoramas.py --names "${NAMES}" --titles
           else
             python tools/survey_panoramas.py --sample "${SAMPLE:-45}"
           fi

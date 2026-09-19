@@ -38,6 +38,37 @@ UA = "heritle-panorama-survey (https://heritle.org)"
 
 REFUSE = ("noncommercial", "nonderiv", "noderiv")
 
+# Words that carry no identifying weight, so a title matching only these is not
+# a match at all.
+STOP = {"the", "of", "and", "national", "park", "historic", "centre", "center",
+        "city", "town", "old", "site", "sites", "cathedral", "church", "castle",
+        "palace", "temple", "monastery", "area", "region", "valley", "island",
+        "islands", "great", "new", "saint", "st", "de", "la", "le", "du", "des"}
+
+
+def keywords(name):
+    """The distinctive words in a site's name."""
+    cleaned = "".join(c if c.isalnum() or c.isspace() else " " for c in name.lower())
+    return [w for w in cleaned.split() if len(w) > 3 and w not in STOP]
+
+
+def about(title, name):
+    """Is this file actually about this site?
+
+    Search relevance cannot be trusted for this. Adding an OR clause for
+    panorama words made every site in a twenty-site survey return the same
+    1.3 GB image, because the clause let the site's name stop constraining the
+    query -- the survey was measuring the largest panoramas on Commons rather
+    than the ones belonging to each place. So relevance is verified here rather
+    than assumed: a distinctive word of the name has to appear in the file's
+    own title.
+    """
+    keys = keywords(name)
+    if not keys:
+        return True                     # nothing distinctive to test against
+    low = title.lower()
+    return any(k in low for k in keys)
+
 
 def api(params):
     params = dict(params, format="json", formatversion="2")
@@ -80,6 +111,7 @@ def panoramas_for(name, limit=50):
             if page.get("title") in seen:
                 continue
             seen.add(page.get("title"))
+            page["_for"] = name
             pages.append(page)
         time.sleep(0.2)
     data = {"query": {"pages": pages}}
@@ -101,6 +133,8 @@ def panoramas_for(name, limit=50):
         for tag in ("<", ">"):
             if tag in author:
                 author = " ".join(author.split("<")[0].split())
+        if not about(page.get("title", ""), page.get("_for", "")):
+            continue
         out.append({
             "title": page.get("title", ""),
             "w": w, "h": h,
@@ -124,6 +158,8 @@ def main():
     ap.add_argument("--sample", type=int, default=40)
     ap.add_argument("--names", default="", help="comma-separated, instead of a sample")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--titles", action="store_true",
+                    help="print every panorama found, not just the best")
     args = ap.parse_args()
 
     if args.names:
@@ -160,6 +196,10 @@ def main():
             print(f"  {tier} {name[:44]:<44} {len(ok):>2} pano  "
                   f"{best['w']}x{best['h']}  {best['bytes']/1_000_000:>5.1f} MB  "
                   f"{best['licence'][:18]}")
+            if args.titles:
+                for p in ok[:4]:
+                    print(f"        {p['title'][5:60]:<56} {p['w']}x{p['h']}"
+                          f"  {p['bytes']/1_000_000:.1f} MB  {p['licence'][:16]}")
         else:
             print(f"  {tier} {name[:44]:<44}  — none"
                   + (f" ({len(pans)} found, all unusable)" if pans else ""))
