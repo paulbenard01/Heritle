@@ -280,12 +280,80 @@ def resolutions(token, dataset):
     return 0
 
 
+CONTINENTS = {"EU": "Europe", "AS": "Asia", "AF": "Africa",
+              "NA": "North America", "SA": "South America", "OC": "Oceania"}
+
+
+def by_continent(token, dataset, per, radius, seed):
+    """Hit rate per continent, which is the question spread actually asks.
+
+    The fame-tier survey said 11% overall, but an overall rate hides whether
+    that 11% is evenly spread or is Europe carrying the whole number. Two
+    hundred places chosen by what happens to have coverage is a different game
+    from two hundred chosen to look like the world, and the difference is
+    measurable rather than arguable.
+    """
+    with open(dataset, encoding="utf-8") as fh:
+        entries = json.load(fh)["entries"]
+    sites = [e for e in entries
+             if e.get("type") == "material" and e.get("lat") is not None]
+    random.Random(seed).shuffle(sites)
+
+    buckets = {c: [] for c in CONTINENTS}
+    for e in sites:
+        c = e.get("continent")
+        if c in buckets and len(buckets[c]) < per:
+            buckets[c].append(e)
+
+    print(f"{per} sites per continent, {radius} m around each\n")
+    totals = {}
+    for code, label in CONTINENTS.items():
+        group = buckets[code]
+        if not group:
+            print(f"  {label:<15} no sites in the pool")
+            continue
+        hits, panos = 0, 0
+        for e in group:
+            try:
+                data, _ = fetch_adaptive(token, e["lat"], e["lng"],
+                                         limit=PER_SITE, metres=radius)
+            except Exception:                       # noqa: BLE001
+                time.sleep(0.3)
+                continue
+            found = [i for i in (data.get("data") or []) if i.get("is_pano")]
+            if found:
+                hits += 1
+                panos += len(found)
+                print(f"    {label[:2]}  {e['names']['en'][:46]:<46} "
+                      f"{len(found):>3} 360s")
+            time.sleep(0.35)
+        totals[label] = (hits, len(group), panos)
+        print(f"  {label:<15} {hits:>2} of {len(group):<3} "
+              f"({hits * 100 // max(1, len(group)):>3}%)  {panos} panoramas\n")
+
+    print("=== spread ===")
+    for label, (hits, n, panos) in sorted(totals.items(),
+                                          key=lambda kv: -kv[1][0] / max(1, kv[1][1])):
+        bar = "#" * (hits * 20 // max(1, n))
+        print(f"  {label:<15} {hits:>2}/{n:<3} {bar}")
+    got = sum(h for h, _, _ in totals.values())
+    tot = sum(n for _, n, _ in totals.values())
+    print(f"\n  overall {got} of {tot} ({got * 100 // max(1, tot)}%)")
+    print("\n  A pool chosen for spread needs the low rows to carry their share.")
+    print("  Where a row is thin, Commons and Poly Haven have to fill it.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="data/dataset.json")
     ap.add_argument("--sample", type=int, default=45)
     ap.add_argument("--radius", type=int, default=RADIUS_M)
     ap.add_argument("--schema", action="store_true")
+    ap.add_argument("--by-continent", action="store_true",
+                    help="hit rate per continent rather than per fame tier")
+    ap.add_argument("--per", type=int, default=14,
+                    help="sites per continent for --by-continent")
     ap.add_argument("--resolution", action="store_true",
                     help="measure the real pixel size of panoramas at the "
                          "sites the survey found them")
@@ -306,6 +374,8 @@ def main():
         return dump_schema(token)
     if args.resolution:
         return resolutions(token, args.dataset)
+    if args.by_continent:
+        return by_continent(token, args.dataset, args.per, args.radius, args.seed)
 
     with open(args.dataset, encoding="utf-8") as fh:
         entries = json.load(fh)["entries"]

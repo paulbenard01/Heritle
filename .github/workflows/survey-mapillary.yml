@@ -21,6 +21,12 @@ on:
       resolution:
         description: 'Measure real pixel sizes instead of surveying coverage'
         default: 'false'
+      by_continent:
+        description: 'Hit rate per continent, to see whether spread is possible'
+        default: 'false'
+      per:
+        description: 'Sites per continent for the spread survey'
+        default: '14'
 
 permissions:
   contents: read
@@ -107,15 +113,25 @@ jobs:
         run: python tools/survey_mapillary.py --schema || true
 
       - name: How big are the panoramas really
-        if: ${{ inputs.resolution == 'true' }}
+        if: ${{ inputs.resolution == 'true' && inputs.by_continent != 'true' }}
         env:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
         run: |
           pip install --quiet Pillow
           python tools/survey_mapillary.py --resolution
 
+      - name: Spread across continents
+        if: ${{ inputs.by_continent == 'true' }}
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+          PER: ${{ inputs.per }}
+          RADIUS: ${{ inputs.radius }}
+        run: |
+          python tools/survey_mapillary.py --by-continent \
+            --per "${PER:-14}" --radius "${RADIUS:-150}"
+
       - name: Survey
-        if: ${{ inputs.resolution != 'true' }}
+        if: ${{ inputs.resolution != 'true' && inputs.by_continent != 'true' }}
         env:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
           SAMPLE: ${{ inputs.sample }}
