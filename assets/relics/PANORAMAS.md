@@ -129,43 +129,83 @@ the honest expectation is that it holds no heritage spheres at all.
 | Oceania | 0 | ~1 | **~1** | 28 |
 | | ~215 | ~40 | **~255** | 1,219 |
 
-## The decision, and what it costs
+## The census: Africa and Oceania counted, not sampled
 
-Settled 19 September 2026: **the Mapillary logo is accepted**, so self-hosting
-is available under Section 11 and Mapillary is the main source. The target is
-**ninety places chosen for spread** rather than two hundred chosen for supply.
+Every site in both continents, both sources, 179 sites. Run because the
+sampled estimates for these rows were built on a handful of hits and the
+pool's whole shape depended on them.
 
-Ninety is reachable. An even ninety is not. Fifteen per continent needs
-fifteen from Africa, which has six, and fifteen from Oceania, which has one.
-The achievable shape caps the rich rows well below capacity instead:
-
-| Continent | In a 90-place pool | Of the ~available |
+| | Africa (151 sites) | Oceania (28 sites) |
 |---|---|---|
-| Europe | 35 | of ~180 |
-| Asia | 30 | of ~50 |
-| South America | 11 | of ~11 |
-| North America | 7 | of ~7 |
-| Africa | 6 | of ~6 |
-| Oceania | 1 | of ~1 |
+| Mapillary | **1** — Grand-Bassam | **1** — Sydney Opera House |
+| Commons | **0** | **1** — Greater Blue Mountains |
+| Total | **1 place** | **2 places** |
 
-Europe still lands near 39% — but that is 35 of 180 taken, against 11 of 11
-and 6 of 6 elsewhere. Every non-European row is exhausted. Spread is not a
-policy that can be tightened further; it is already at the limit of what
-exists, and Oceania is one place.
+The sampled estimate for Africa was ~6. The true count is 1 — the estimate
+was six times too high, which is what a census is for.
 
-A genuinely flat pool — no continent more than twice the thinnest real row —
-comes out nearer **fifty-five**. That is the honest alternative if 39% Europe
-is too much, and it is the only other shape available.
+Two caveats on the counts themselves. Mapillary's Oceania census returned 0
+on one run and 1 on the next, the same 28 sites both times, so even a census
+carries the run-to-run instability recorded below. And Commons' Africa count
+fell from 2 to 0 when the relevance guard was fixed: both African "hits" were
+false, M'zab having been handed a 1.3 GB photograph of the Pfaffen and
+another of the Bälmeten, which are Swiss.
 
-### How firm these numbers are
+The six-continent sample was re-run after that same fix and came back
+unchanged at 5 of 150. The broken guard had inflated the census, not the
+sample.
 
-Not very, in the rows that matter most. Africa's ~6 rests on 2 hits in 54
-Mapillary sites and 0 in 25 on Commons; Oceania's ~1 rests on a 28-site census
-that found nothing and a single Commons hit. The rich rows are well measured
-and the thin ones are not, which is the wrong way round for planning. Before
-committing to exact per-continent quotas, Africa and Oceania deserve a
-dedicated pass over every site rather than a sample — 179 sites between them,
-which is affordable.
+## What actually exists, after all of it
+
+| Continent | Mapillary | Commons | Together | Sites in pool |
+|---|---|---|---|---|
+| Europe | ~160 | ~20 | **~180** | 515 |
+| Asia | ~37 | ~13 | **~50** | 332 |
+| South America | ~5 | ~6 | **~11** | 79 |
+| North America | ~7 | ~0 | **~7** | 112 |
+| Oceania | 1 | 1 | **2** (counted) | 28 |
+| Africa | 1 | 0 | **1** (counted) | 151 |
+
+## Spread is not available at any pool size
+
+Ninety places chosen for spread was the decision. It cannot be built. Africa
+has one usable panorama and Oceania has two, and those are counts of every
+site rather than estimates, so no target and no amount of further searching
+moves them.
+
+A ninety-place pool would be Africa 1 and Oceania 2 — three places, three per
+cent, for two continents holding an enormous share of the world's heritage.
+Europe and Asia would carry about 77% of it. That is not a spread-focused
+pool with a caveat; it is a Europe-and-Asia game with two other continents
+represented by a token.
+
+And a genuinely flat pool — every continent equal — is capped by Africa at
+one, so it would hold about six places in total.
+
+The constraint is not the target. It is that the imagery does not exist:
+360 rigs are carried by people who own them, along roads they drive, and that
+distribution is what the survey has been measuring all along.
+
+## The options that are actually open
+
+1. **Ninety places, honestly labelled.** Build it, and say plainly that it is
+   where 360 imagery exists rather than where heritage is. Africa 1,
+   Oceania 2.
+2. **Two hundred places, Europe-heavy.** The original shape, ~215 available.
+   Same imbalance, more game.
+3. **Keep the daily game as the world-spanning one** and make 360 a bonus
+   mode over the few dozen places that have coverage. The daily game already
+   draws on 1,872 entries with real spread; nothing about it is constrained
+   by where someone carried a panorama rig.
+4. **Go back to 3D models.** Sketchfab coverage is not street-shaped, so its
+   geography is different — but the models were judged poor when looked at,
+   and that judgement has not changed.
+
+Option 3 is the one worth recommending. The spread the project wants already
+exists in the daily game, and 360 is a good bonus over a small set and a bad
+foundation for a world-spanning one. It also costs nothing already built: the
+Heritle 3D shell on `claude/vigilant-ride-6p54ko` is a separate mode by
+design.
 
 ## Not usable
 
@@ -292,14 +332,12 @@ CC-BY-SA."*
 
 ## Open questions before committing to this
 
-1. **A full pass over Africa and Oceania** — 179 sites, every one of them,
-   rather than a sample. The two rows the pool shape depends on are the two
-   measured worst.
-2. **Per-image licence**, once images are actually fetched: CC-BY-SA is the
-   default and not the guarantee, and NonCommercial is refused.
-3. **Whether 39% Europe is acceptable** at ninety places, or whether the pool
-   drops to about fifty-five for a flatter shape. Both are measured; the
-   choice is not a technical one.
+1. **Which of the four options above.** Everything measurable has now been
+   measured; this one is a decision about what the game is for.
+2. **Per-image licence**, if images are fetched: CC-BY-SA is the default and
+   not the guarantee, and NonCommercial is refused.
 
-Settled: the Mapillary logo is accepted, the target is ninety places chosen
-for spread, and Commons and Poly Haven have been surveyed per continent.
+Settled: the Mapillary logo is accepted, so self-hosting is permitted. Commons
+and Poly Haven are surveyed per continent. Africa and Oceania are counted
+outright. And the ninety-place spread target, as specified, is not buildable —
+not for want of a plan but for want of photographs.
