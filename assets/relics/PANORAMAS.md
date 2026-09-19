@@ -64,16 +64,108 @@ Only 10% have a 360 while about half have *some* imagery, which says most
 Mapillary contributions are flat phone and dashcam frames rather than spherical
 rigs.
 
-## Wikimedia Commons — thin, and easy to overcount
+## Wikimedia Commons — measured properly, and thin
 
-A 2:1 aspect ratio is how an equirectangular panorama is recognised, and it is
-**necessary but not sufficient**: plenty of wide or cropped photographs land
-near 2:1 by accident. Of six apparent hits across fourteen famous sites, only
-the Colosseum's was unambiguously a 360 — a CC0 HDRI by Greg Zaal and Rico
-Cilliers via Poly Haven. One was a church in **Cusco**, not Barcelona.
+25 sites per continent, 150 in all, every candidate's file opened and read.
 
-The definitive test is the GPano XMP tag (`ProjectionType=equirectangular`),
-not the shape. That has not been implemented yet.
+| Continent | Hit | Reachable in the pool |
+|---|---|---|
+| South America | 2/25 (8%) | ~6 of 79 |
+| Europe | 1/25 (4%) | ~20 of 515 |
+| Asia | 1/25 (4%) | ~13 of 332 |
+| Oceania | 1/25 (4%) | ~1 of 28 |
+| Africa | **0/25** | 0 of 151 |
+| North America | **0/25** | 0 of 112 |
+| | 5/150 (3%) | **~40** |
+
+The five: Verla, Hiraizumi, Cuenca, Humberstone, the Greater Blue Mountains.
+
+So Commons is a supplement worth about forty places, not a rescue. It cannot
+fill Africa, which was the row it was asked to fill.
+
+### The projection test earned itself on the first run
+
+A 2:1 aspect ratio is necessary and nowhere near sufficient, which this file
+has said for days while the survey went on trusting it. It is now tested
+properly: 128 KB of each candidate is fetched and searched for the GPano XMP
+tag the stitcher writes, which is enough because XMP sits near the start of a
+JPEG.
+
+Eight sites came back "looked 2:1, none were spheres" — Malbork, Pienza,
+Speyer, Mount Wutai, Thebes, Maloti-Drakensberg, Castillo de San Pedro, the
+Sydney Opera House. Every one of those would have counted under the old test.
+It would have reported 13 of 150 instead of 5, and nearly tripled the rate the
+pool size rests on.
+
+A file that cannot be read returns neither yes nor no, and those are counted
+apart. Reading a network failure as "not a panorama" would turn an outage into
+a finding.
+
+### Poly Haven: candidates, never counts
+
+Four filters were written for it and each failed differently. Substrings gave
+`viale_giuseppe_GARIbaldi` for K'gari. Whole tokens still gave a museum of
+history for National History Park. Requiring the lone word to be rare in the
+catalogue passed that one anyway — "history" is rare in a library of render
+lighting and generic everywhere else. Requiring two distinctive words to agree
+could almost never fire, because heritage names collapse to one key once the
+stop list has taken "temple", "park" and every word under four letters:
+"Angkor Wat Temple" reduces to "angkor".
+
+A test that cannot pass is the same bug as a test that cannot fail, and this
+survey produced one of each. So Poly Haven now prints links for a person to
+open and adds nothing to any total. It is a library for lighting 3D renders;
+the honest expectation is that it holds no heritage spheres at all.
+
+## What the two sources give together
+
+| Continent | Mapillary | Commons | Together | Sites in pool |
+|---|---|---|---|---|
+| Europe | ~160 | ~20 | **~180** | 515 |
+| Asia | ~37 | ~13 | **~50** | 332 |
+| South America | ~5 | ~6 | **~11** | 79 |
+| North America | ~7 | ~0 | **~7** | 112 |
+| Africa | ~6 | 0 | **~6** | 151 |
+| Oceania | 0 | ~1 | **~1** | 28 |
+| | ~215 | ~40 | **~255** | 1,219 |
+
+## The decision, and what it costs
+
+Settled 19 September 2026: **the Mapillary logo is accepted**, so self-hosting
+is available under Section 11 and Mapillary is the main source. The target is
+**ninety places chosen for spread** rather than two hundred chosen for supply.
+
+Ninety is reachable. An even ninety is not. Fifteen per continent needs
+fifteen from Africa, which has six, and fifteen from Oceania, which has one.
+The achievable shape caps the rich rows well below capacity instead:
+
+| Continent | In a 90-place pool | Of the ~available |
+|---|---|---|
+| Europe | 35 | of ~180 |
+| Asia | 30 | of ~50 |
+| South America | 11 | of ~11 |
+| North America | 7 | of ~7 |
+| Africa | 6 | of ~6 |
+| Oceania | 1 | of ~1 |
+
+Europe still lands near 39% — but that is 35 of 180 taken, against 11 of 11
+and 6 of 6 elsewhere. Every non-European row is exhausted. Spread is not a
+policy that can be tightened further; it is already at the limit of what
+exists, and Oceania is one place.
+
+A genuinely flat pool — no continent more than twice the thinnest real row —
+comes out nearer **fifty-five**. That is the honest alternative if 39% Europe
+is too much, and it is the only other shape available.
+
+### How firm these numbers are
+
+Not very, in the rows that matter most. Africa's ~6 rests on 2 hits in 54
+Mapillary sites and 0 in 25 on Commons; Oceania's ~1 rests on a 28-site census
+that found nothing and a single Commons hit. The rich rows are well measured
+and the thin ones are not, which is the wrong way round for planning. Before
+committing to exact per-continent quotas, Africa and Oceania deserve a
+dedicated pass over every site rather than a sample — 179 sites between them,
+which is affordable.
 
 ## Not usable
 
@@ -200,13 +292,14 @@ CC-BY-SA."*
 
 ## Open questions before committing to this
 
-1. **Whether a Europe-heavy pool is the game you want**, or whether the pool
-   shrinks to roughly ninety for the sake of spread. Measured above; the
+1. **A full pass over Africa and Oceania** — 179 sites, every one of them,
+   rather than a sample. The two rows the pool shape depends on are the two
+   measured worst.
+2. **Per-image licence**, once images are actually fetched: CC-BY-SA is the
+   default and not the guarantee, and NonCommercial is refused.
+3. **Whether 39% Europe is acceptable** at ninety places, or whether the pool
+   drops to about fifty-five for a flatter shape. Both are measured; the
    choice is not a technical one.
-2. **Whether the Mapillary logo belongs on the reveal screen.** Required by
-   the terms, so it is accept-or-abandon rather than a preference.
-3. **Where the thin rows get filled from**, if neither pool size is
-   acceptable. Commons and Poly Haven are the candidates and neither has been
-   surveyed per continent.
-4. **Per-image licence**, once images are actually fetched: CC-BY-SA is the
-   default and not the guarantee.
+
+Settled: the Mapillary logo is accepted, the target is ninety places chosen
+for spread, and Commons and Poly Haven have been surveyed per continent.
