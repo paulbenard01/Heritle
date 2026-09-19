@@ -97,10 +97,14 @@ jobs:
                   echo "secret, the survey will return nothing." ;;
           esac
 
+      # A diagnostic must never block the work it is diagnosing. This step
+      # has failed a run twice on its own choice of probe location while the
+      # actual survey was fine.
       - name: What a response actually contains
+        continue-on-error: true
         env:
           MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
-        run: python tools/survey_mapillary.py --schema
+        run: python tools/survey_mapillary.py --schema || true
 
       - name: How big are the panoramas really
         if: ${{ inputs.resolution == 'true' }}
