@@ -199,6 +199,19 @@ CONTINENTS = {"EU": "Europe", "AS": "Asia", "AF": "Africa",
 POLY_HAVEN = "https://api.polyhaven.com/assets?t=hdris"
 
 
+class Catalogue(dict):
+    """A name index that also knows how common each word in it is."""
+
+    freq = {}
+
+    def count_tokens(self):
+        self.freq = {}
+        for label in self:
+            for tok in set(label.replace("_", " ").replace("-", " ").split()):
+                self.freq[tok] = self.freq.get(tok, 0) + 1
+        return self.freq
+
+
 def poly_haven_index():
     """Poly Haven's whole HDRI catalogue, as {lowercased name: slug}.
 
@@ -214,22 +227,52 @@ def poly_haven_index():
     except Exception as exc:                            # noqa: BLE001
         print(f"  ! Poly Haven unreachable: {exc}", file=sys.stderr)
         return {}
-    out = {}
+    out = Catalogue()
     for slug, asset in data.items():
         name = (asset.get("name") or slug).lower()
         out[name] = slug
         for tag in asset.get("tags") or []:
             out.setdefault(str(tag).lower(), slug)
+    out.count_tokens()
     return out
 
 
 def poly_haven_hit(name, index):
+    """Does Poly Haven hold a sphere of *this place*?
+
+    The first version of this matched on a substring of a single distinctive
+    word and reported three hits, all of them false: "Museum Island" matched
+    an air museum playground, "National History Park" matched a museum of
+    history, and "K'gari" matched viale_giuseppe_GARIbaldi. Each one had been
+    reduced to a single generic key first, because the stop list eats "island"
+    and "national park".
+
+    So: whole tokens, never substrings; every distinctive word must appear,
+    not the first two; and a single short word is not enough on its own. The
+    same mistake as the Sketchfab licence filter, and it deserves the same
+    answer -- a filter that matches one generic word is not a filter.
+    """
     keys = keywords(name)
     if not keys:
         return None
     for label, slug in index.items():
-        if all(k in label for k in keys[:2]):
-            return slug
+        tokens = set(label.replace("_", " ").replace("-", " ").split())
+        if not all(k in tokens for k in keys):
+            continue
+        # A single word carries the whole match, so it has to be a word that
+        # could only mean this place. Length does not say that -- "museum" and
+        # "history" are both long and both generic. Rarity in the catalogue
+        # does, and it is measured rather than guessed: a lone word has to be
+        # unique in the catalogue. "stonehenge" appears once; "museum" and
+        # "history" do not. Names like "National History Park" have no
+        # distinctive word left after the stop list at all, and refusing them
+        # is the right answer rather than a missed one.
+        #
+        # Still a heuristic. Poly Haven hits are few enough to eyeball, and
+        # they should be.
+        if len(keys) == 1 and index.freq.get(keys[0], 0) > 1:
+            continue
+        return slug
     return None
 
 
