@@ -1,0 +1,61 @@
+name: Survey Mapillary 360s
+
+# Commons holds heritage photographs, not heritage 360s. Mapillary is built for
+# street-level imagery and is queried by bounding box, so relevance is
+# geometric rather than textual -- the question becomes "is this image within
+# 150 m of Petra", which is a fact about the image rather than a guess about a
+# search engine.
+#
+# Needs the MAPILLARY_TOKEN secret: the access token beginning MLY|, not the
+# client secret. Nothing is downloaded and nothing is committed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: 'How many sites to survey (spread across fame tiers)'
+        default: '45'
+      radius:
+        description: 'Metres around each site'
+        default: '150'
+
+permissions:
+  contents: read
+
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Is the token there at all
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [ -z "${MAPILLARY_TOKEN:-}" ]; then
+            echo "MAPILLARY_TOKEN is not set as a repository secret."
+            echo "Add the Mapillary *access token* (it begins MLY|) under"
+            echo "Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          # Never the value, only its shape: enough to tell an access token
+          # from a client secret pasted by mistake.
+          echo "token present, ${#MAPILLARY_TOKEN} characters, starts '${MAPILLARY_TOKEN:0:4}'"
+
+      - name: What a response actually contains
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+        run: python tools/survey_mapillary.py --schema
+
+      - name: Survey
+        env:
+          MAPILLARY_TOKEN: ${{ secrets.MAPILLARY_TOKEN }}
+          SAMPLE: ${{ inputs.sample }}
+          RADIUS: ${{ inputs.radius }}
+        run: |
+          python tools/survey_mapillary.py \
+            --sample "${SAMPLE:-45}" --radius "${RADIUS:-150}"

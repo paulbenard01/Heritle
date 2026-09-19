@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""How many heritage sites have a 360 panorama on Mapillary?
+
+Commons holds heritage photographs, not heritage 360s: a survey of fourteen
+famous sites found one unambiguous equirectangular panorama, and several near
+misses that were only wide or cropped photographs landing near 2:1 by accident.
+Mapillary is street-level imagery built for this, and it answers a much better
+question.
+
+**Relevance here is geometric, not textual.** Every survey before this one
+searched by name and then tried to judge whether a result was really about the
+place -- which went wrong three times, most memorably when every site in a
+twenty-site run returned the same 1.3 GB picture of the Milky Way. Mapillary is
+queried by bounding box, and the dataset already carries coordinates for all
+1,872 entries, so "is this image of Petra" becomes "is this image within 150
+metres of Petra". That is a fact about the image, not a guess about a search
+engine.
+
+Before any filtering, --schema prints what a response actually contains. That
+habit is the direct result of writing three filters against fields that were
+not there.
+
+    python tools/survey_mapillary.py --schema
+    python tools/survey_mapillary.py --sample 45
+
+Needs MAPILLARY_TOKEN in the environment: Mapillary's *access token*, the one
+beginning MLY|. Not the client secret, which is for signing users in, and not
+the authorisation URL.
+
+Licence caution, to settle before anything ships: Mapillary imagery is
+CC-BY-SA, but Mapillary's own API terms place conditions on bulk download and
+redistribution that a CC licence alone does not answer. Read them before the
+first image is cached, not after.
+"""
+import argparse
+import json
+import os
+import random
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+GRAPH = "https://graph.mapillary.com/images"
+RADIUS_M = 150          # a box this big around a site is still that site
+FIELDS = "id,is_pano,captured_at,geometry,compass_angle,thumb_2048_url,creator"
+PER_SITE = 50
+
+
+def bbox(lat, lng, metres=RADIUS_M):
+    """A box of about this many metres around a point.
+
+    A degree of latitude is ~111 km everywhere; a degree of longitude shrinks
+    with the cosine of the latitude, which matters for a site in Svalbard and
+    not at all for one in Kenya. Cheap to do properly, so do it properly.
+    """
+    import math
+    dlat = metres / 111_000.0
+    dlng = metres / (111_000.0 * max(0.05, math.cos(math.radians(lat))))
+    return f"{lng - dlng},{lat - dlat},{lng + dlng},{lat + dlat}"
+
+
+def fetch(token, lat, lng, limit=PER_SITE, fields=FIELDS):
+    params = {"access_token": token, "fields": fields,
+              "bbox": bbox(lat, lng), "limit": str(limit)}
+    url = GRAPH + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "heritle-survey"})
+    with urllib.request.urlopen(req, timeout=60) as fh:
+        return json.load(fh)
+
+
+def dump_schema(token):
+    """What a response really looks like, before anything is filtered on it."""
+    # Trafalgar Square: dense coverage, so a response is guaranteed.
+    try:
+        data = fetch(token, 51.5080, -0.1281, limit=3)
+    except Exception as exc:                        # noqa: BLE001
+        print(f"schema fetch failed: {exc}", file=sys.stderr)
+        return 1
+    items = data.get("data") or []
+    print(f"--- {len(items)} images near Trafalgar Square ---")
+    if not items:
+        print("  empty. Either the token lacks scope or the bbox is wrong.")
+        print(f"  raw: {json.dumps(data)[:300]}")
+        return 1
+    for k, v in sorted(items[0].items()):
+        flat = (repr(v)[:90] if isinstance(v, (str, int, float, bool, type(None)))
+                else json.dumps(v)[:90])
+        print(f"  {k:18} {flat}")
+    print(f"\n  is_pano across the {len(items)}: "
+          f"{[i.get('is_pano') for i in items]}")
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dataset", default="data/dataset.json")
+    ap.add_argument("--sample", type=int, default=45)
+    ap.add_argument("--radius", type=int, default=RADIUS_M)
+    ap.add_argument("--schema", action="store_true")
+    ap.add_argument("--seed", type=int, default=7)
+    args = ap.parse_args()
+
+    token = os.environ.get("MAPILLARY_TOKEN", "").strip()
+    if not token:
+        print("MAPILLARY_TOKEN is not set. It is the access token beginning "
+              "MLY|, not the client secret.", file=sys.stderr)
+        return 2
+    if not token.startswith("MLY"):
+        print("warning: a Mapillary access token normally begins 'MLY|'. "
+              "If this is the client secret, the survey will return nothing.",
+              file=sys.stderr)
+
+    if args.schema:
+        return dump_schema(token)
+
+    with open(args.dataset, encoding="utf-8") as fh:
+        entries = json.load(fh)["entries"]
+    sites = [e for e in entries
+             if e.get("type") == "material" and e.get("lat") is not None]
+    random.Random(args.seed).shuffle(sites)
+    # Across fame tiers: a survey of famous places alone flatters the answer,
+    # and the pool is mostly not famous.
+    by_tier = {1: [], 2: [], 3: []}
+    for e in sites:
+        t = e.get("tier")
+        if t in by_tier and len(by_tier[t]) < args.sample // 3 + 1:
+            by_tier[t].append(e)
+    chosen = [e for t in (1, 2, 3) for e in by_tier[t]][:args.sample]
+
+    with_any, with_pano, panos_total, approx = 0, 0, 0, 0
+    print(f"surveying {len(chosen)} sites, {args.radius} m around each\n")
+    for e in chosen:
+        name = e["names"]["en"]
+        try:
+            data = fetch(token, e["lat"], e["lng"], limit=PER_SITE)
+        except Exception as exc:                    # noqa: BLE001
+            print(f"  t{e['tier']} {name[:42]:<42}  ! {str(exc)[:40]}")
+            time.sleep(0.4)
+            continue
+        items = data.get("data") or []
+        panos = [i for i in items if i.get("is_pano")]
+        if items:
+            with_any += 1
+        if panos:
+            with_pano += 1
+            panos_total += len(panos)
+        # An approximate coordinate means the box may not be over the site at
+        # all, so those results prove less. The dataset flags them.
+        if e.get("approx"):
+            approx += 1
+        flag = " ~" if e.get("approx") else "  "
+        print(f"  t{e['tier']}{flag}{name[:42]:<42} "
+              f"{len(items):>3} images  {len(panos):>3} are 360")
+        time.sleep(0.4)
+
+    n = len(chosen)
+    print(f"\n=== {with_pano} of {n} sites have at least one 360 "
+          f"({with_pano * 100 // max(1, n)}%) ===")
+    print(f"  any street-level imagery at all: {with_any} of {n}")
+    print(f"  360s found in total: {panos_total}")
+    print(f"  sites whose coordinate is approximate: {approx}"
+          " (their boxes may not sit over the site)")
+    if with_pano:
+        print(f"  extrapolated: {with_pano * 1872 // max(1, n)} of the 1,872 "
+              "entries might have one")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
