@@ -4879,6 +4879,14 @@ async function loadRelics(){
     if(!res.ok) throw new Error('relics ' + res.status);
     const data = await res.json();
     RELIC_VIEWER = typeof data.viewer === 'string' ? data.viewer : null;
+    // Where the models are served from. Empty means "beside the page", which
+    // is where they start. Moving them to a release, a second Pages site or a
+    // CDN later is then one line in relics.json rather than a code change --
+    // and the filename stays ours either way, so the answer is still not in
+    // the URL.
+    const base = typeof data.base === 'string' ? data.base.replace(/\/+$/, '') + '/' : '';
+    const abs = (u)=> !u ? u : (/^https?:|^\//.test(u) ? u : base + u);
+    (data.relics || []).forEach(r => { r.model = abs(r.model); r.image = abs(r.image); });
     const byId = new Map((data.relics || []).map(r => [r.id, r]));
     RELIC_GROUPS = (data.groups || [])
       .map(g => ({ ...g, relics: (g.relics || []).filter(id => byId.has(id)) }))
