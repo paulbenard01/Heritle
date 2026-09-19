@@ -47,21 +47,42 @@ def api(params):
         return json.load(fh)
 
 
-def panoramas_for(name, limit=40):
-    """Every 2:1 image Commons offers for this name, largest first."""
-    try:
-        data = api({
-            "action": "query",
-            "generator": "search",
-            "gsrsearch": f'{name} filetype:bitmap',
-            "gsrnamespace": "6",          # File:
-            "gsrlimit": str(limit),
-            "prop": "imageinfo",
-            "iiprop": "url|size|extmetadata",
-        })
-    except Exception as exc:                        # noqa: BLE001
-        print(f"    ! search failed: {exc}", file=sys.stderr)
-        return []
+def _search(query, limit):
+    return api({
+        "action": "query",
+        "generator": "search",
+        "gsrsearch": query,
+        "gsrnamespace": "6",          # File:
+        "gsrlimit": str(limit),
+        "prop": "imageinfo",
+        "iiprop": "url|size|extmetadata",
+    })
+
+
+def panoramas_for(name, limit=50):
+    """Every 2:1 image Commons offers for this name, largest first.
+
+    Two queries, unioned. Commons sorts by relevance, so for a cathedral with
+    three thousand photographs a panorama may simply not appear in the first
+    fifty results of a plain name search -- which would make a survey of the
+    plain query measure Commons' ranking rather than its holdings. The second
+    query asks for panoramas by name.
+    """
+    pages, seen = [], set()
+    for query in (f'{name} (360 OR panorama OR equirectangular OR spherical)',
+                  f'{name} filetype:bitmap'):
+        try:
+            data = _search(query, limit)
+        except Exception as exc:                    # noqa: BLE001
+            print(f"    ! search failed: {exc}", file=sys.stderr)
+            continue
+        for page in (data.get("query", {}) or {}).get("pages", []) or []:
+            if page.get("title") in seen:
+                continue
+            seen.add(page.get("title"))
+            pages.append(page)
+        time.sleep(0.2)
+    data = {"query": {"pages": pages}}
 
     out = []
     for page in (data.get("query", {}) or {}).get("pages", []) or []:
