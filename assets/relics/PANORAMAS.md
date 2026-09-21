@@ -1,3 +1,25 @@
+# 360 panoramas and 3D models: closed, 21 September 2026
+
+**The whole visual-asset direction is abandoned.** Not because the
+measurements were inconclusive — they were unusually clear — but because
+what they showed was that the imagery for a world-spanning game does not
+exist, and the workaround for that was more complexity than the project
+wants to carry.
+
+The numbers that closed it: Africa has **1** usable panorama across all 151
+of its sites, Oceania **2** of 28, both counted rather than sampled. The 3D
+models were shortlisted and, when opened, judged poor.
+
+What survives is the daily game, which already spans 1,872 entries with real
+spread and is constrained by nothing but the dataset. The Heritle 3D shell
+remains unmerged on `claude/vigilant-ride-6p54ko`; the surveys and their
+tooling remain in `tools/`, and the lessons are written up in
+`docs/BUILD_PROMPT.md`.
+
+Everything below is the record of how that was established.
+
+---
+
 # 360 panoramas: what the sources actually hold
 
 Measured 19 September 2026, against the real dataset, by
