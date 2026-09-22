@@ -8,6 +8,8 @@ Brand files live here. The game loads the header mark from this folder.
 | `heritlelogonavy.svg` | the dark mark, for light backgrounds | share cards, print, anything on cream |
 | `Heritlelogogold.png` | raster copy of the light mark | social preview (`og:image`), Apple touch icon |
 | `Heritlelogonavy.png` | raster copy of the dark mark | spare |
+| `Instagram_white.svg`, `TikTok_white.svg`, `YouTube_white.svg` | white social marks (TikTok and YouTube from Simple Icons, CC0) | beside the language picker and in the menu |
+| `github-white-icon.svg` | white GitHub mark | the menu's Source link |
 
 Note the mixed capitalisation: the SVGs are lowercase and the PNGs are not.
 That is how they were uploaded, and the code points at the real names rather

@@ -143,7 +143,14 @@ HEADER_PROBE = """
     range.selectNodeContents(wm);
     const t = range.getBoundingClientRect();
     return { text: { l: Math.round(t.left), r: Math.round(t.right) },
-             lang: box('.lang-slider'), mark: box('.mark'), ig: box('.lang-ig') };
+             lang: box('.lang-slider'), mark: box('.mark'),
+             social: [...document.querySelectorAll('.lang-ig')].map(e => {
+               const b = e.getBoundingClientRect();
+               return { l: Math.round(b.left), r: Math.round(b.right),
+                        b: Math.round(b.bottom) };
+             }),
+             pitchTop: Math.round(document.querySelector('.pitch')
+                                    .getBoundingClientRect().top) };
   }
 """
 
@@ -2255,8 +2262,14 @@ def main():
             check(g["text"]["l"] >= g["mark"]["r"],
                   f"{width}px: nor the mark",
                   f"mark ends {g['mark']['r']}, title starts {g['text']['l']}")
-            check(g["ig"] is not None and g["ig"]["r"] <= width,
-                  f"{width}px: and Instagram is on the screen", str(g["ig"]))
+            check(len(g["social"]) == 3 and all(m["r"] <= width for m in g["social"]),
+                  f"{width}px: and Instagram, TikTok and YouTube are on the screen",
+                  str(g["social"]))
+            # On a phone they sit on a line of their own under the languages,
+            # and that line must stop short of the pitch.
+            check(all(m["b"] <= g["pitchTop"] + 6 for m in g["social"]),
+                  f"{width}px: without sitting on the pitch",
+                  f"marks end {[m['b'] for m in g['social']]}, pitch starts {g['pitchTop']}")
             ctx.close()
 
         # ---- the mark, and the tab ----

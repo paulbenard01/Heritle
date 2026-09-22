@@ -231,8 +231,9 @@
   .mark-menu .menu-label{display:flex;align-items:center;gap:9px;min-width:0;}
   .menu-icon{width:15px;height:15px;object-fit:contain;flex:none;opacity:0.85;}
   .mark-menu a:hover .menu-icon{opacity:1;}
-  /* Instagram beside the language picker: videos are going up there, and a
-     link nobody finds is not a link. */
+  /* Instagram, TikTok and YouTube beside the language picker: videos are
+     going up there, and a link nobody finds is not a link. */
+  .lang-row, .lang-social{display:inline-flex;align-items:center;}
   .lang-ig{display:inline-flex;align-items:center;padding:4px 2px 4px 8px;
     opacity:0.6;}
   .lang-ig:hover{opacity:1;}
@@ -282,6 +283,14 @@
      visual order. It is now quiet type, and absolutely positioned so it costs
      nothing in the vertical budget above the photograph. */
   .lang-slider{position:absolute;top:0;right:0;display:inline-flex;}
+  /* Three marks beside three languages is wider than a phone can spare next
+     to the title, so there they drop to a line of their own under the
+     languages -- level with the title's lower half, not the pitch below it. */
+  @media (max-width:560px){
+    .lang-slider{flex-direction:column;align-items:flex-end;}
+    .lang-social{margin-top:-17px;padding-right:4px;}
+    .lang-ig{padding:3px 2px 3px 7px;}
+  }
   .lang-btn{background:transparent;border:none;color:var(--ink-dim);
     font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.03em;
     padding:4px 6px;cursor:pointer;opacity:0.65;}
@@ -878,13 +887,23 @@
     <a class="wordmark" href="." aria-label="Heritle">Heritle</a>
     <div class="pitch" id="pitch"></div>
     <div class="tagline" id="tagline"></div>
-    <div class="lang-slider" role="tablist">
-      <button class="lang-btn active" data-lang="en">EN</button>
-      <button class="lang-btn" data-lang="fr">FR</button>
-      <button class="lang-btn" data-lang="es">ES</button>
-      <a class="lang-ig" id="langIg" target="_blank" rel="noopener noreferrer">
-        <img src="assets/Instagram_white.svg" alt="" aria-hidden="true">
-      </a>
+    <div class="lang-slider">
+      <span class="lang-row" role="tablist">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+      </span>
+      <span class="lang-social">
+        <a class="lang-ig" id="langIg" target="_blank" rel="noopener noreferrer">
+          <img src="assets/Instagram_white.svg" alt="" aria-hidden="true">
+        </a>
+        <a class="lang-ig" id="langTt" target="_blank" rel="noopener noreferrer">
+          <img src="assets/TikTok_white.svg" alt="" aria-hidden="true">
+        </a>
+        <a class="lang-ig" id="langYt" target="_blank" rel="noopener noreferrer">
+          <img src="assets/YouTube_white.svg" alt="" aria-hidden="true">
+        </a>
+      </span>
     </div>
   </header>
 
@@ -1030,6 +1049,8 @@ const LINKS = {
   news:       'https://whc.unesco.org/en/news/',      // inscriptions, decisions, alerts
   europeana:  'https://www.europeana.eu/en',          // millions of digitised items
   instagram:  'https://instagram.com/herit.le',
+  tiktok:     'https://www.tiktok.com/@heritlemedia',
+  youtube:    'https://www.youtube.com/@HeritleMedia',
   source:     'https://github.com/paulbenard01/Heritle',
   contact:    ''                                      // e.g. mailto:you@example.com
 };
@@ -1039,7 +1060,7 @@ const LINKS = {
    footnotes next to an Instagram handle. */
 const LINK_GROUPS = [
   { label: 'explore', keys: ['list', 'ich', 'news', 'europeana'] },
-  { label: 'project', keys: ['instagram', 'source', 'contact'] }
+  { label: 'project', keys: ['instagram', 'tiktok', 'youtube', 'source', 'contact'] }
 ];
 
 /* ---------- Fallback dataset ----------
@@ -1268,7 +1289,7 @@ const UI = {
          updated:'Last updated: 13 September 2026' },
        links:{ list:'The World Heritage List', ich:'Living traditions',
                news:'Heritage news', europeana:'Europeana collections',
-               instagram:'Instagram', source:'Source', contact:'Get in touch' },
+               instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Source', contact:'Get in touch' },
        linkGroups:{ explore:'Read further', project:'This project' },
        achEarned:'Earned', achLocked:'Still to find',
        inAppNote:'You are in <b>Instagram\u2019s own browser</b>, which keeps its progress separately from your usual one. Open heritle.org there to find your collection \u2014 or copy the backup code from the Passport and paste it across.',
@@ -1437,7 +1458,7 @@ const UI = {
          updated:'Dernière mise à jour : 13 septembre 2026' },
        links:{ list:'La Liste du patrimoine mondial', ich:'Traditions vivantes',
                news:'Actualité du patrimoine', europeana:'Collections Europeana',
-               instagram:'Instagram', source:'Code source', contact:'Nous écrire' },
+               instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Code source', contact:'Nous écrire' },
        linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
        achEarned:'Obtenues', achLocked:'Encore à trouver',
        inAppNote:'Vous êtes dans le <b>navigateur interne d\u2019Instagram</b>, qui garde sa progression à part. Ouvrez heritle.org dans votre navigateur habituel pour retrouver votre collection \u2014 ou copiez le code de sauvegarde du Passeport et collez-le ici.',
@@ -1606,7 +1627,7 @@ const UI = {
          updated:'Última actualización: 13 de septiembre de 2026' },
        links:{ list:'La Lista del Patrimonio Mundial', ich:'Tradiciones vivas',
                news:'Noticias del patrimonio', europeana:'Colecciones Europeana',
-               instagram:'Instagram', source:'Código fuente', contact:'Escríbenos' },
+               instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Código fuente', contact:'Escríbenos' },
        linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
        inAppNote:'Estás en el <b>navegador interno de Instagram</b>, que guarda su progreso aparte. Abre heritle.org en tu navegador habitual para encontrar tu colección, o copia el código de copia de seguridad del Pasaporte y pégalo aquí.',
@@ -4183,6 +4204,8 @@ function renderLinks(){
   // A few of these carry their own mark. The file names are the ones that
   // were uploaded, capitalisation included: on Pages that is part of the name.
   const ICONS = { instagram: 'assets/Instagram_white.svg',
+                  tiktok:    'assets/TikTok_white.svg',
+                  youtube:   'assets/YouTube_white.svg',
                   source:    'assets/github-white-icon.svg' };
   const item = (k) =>
     `<a href="${LINKS[k]}" target="_blank" rel="noopener noreferrer">`
@@ -4215,11 +4238,15 @@ function renderLinks(){
     figure.appendChild(img);
     spinTop(figure, img);
   }
-  const ig = document.getElementById('langIg');
-  if(ig){
-    if(LINKS.instagram){ ig.href = LINKS.instagram; ig.title = T.links.instagram; }
-    else ig.hidden = true;
-  }
+  // The same three marks beside the language picker.
+  [['langIg', 'instagram'], ['langTt', 'tiktok'], ['langYt', 'youtube']]
+    .forEach(([id, k]) => {
+      const a = document.getElementById(id);
+      if(!a) return;
+      if(LINKS[k]){ a.href = LINKS[k]; a.title = T.links[k];
+                    a.setAttribute('aria-label', T.links[k]); }
+      else a.hidden = true;
+    });
 }
 
 /* ---------- Who am I ---------- */
