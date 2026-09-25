@@ -38,7 +38,21 @@
     --navy:#131D34; --navy-2:#1B2A4A; --navy-3:#233A63;
     --cream:#F3EEDF; --ink:#E7E1CF; --ink-dim:#9CA6C0;
     --gold:#C9A24B; --gold-dim:#8E7333;
-    --heat-far:#3E5C86; --heat-mid:#8C6A46; --heat-close:#B8532E; --heat-hot:#8E2F1D; --correct:#5C8A5C;
+    /* Distance, far to right: slate, earth, rust, straw, green. It climbs
+       towards the green of a solved round rather than peaking at red, which
+       every player already reads as "wrong" -- and it matches the shared
+       grid, where Wordle taught everyone that yellow means nearly. */
+    --heat-far:#7D8597; --heat-mid:#8C6A46; --heat-close:#B8532E; --heat-hot:#E3C454; --correct:#5C8A5C;
+    /* Not distance: "wrong", and the stamps and secret awards. Named apart
+       so the colour-blind palette, which moves the heat scale, leaves them be. */
+    --miss:#8E2F1D; --rust:#B8532E; --sage:#5C8A5C;
+  }
+  /* Colour-blind palette: purple to pale yellow, one axis of lightness and of
+     blue against yellow -- the two things the common forms of colour
+     blindness keep. From #7b3294 to #ffffbf in even CIELAB steps, starting a
+     fifth of the way along so the far end still clears 3:1 on the panels. */
+  body.cb{
+    --heat-far:#985C9E; --heat-mid:#B383A7; --heat-close:#CEACB0; --heat-hot:#E7D5B8; --correct:#FFFFBF;
   }
   *{box-sizing:border-box;}
   body{
@@ -302,7 +316,7 @@
     font-family:'JetBrains Mono',monospace;font-size:0.75rem;border:1px solid var(--gold-dim);color:var(--ink-dim);}
   .round-pip.current{border-color:var(--gold);color:var(--cream);}
   .round-pip.done-solved{background:var(--correct);border-color:var(--correct);color:var(--navy);}
-  .round-pip.done-failed{background:var(--heat-hot);border-color:var(--heat-hot);color:var(--cream);}
+  .round-pip.done-failed{background:var(--miss);border-color:var(--miss);color:var(--cream);}
   /* The bonus round is a different kind of thing, not a fourth site: dashed
      until played, so the row reads as three-plus-one. Placed after the state
      rules above so a played bonus pip still shows its result colour. */
@@ -451,7 +465,7 @@
      distance, because that is the question a player asks first. */
   .map-readout .lg-verdict{font-family:'JetBrains Mono',monospace;font-size:0.74rem;
     letter-spacing:0.04em;text-transform:uppercase;}
-  .map-readout .lg-verdict.no{color:var(--heat-close);}
+  .map-readout .lg-verdict.no{color:var(--rust);}
   .map-readout .lg-verdict.ok{color:var(--correct);}
   .map-readout .lg-verdict b{color:inherit;font-weight:600;}
   /* Tries as boxes: a crossed one is spent. A count alone lived in the footer,
@@ -464,7 +478,7 @@
     justify-content:center;font-size:0.62rem;line-height:1;
     border:1px solid var(--gold-dim);color:var(--ink-dim);}
   .lg-pip.free{opacity:0.45;}
-  .lg-pip.used{border-color:var(--heat-close);color:var(--heat-close);
+  .lg-pip.used{border-color:var(--rust);color:var(--rust);
     background:rgba(184,83,46,0.12);}
   .lg-pip.hit{border-color:var(--correct);color:var(--correct);
     background:rgba(92,138,92,0.16);}
@@ -630,9 +644,9 @@
     font-family:'JetBrains Mono',monospace;}
   .stamp b{font-size:0.78rem;line-height:1;}
   .stamp span{font-size:0.48rem;opacity:0.8;}
-  .stamp.s3{border-color:var(--correct);color:#9ccf9c;}
+  .stamp.s3{border-color:var(--sage);color:#9ccf9c;}
   .stamp.s2{border-color:var(--gold);color:var(--gold);}
-  .stamp.s1{border-color:var(--heat-close);color:var(--heat-close);}
+  .stamp.s1{border-color:var(--rust);color:var(--rust);}
 
   /* ---- achievements ---- */
   /* Three to a row: a page of stamps, not a list of them. */
@@ -663,13 +677,13 @@
     border-color:transparent var(--gold) transparent transparent;
     border-radius:0 9px 0 0;}
   .ach-tile{position:relative;overflow:hidden;}
-  .ach-tile.r-secret{border-color:var(--heat-close);
+  .ach-tile.r-secret{border-color:var(--rust);
     background:linear-gradient(180deg, rgba(184,83,46,0.14), rgba(184,83,46,0.04));}
   .ach-tile.r-secret span{color:#E9C7B4;}
   /* The ring is drawn, not filled: filling it too painted the stamp into a
      solid disc with its own mark invisible inside it. */
-  .ach-tile.r-secret .stamp-mark .ring{stroke:var(--heat-close);fill:none;}
-  .ach-tile.r-secret .stamp-mark .stamp-text{fill:var(--heat-close);stroke:none;}
+  .ach-tile.r-secret .stamp-mark .ring{stroke:var(--rust);fill:none;}
+  .ach-tile.r-secret .stamp-mark .stamp-text{fill:var(--rust);stroke:none;}
   /* Locked tiles say nothing about rank: that is half the point of a ladder. */
   .ach-tile.locked.r-rare, .ach-tile.locked.r-prestige, .ach-tile.locked.r-secret{
     border-color:rgba(156,166,192,0.22);background:transparent;box-shadow:none;}
@@ -679,9 +693,9 @@
   .ach-meta{display:block;margin-top:5px;font-family:'JetBrains Mono',monospace;
     font-size:0.56rem;color:var(--gold-dim);letter-spacing:0.05em;text-transform:uppercase;}
   .ach-detail.r-prestige{border-color:var(--gold);}
-  .ach-detail.r-secret{border-color:var(--heat-close);}
+  .ach-detail.r-secret{border-color:var(--rust);}
   .toast-kind{display:block;font-family:'JetBrains Mono',monospace;font-size:0.55rem;
-    letter-spacing:0.14em;text-transform:uppercase;color:var(--heat-close);
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);
     margin-bottom:3px;}
   /* Spliced in at the end of the tapped tile's own row, so the description is
      never far from the stamp it belongs to. */
@@ -756,10 +770,10 @@
     box-shadow:0 0 0 1px rgba(201,162,75,0.3), 0 18px 44px rgba(5,8,18,0.6);}
   .award-card.r-prestige .award-kind{color:var(--gold);}
   .award-card.r-rare{border-color:rgba(201,162,75,0.55);}
-  .award-card.r-secret{border-color:var(--heat-close);}
-  .award-card.r-secret .award-kind{color:var(--heat-close);}
-  .award-card.r-secret .stamp-mark .ring{stroke:var(--heat-close);fill:none;}
-  .award-card.r-secret .stamp-mark .stamp-text{fill:var(--heat-close);stroke:none;}
+  .award-card.r-secret{border-color:var(--rust);}
+  .award-card.r-secret .award-kind{color:var(--rust);}
+  .award-card.r-secret .stamp-mark .ring{stroke:var(--rust);fill:none;}
+  .award-card.r-secret .stamp-mark .stamp-text{fill:var(--rust);stroke:none;}
 
   .dizzy-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
     z-index:30;background:var(--navy-2);border:1px solid var(--gold);
@@ -792,8 +806,8 @@
     overflow-wrap:break-word;}
   .arch-entry-text span{font-family:'JetBrains Mono',monospace;font-size:0.6rem;
     color:var(--ink-dim);}
-  .arch-have{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--correct);
-    border:1px solid var(--correct);border-radius:4px;padding:2px 5px;flex:none;}
+  .arch-have{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--sage);
+    border:1px solid var(--sage);border-radius:4px;padding:2px 5px;flex:none;}
   .arch-locked{font-family:'JetBrains Mono',monospace;font-size:0.6rem;
     color:rgba(156,166,192,0.5);letter-spacing:0.04em;text-transform:uppercase;
     padding:7px 2px;}
@@ -807,12 +821,6 @@
   .cb-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;
     font-family:'JetBrains Mono',monospace;font-size:0.66rem;color:var(--ink-dim);}
   .cb-row input{width:17px;height:17px;accent-color:var(--gold);}
-  /* Colour-blind mode: a glyph rides on every heat dot, so the reading never
-     depends on hue alone. */
-  .hist-dot{position:relative;}
-  body.cb .hist-dot::after{content:attr(data-glyph);position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:var(--navy);}
-  body.cb .share-grid{letter-spacing:0.05em;}
 
   /* Touch targets. Anything below 16px in an input makes iOS Safari zoom the
      page on focus and never zoom back, so the guess box goes to 16px exactly;
@@ -1305,7 +1313,7 @@ const UI = {
                    'Tap the map where you think it is, then press Guess. Each guess reports its distance and bearing to the site, and whether you have the right continent and region.',
                    'Four guesses per site. Find the country and the round is yours — worth most on the first guess and a little less on each one after. Miss it and your closest guess still scores, by distance and by how near it came culturally. Every miss uncovers another photograph.',
                    'Every entry you meet is accessioned into your collection.'],
-       cbLabel:'Colour-blind marks', settingsTitle:'Settings',
+       cbLabel:'Colour-blind palette', settingsTitle:'Settings',
        backupTitle:'Back up your collection', backupCopy:'Copy code',
        backupCopied:'Copied.', backupSelect:'Selected — copy it now.',
        backupNote:'Your collection lives in this browser and nowhere else. Clear your site data, change phone, or leave it a fortnight on Safari, and it is gone. Keep this code somewhere safe — send it to yourself.',
@@ -1313,14 +1321,14 @@ const UI = {
        restoreNote:'Pasting a code adds to what is here. Nothing is deleted.',
        restoreBad:'That code could not be read.',
        restoreDone:(e,d)=>`Restored ${e} entr${e===1?'y':'ies'} and ${d} day${d===1?'':'s'}.`,
-       cbNote:'How far off a guess was is shown by colour — blue is cold through to red, green is right. That is the one thing the game says only in colour, so this adds a shape to every mark as well: ○ ■ ◆ ▲ ●, coldest to warmest.',
+       cbNote:'How far off a guess was is shown by colour, from grey when it is far through to yellow when it is close, and green when it is right. Red and green are the pair the most common colour blindness loses, so this swaps them for a scale from purple (far) to pale yellow (right).',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Northern',S:'Southern',E:'Eastern',W:'Western',C:'Central'},
        regionOf:(dir,cont)=>`${dir} ${cont}`,
        pointsSolved:(p,max,n)=>n===1 ? `Found on the first guess — <b>${p}</b> of ${max} points.`
                                      : `Found on guess ${n} — <b>${p}</b> of ${max} points.`,
        pointsPartial:(p,max,c,km)=>`Your closest guess, <b>${c}</b>, was ${km} km away — <b>${p}</b> of ${max} points.`,
-       seeResult:'See result', shareBtn:'Copy result',
+       seeResult:'See result', shareBtn:'Copy result', shareDay:'Day',
        shareNote:'Share your result with friends — it copies the grid, not the answers.', photoOf:(i,n)=>`photo ${i} of ${n}`, bonusBadge:'BONUS ROUND',
        bonusIntro:'Bonus round — a living tradition. Four guesses, worth half the day.',
        lastCounts:'The sooner you find it, the more it is worth. Miss it and your closest guess still scores.',
@@ -1474,7 +1482,7 @@ const UI = {
                    'Touchez la carte à l’endroit voulu, puis appuyez sur Proposer. Chaque proposition indique sa distance et sa direction, et si le continent et la région sont les bons.',
                    'Quatre essais par site. Trouvez le pays et la manche est à vous — elle vaut le plus au premier essai et un peu moins à chacun des suivants. Sinon, votre proposition la plus proche compte quand même, selon la distance et la proximité culturelle. Chaque échec dévoile une photographie de plus.',
                    'Chaque entrée rencontrée est inventoriée dans votre collection.'],
-       cbLabel:'Repères daltoniens', settingsTitle:'Réglages',
+       cbLabel:'Palette daltonienne', settingsTitle:'Réglages',
        backupTitle:'Sauvegarder votre collection', backupCopy:'Copier le code',
        backupCopied:'Copié.', backupSelect:'Sélectionné — copiez-le maintenant.',
        backupNote:'Votre collection est enregistrée dans ce navigateur et nulle part ailleurs. Effacez les données du site, changez de téléphone ou laissez passer quinze jours sur Safari, et elle disparaît. Gardez ce code en lieu sûr — par exemple en vous l’envoyant par e-mail.',
@@ -1482,14 +1490,14 @@ const UI = {
        restoreNote:'Coller un code ajoute à ce qui est déjà là. Rien n’est supprimé.',
        restoreBad:'Ce code n’a pas pu être lu.',
        restoreDone:(e,d)=>`${e} entrée${e===1?'':'s'} et ${d} journée${d===1?'':'s'} restaurées.`,
-       cbNote:'L’éloignement d’une proposition est indiqué par la couleur : du bleu (froid) au rouge, le vert signalant la bonne réponse. C’est la seule information donnée uniquement par la couleur ; cette option ajoute donc une forme à chaque repère : ○ ■ ◆ ▲ ●, du plus froid au plus chaud.',
+        cbNote:'L’éloignement d’une proposition est indiqué par la couleur : du gris quand elle est loin au jaune quand elle est proche, le vert signalant la bonne réponse. Or le rouge et le vert sont justement les couleurs que la forme de daltonisme la plus courante confond ; cette option les remplace par une échelle allant du violet (loin) au jaune pâle (bonne réponse).',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Nord',S:'Sud',E:'Est',W:'Ouest',C:'Centre'},
        regionOf:(dir,cont)=>`${cont} — ${dir}`,
        pointsSolved:(p,max,n)=>n===1 ? `Trouvé du premier coup — <b>${p}</b> points sur ${max}.`
                                      : `Trouvé au ${n}ᵉ essai — <b>${p}</b> points sur ${max}.`,
        pointsPartial:(p,max,c,km)=>`Votre proposition la plus proche, <b>${c}</b>, était à ${km} km — <b>${p}</b> points sur ${max}.`,
-       seeResult:'Voir le résultat', shareBtn:'Copier le résultat',
+       seeResult:'Voir le résultat', shareBtn:'Copier le résultat', shareDay:'Jour',
        shareNote:'Partagez votre résultat — la grille est copiée, pas les réponses.', photoOf:(i,n)=>`photo ${i} sur ${n}`, bonusBadge:'MANCHE BONUS',
        bonusIntro:'Manche bonus — une tradition vivante. Quatre essais, la moitié de la journée en jeu.',
        lastCounts:'Plus vous trouvez tôt, plus cela vaut. À défaut, votre proposition la plus proche compte quand même.',
@@ -1643,7 +1651,7 @@ const UI = {
                    'Toca el mapa donde creas que está y pulsa Proponer. Cada intento indica la distancia y la dirección, y si el continente y la región son los correctos.',
                    'Cuatro intentos por sitio. Acierta el país y la ronda es tuya: vale más al primer intento y algo menos en cada uno siguiente. Si no, tu propuesta más cercana puntúa igualmente, por distancia y por cercanía cultural. Cada fallo descubre otra fotografía.',
                    'Cada entrada que encuentras se registra en tu colección.'],
-       cbLabel:'Marcas para daltonismo', settingsTitle:'Ajustes',
+       cbLabel:'Paleta para daltonismo', settingsTitle:'Ajustes',
        backupTitle:'Copia de seguridad de tu colección', backupCopy:'Copiar código',
        backupCopied:'Copiado.', backupSelect:'Seleccionado: cópialo ahora.',
        backupNote:'Tu colección se guarda en este navegador y en ningún otro sitio. Si borras los datos del sitio, cambias de teléfono o pasas quince días sin entrar en Safari, desaparece. Guarda este código en un lugar seguro, por ejemplo enviándotelo por correo.',
@@ -1651,14 +1659,14 @@ const UI = {
        restoreNote:'Pegar un código suma su contenido a lo que ya tienes. No se borra nada.',
        restoreBad:'No se ha podido leer ese código.',
        restoreDone:(e,d)=>`Restauradas ${e} entrada${e===1?'':'s'} y ${d} jornada${d===1?'':'s'}.`,
-       cbNote:'Lo lejos que quedó una propuesta se indica con color: del azul (frío) al rojo, y verde si es correcta. Es lo único que el juego comunica solo con color, así que esta opción añade una forma a cada marca: ○ ■ ◆ ▲ ●, de más fría a más cálida.',
+       cbNote:'Lo lejos que quedó una propuesta se indica con color: del gris cuando está lejos al amarillo cuando está cerca, y verde si es correcta. El rojo y el verde son justo los colores que confunde el daltonismo más común, así que esta opción los cambia por una escala del morado (lejos) al amarillo pálido (correcta).',
        scoreOf:(s,max)=>`${s} / ${max}`,
        regions:{N:'Norte',S:'Sur',E:'Este',W:'Oeste',C:'Centro'},
        regionOf:(dir,cont)=>`${cont} — ${dir}`,
        pointsSolved:(p,max,n)=>n===1 ? `Acertado al primer intento — <b>${p}</b> de ${max} puntos.`
                                      : `Acertado en el intento ${n} — <b>${p}</b> de ${max} puntos.`,
        pointsPartial:(p,max,c,km)=>`Tu propuesta más cercana, <b>${c}</b>, estaba a ${km} km — <b>${p}</b> de ${max} puntos.`,
-       seeResult:'Ver resultado', shareBtn:'Copiar resultado',
+       seeResult:'Ver resultado', shareBtn:'Copiar resultado', shareDay:'Día',
        shareNote:'Comparte tu resultado — se copia la cuadrícula, no las respuestas.', photoOf:(i,n)=>`foto ${i} de ${n}`, bonusBadge:'RONDA BONUS',
        bonusIntro:'Ronda bonus — una tradición viva. Cuatro intentos, la mitad de la jornada en juego.',
        lastCounts:'Cuanto antes aciertes, más vale. Si no, tu propuesta más cercana puntúa igualmente.',
@@ -2639,10 +2647,10 @@ function earnedOn(id){
 }
 
 /* ---------- Colour-blind support ----------
-   The heat scale is hue-only, which is exactly the cue that fails for the most
-   common forms of colour blindness. The toggle layers a distinct glyph onto
-   every distance bucket so the reading never depends on hue. */
-const heatGlyph = { correct:'●', hot:'▲', close:'◆', mid:'■', far:'○' };
+   The default scale runs through reds and greens, exactly the pair the most
+   common forms of colour blindness lose. The toggle swaps in a palette that
+   varies in lightness and along blue-yellow instead; see body.cb in the CSS.
+   Shapes were tried first and read as clutter on an 11px dot. */
 function cbOn(){ return !!profile.colorblind; }
 function applyColorblind(){
   document.body.classList.toggle('cb', cbOn());
@@ -2669,7 +2677,7 @@ function heatBucket(km){
   return 'far';
 }
 const heatColorVar = { pending:'var(--gold)', correct:'var(--correct)', hot:'var(--heat-hot)', close:'var(--heat-close)', mid:'var(--heat-mid)', far:'var(--heat-far)' };
-const heatEmoji = { correct:'✅', hot:'🟥', close:'🟧', mid:'🟨', far:'🟦' };
+const heatEmoji = { correct:'🟩', hot:'🟨', close:'🟧', mid:'🟫', far:'⬛' };
 const compassDirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 function dirLabel(deg){ return compassDirs[Math.round(deg/22.5) % 16]; }
 /* ---------- Scoring ----------
@@ -3185,7 +3193,7 @@ function renderHistory(){
       + `${tag(g.contOk, T.clueLabels[0])}${tag(g.regionOk, T.clueLabels[3])}</span>`;
     // km before the tags: the tags claim a full row, so anything after them
     // wraps onto a third line.
-    row.innerHTML = `<span class="hist-dot" data-glyph="${heatGlyph[g.bucket]||''}" style="background:${heatColorVar[g.bucket]}"></span>
+    row.innerHTML = `<span class="hist-dot" style="background:${heatColorVar[g.bucket]}"></span>
       <span class="hist-name">${guessName(g)}</span>
       <span class="hist-km">${g.km} km ${dirLabel(g.bearing)}</span>${tags}`;
     box.appendChild(row);
@@ -3293,7 +3301,7 @@ function renderMapForRound(){
     readout.innerHTML =
       `${verdict}
        <span class="lg-head">
-         <span class="hist-dot" data-glyph="${heatGlyph[last.bucket]||''}" style="background:${heatColorVar[last.bucket]}"></span>
+         <span class="hist-dot" style="background:${heatColorVar[last.bucket]}"></span>
          <b>${guessName(last)}</b>
        </span>
        ${right ? '' : `<span class="lg-dist">${T.readout(last.km, dirLabel(last.bearing))}</span>`}
@@ -3560,9 +3568,36 @@ function renderFinal(){
   });
   document.getElementById('shareBtn').onclick = ()=>{
     // Day one is the first day, not the zeroth.
-    const text = `Heritle — Day ${dayIndex + 1}\n${lines}\n${totalScore()}/${MAX_SCORE}`;
-    navigator.clipboard?.writeText(text);
+    const head = `${T.shareDay} ${dayIndex + 1}`, score = `${totalScore()}/${MAX_SCORE}`;
+    // Plain text cannot hold a link, only a URL, and the apps a grid actually
+    // gets pasted into -- WhatsApp, iMessage, SMS -- are plain text. They turn
+    // a bare URL into a link and usually a preview card, so the URL goes on a
+    // line of its own. Anywhere that takes rich text gets the name itself as
+    // the link instead.
+    const text = `Heritle — ${head}\n${lines}\n${score}\n${SITE_URL}`;
+    const html = `<a href="${SITE_URL}">Heritle</a> — ${head}<br>`
+      + lines.split('\n').join('<br>') + `<br>${score}`;
+    shareCopy(text, html);
   };
+}
+
+const SITE_URL = 'https://heritle.org';
+/* Both forms at once where the browser can, plain text where it cannot. The
+   ClipboardItem is built inside the click, because Safari refuses one made
+   after anything asynchronous. */
+function shareCopy(text, html){
+  const cb = navigator.clipboard;
+  if(!cb) return Promise.resolve(false);
+  if(window.ClipboardItem && cb.write){
+    try{
+      const item = new ClipboardItem({
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+        'text/html':  new Blob([html], { type: 'text/html' })
+      });
+      return cb.write([item]).then(()=>true, ()=> cb.writeText(text).then(()=>true, ()=>false));
+    }catch(e){ /* fall through to plain text */ }
+  }
+  return cb.writeText ? cb.writeText(text).then(()=>true, ()=>false) : Promise.resolve(false);
 }
 
 /* ---------- Photo viewer ----------

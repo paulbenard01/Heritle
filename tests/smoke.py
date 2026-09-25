@@ -901,6 +901,41 @@ def play_day(page, base, day, width, label):
     check(statuses == ["solved", "failed", "solved", "failed"],
           f"{label}: 2 solved / 2 missed", str(statuses))
 
+    # The shared grid climbs towards green: a solved round ends on 🟩, and none
+    # of the old ladder survives -- red for "nearly" read as "wrong" to anyone
+    # who has played Wordle, which is everyone the grid is sent to.
+    rows = grid.split("\n")
+    for i, st in enumerate(statuses):
+        if st == "solved":
+            check(rows[i].split()[-1] == "🟩", f"{label}: solved round {i+1} ends on green", rows[i])
+    check(not any(e in grid for e in "🟥🟦✅"), f"{label}: nothing left of the old share ladder", repr(grid))
+    check(set(grid.replace(" ", "").replace("\n", "")) <= set("⬛🟫🟧🟨🟩—"),
+          f"{label}: grid uses only the new ladder", repr(grid))
+
+    # What the share button actually puts on the clipboard. Stubbed rather than
+    # read back, because clipboard-read needs a permission a headless run does
+    # not reliably get.
+    page.evaluate("""() => {
+      window.__copied = {};
+      const read = b => b.text();
+      navigator.clipboard.write = async items => {
+        for (const t of items[0].types) window.__copied[t] = await read(await items[0].getType(t));
+      };
+      navigator.clipboard.writeText = async t => { window.__copied['text/plain'] = t; };
+    }""")
+    page.click("#shareBtn"); page.wait_for_timeout(300)
+    copied = page.evaluate("window.__copied")
+    plain = copied.get("text/plain", "")
+    day = page.evaluate("dayIndex + 1")
+    check(plain.startswith(f"Heritle — Day {day}\n"), f"{label}: share opens with the day", repr(plain[:40]))
+    check(plain.rstrip().split("\n")[-1] == "https://heritle.org",
+          f"{label}: share ends on the site's URL, on its own line", repr(plain[-40:]))
+    check(f"{score}/{mx}" in plain, f"{label}: share carries the score", repr(plain))
+    check(grid in plain, f"{label}: share carries the grid as shown", repr(plain))
+    html = copied.get("text/html", "")
+    check('<a href="https://heritle.org">Heritle</a>' in html,
+          f"{label}: rich-text paste makes the name itself the link", repr(html[:80]))
+
     check(not errors, f"{label}: no console errors", "; ".join(errors[:3]))
     check(not bad_requests, f"{label}: no broken script/data requests",
           "; ".join(bad_requests[:3]))
@@ -1531,7 +1566,17 @@ def main():
         page.evaluate("showView('Passport')"); page.wait_for_timeout(200)
         page.check("#cbToggle"); page.wait_for_timeout(200)
         check(page.evaluate("document.body.classList.contains('cb')"),
-              "colour-blind marks toggle on")
+              "colour-blind palette toggles on")
+        # A palette now, not shapes: the heat variables themselves change, and
+        # nothing is drawn on top of the dots.
+        far = page.evaluate("getComputedStyle(document.body).getPropertyValue('--heat-far').trim()")
+        right = page.evaluate("getComputedStyle(document.body).getPropertyValue('--correct').trim()")
+        check(far.lower() == "#985c9e", "colour-blind far is the purple end", far)
+        check(right.lower() == "#ffffbf", "colour-blind right is the pale-yellow end", right)
+        check(page.evaluate("typeof heatGlyph") == "undefined", "the glyph overlay is gone")
+        page.uncheck("#cbToggle"); page.wait_for_timeout(200)
+        far = page.evaluate("getComputedStyle(document.body).getPropertyValue('--heat-far').trim()")
+        check(far.lower() == "#7d8597", "and it switches back off to the default slate", far)
         check(not errors, "no console errors across the panels", "; ".join(errors[:3]))
         ctx.close()
 
