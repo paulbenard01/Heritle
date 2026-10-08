@@ -135,7 +135,8 @@ browser and fails if the live site does not behave.
 
 ## Licences
 
-Game code: yours. Map coastlines and country borders: [Natural
+Game code: [MIT](LICENSE) © 2026 Paul Benard. That covers the code in this
+repository only, not the material the game shows. Map coastlines and country borders: [Natural
 Earth](https://www.naturalearthdata.com/) 10m admin-0 countries, public domain,
 via [natural-earth-vector](https://github.com/nvkelso/natural-earth-vector).
 Entry metadata: [Wikidata](https://www.wikidata.org/) (CC0). Photographs:
