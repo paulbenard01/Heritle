@@ -30,7 +30,15 @@
      ended up in a dark tab strip. An SVG favicon is a document, so it carries
      its own stylesheet; see tools/make_favicon.py. -->
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<link rel="apple-touch-icon" href="assets/vectorised-4c7d2e03.svg">
+<!-- The home-screen icon. Without a manifest, "Add to home screen" used the
+     tab favicon above, whose canvas is not square and whose disc is not in
+     the middle of it: the shortcut came out small and off-centre. These are
+     square PNGs with the disc centred, built by tools/make_app_icons.py.
+     display:browser keeps it a shortcut that opens in the browser, so the
+     collection stays in the same storage as before -- an installed app on
+     iOS gets a box of its own and would arrive with an empty passport. -->
+<link rel="manifest" href="assets/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1280,7 +1288,7 @@ const UI = {
            ['3. Fair use',
             'Please do not use automated means to disrupt the service or to interfere with other people\u2019s use of it. The game runs entirely in your own browser, so what you do with your own copy of the page is your business.'],
            ['4. Rights in the game, and in what it shows',
-            'The game\u2019s source code is published under the MIT licence: anyone may reuse, modify and share it, provided the copyright notice and the licence travel with it. The material the game presents is not covered by that licence: the heritage data comes from Wikidata under CC0, the photographs from Wikimedia Commons under their own individual licences and credited as such, and the country outlines from Natural Earth in the public domain. No ownership of that material is claimed here, and no right to reuse it is granted by these terms — its own licences govern that.'],
+            'The game\u2019s source code is published under the MIT licence: anyone may reuse, modify and share it, provided the copyright notice and the licence travel with it. The licence does not extend to the Heritle name or logo, which remain the publisher\u2019s and may not be used for another project. The material the game presents is not covered by that licence: the heritage data comes from Wikidata under CC0, the photographs from Wikimedia Commons under their own individual licences and credited as such, and the country outlines from Natural Earth in the public domain. No ownership of that material is claimed here, and no right to reuse it is granted by these terms — its own licences govern that.'],
            ['5. Independence',
             'Heritle is not affiliated with, endorsed by or connected to UNESCO or any other heritage organisation, and does not speak for any of them.'],
            ['6. Availability',
@@ -1294,7 +1302,7 @@ const UI = {
            ['10. Contact',
             CONTACT_EMAIL]
          ],
-         updated:'Last updated: 8 October 2026' },
+         updated:'Last updated: 10 October 2026' },
        links:{ list:'The World Heritage List', ich:'Living traditions',
                news:'Heritage news', europeana:'Europeana collections',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Source', contact:'Get in touch' },
@@ -1449,7 +1457,7 @@ const UI = {
            ['3. Usage loyal',
             'Merci de ne pas recourir à des moyens automatisés pour perturber le service ou gêner son usage par d’autres. Le jeu tourne entièrement dans votre navigateur : ce que vous faites de votre propre copie de la page ne regarde que vous.'],
            ['4. Droits sur le jeu, et sur ce qu’il montre',
-            'Le code source du jeu est publié sous licence MIT : chacun peut le réutiliser, le modifier et le partager, à condition de conserver la mention de copyright et le texte de la licence. Ce que le jeu présente n’est pas couvert par cette licence : les données patrimoniales viennent de Wikidata sous CC0, les photographies de Wikimedia Commons sous leurs licences respectives et créditées comme telles, les contours des pays de Natural Earth, dans le domaine public. Aucune propriété n’est revendiquée sur ces éléments, et les présentes conditions n’accordent aucun droit de réutilisation : leurs propres licences s’appliquent.'],
+            'Le code source du jeu est publié sous licence MIT : chacun peut le réutiliser, le modifier et le partager, à condition de conserver la mention de copyright et le texte de la licence. Cette licence ne s’étend ni au nom ni au logo Heritle, qui restent la propriété de l’éditeur et ne peuvent pas être utilisés pour un autre projet. Ce que le jeu présente n’est pas couvert par cette licence : les données patrimoniales viennent de Wikidata sous CC0, les photographies de Wikimedia Commons sous leurs licences respectives et créditées comme telles, les contours des pays de Natural Earth, dans le domaine public. Aucune propriété n’est revendiquée sur ces éléments, et les présentes conditions n’accordent aucun droit de réutilisation : leurs propres licences s’appliquent.'],
            ['5. Indépendance',
             'Heritle n’est ni affilié à l’UNESCO ni à aucune autre organisation patrimoniale, ni approuvé par elles, et ne parle pas en leur nom.'],
            ['6. Disponibilité',
@@ -1463,7 +1471,7 @@ const UI = {
            ['10. Contact',
             CONTACT_EMAIL]
          ],
-         updated:'Dernière mise à jour : 8 octobre 2026' },
+         updated:'Dernière mise à jour : 10 octobre 2026' },
        links:{ list:'La Liste du patrimoine mondial', ich:'Traditions vivantes',
                news:'Actualité du patrimoine', europeana:'Collections Europeana',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Code source', contact:'Nous écrire' },
@@ -1618,7 +1626,7 @@ const UI = {
            ['3. Uso leal',
             'Por favor, no emplees medios automatizados para perturbar el servicio ni para dificultar su uso por parte de otras personas. El juego se ejecuta enteramente en tu navegador: lo que hagas con tu propia copia de la página es asunto tuyo.'],
            ['4. Derechos sobre el juego, y sobre lo que muestra',
-            'El código fuente del juego se publica bajo la licencia MIT: cualquiera puede reutilizarlo, modificarlo y compartirlo, siempre que conserve el aviso de copyright y el texto de la licencia. Lo que el juego presenta no está cubierto por esa licencia: los datos patrimoniales vienen de Wikidata bajo CC0, las fotografías de Wikimedia Commons bajo sus licencias respectivas y acreditadas como tales, y los contornos de los países de Natural Earth, de dominio público. Aquí no se reclama ninguna propiedad sobre ese material, y estas condiciones no conceden ningún derecho de reutilización: rigen sus propias licencias.'],
+            'El código fuente del juego se publica bajo la licencia MIT: cualquiera puede reutilizarlo, modificarlo y compartirlo, siempre que conserve el aviso de copyright y el texto de la licencia. La licencia no se extiende al nombre ni al logotipo de Heritle, que siguen siendo propiedad del editor y no pueden utilizarse para otro proyecto. Lo que el juego presenta no está cubierto por esa licencia: los datos patrimoniales vienen de Wikidata bajo CC0, las fotografías de Wikimedia Commons bajo sus licencias respectivas y acreditadas como tales, y los contornos de los países de Natural Earth, de dominio público. Aquí no se reclama ninguna propiedad sobre ese material, y estas condiciones no conceden ningún derecho de reutilización: rigen sus propias licencias.'],
            ['5. Independencia',
             'Heritle no está afiliado a la UNESCO ni a ninguna otra organización del patrimonio, no cuenta con su respaldo y no habla en su nombre.'],
            ['6. Disponibilidad',
@@ -1632,7 +1640,7 @@ const UI = {
            ['10. Contacto',
             CONTACT_EMAIL]
          ],
-         updated:'Última actualización: 8 de octubre de 2026' },
+         updated:'Última actualización: 10 de octubre de 2026' },
        links:{ list:'La Lista del Patrimonio Mundial', ich:'Tradiciones vivas',
                news:'Noticias del patrimonio', europeana:'Colecciones Europeana',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Código fuente', contact:'Escríbenos' },

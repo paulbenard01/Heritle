@@ -2,6 +2,10 @@
 
 Brand files live here. The game loads the header mark from this folder.
 
+The Heritle mark and everything built from it are **not** under the
+repository's MIT licence: © 2026 Paul Benard, all rights reserved. See the
+Licences section of the top-level README.
+
 | File | What it is | Used by |
 |---|---|---|
 | `heritlelogogold.svg` | the light mark, for the navy page | **the header** — `heritle.html` loads this exact path |
@@ -10,6 +14,8 @@ Brand files live here. The game loads the header mark from this folder.
 | `Heritlelogonavy.png` | raster copy of the dark mark | spare |
 | `Instagram_white.svg`, `TikTok_white.svg`, `YouTube_white.svg` | white social marks (TikTok and YouTube from Simple Icons, CC0) | beside the language picker and in the menu |
 | `github-white-icon.svg` | white GitHub mark | the menu's Source link |
+| `icons/` | square PNG home-screen icons, disc centred — built by `tools/make_app_icons.py`, do not edit by hand | `manifest.webmanifest`, `apple-touch-icon` |
+| `manifest.webmanifest` | names the home-screen icons | `<link rel="manifest">` |
 
 Note the mixed capitalisation: the SVGs are lowercase and the PNGs are not.
 That is how they were uploaded, and the code points at the real names rather

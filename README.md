@@ -136,7 +136,16 @@ browser and fails if the live site does not behave.
 ## Licences
 
 Game code: [MIT](LICENSE) © 2026 Paul Benard. That covers the code in this
-repository only, not the material the game shows. Map coastlines and country borders: [Natural
+repository only, not the material the game shows.
+
+**The Heritle name and logo are not covered by the MIT licence.** The name,
+the mark in all its versions, and the brand artwork built from it (the
+`heritlelogo*`, `Heritlelogo*` and `vectorised-*` files, `favicon.svg` and
+`assets/icons/`) are © 2026 Paul Benard, all rights reserved. Fork the code
+freely, but publish it under another name and with another logo. The social
+marks in `assets/` (Instagram, TikTok, YouTube, GitHub) belong to their owners.
+
+Map coastlines and country borders: [Natural
 Earth](https://www.naturalearthdata.com/) 10m admin-0 countries, public domain,
 via [natural-earth-vector](https://github.com/nvkelso/natural-earth-vector).
 Entry metadata: [Wikidata](https://www.wikidata.org/) (CC0). Photographs:

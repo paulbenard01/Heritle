@@ -2376,6 +2376,25 @@ def main():
         check("prefers-color-scheme" in body and "<style" in body,
               "and changes its own colour with the browser's theme",
               body[:60])
+        # The home-screen icon is a different job: square, with the disc in the
+        # middle. The tab favicon did it by default and came out off-centre.
+        home = page.evaluate("""
+          async () => {
+            const href = document.querySelector('link[rel=manifest]').href;
+            const man = await (await fetch(href)).json();
+            const urls = man.icons.map(i => new URL(i.src, href).href)
+              .concat(document.querySelector('link[rel=apple-touch-icon]').href);
+            return Promise.all(urls.map(u => new Promise(res => {
+              const img = new Image();
+              img.onload = () => res({ u: u.split('/').pop(),
+                                       w: img.naturalWidth, h: img.naturalHeight });
+              img.onerror = () => res({ u: u.split('/').pop(), w: 0, h: 0 });
+              img.src = u;
+            })));
+          }
+        """)
+        check(len(home) == 5 and all(i["w"] > 0 and i["w"] == i["h"] for i in home),
+              "the home-screen icons are all there, and square", str(home))
         ctx.close()
 
         # ---- the way back ----
