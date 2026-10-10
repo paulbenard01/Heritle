@@ -34,9 +34,13 @@
      tab favicon above, whose canvas is not square and whose disc is not in
      the middle of it: the shortcut came out small and off-centre. These are
      square PNGs with the disc centred, built by tools/make_app_icons.py.
-     display:browser keeps it a shortcut that opens in the browser, so the
-     collection stays in the same storage as before -- an installed app on
-     iOS gets a box of its own and would arrive with an empty passport. -->
+     display is minimal-ui, deliberately. Chrome on Android installs it, and
+     an installed app there shares Chrome's storage, so the collection comes
+     along. Safari does not treat minimal-ui as a web app and keeps opening
+     the page in the browser -- which matters, because a standalone web app
+     on iOS gets a storage box of its own and would arrive with an empty
+     passport. "browser" was tried first and made Chrome offer an Install
+     button that then said the app cannot be installed. -->
 <link rel="manifest" href="assets/manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">

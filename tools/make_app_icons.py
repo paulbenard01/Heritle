@@ -30,14 +30,16 @@ WHITE = "#FFFFFF"
 # name, size in px, disc diameter as a share of the side.
 #  - apple-touch: iOS rounds the corners itself and keeps everything inside.
 #  - any: what Chrome uses when it does not mask.
-#  - maskable: Android crops to its own shape; only the central 80% circle is
-#    guaranteed to survive, so the disc stays just inside it.
+#  - maskable: Android crops to its own shape. The spec promises the central
+#    80% circle survives, but launchers show less: an adaptive icon keeps
+#    72 of its 108 units, two thirds. At 78% the disc was cut by the
+#    squircle on a real phone; at 56% it fills the visible part with a margin.
 ICONS = [
     ("apple-touch-icon.png", 180, 0.84),
     ("icon-192.png", 192, 0.86),
     ("icon-512.png", 512, 0.86),
-    ("maskable-192.png", 192, 0.78),
-    ("maskable-512.png", 512, 0.78),
+    ("maskable-192.png", 192, 0.56),
+    ("maskable-512.png", 512, 0.56),
 ]
 
 # Painted-pixel box of the mark, in its own SVG units.
