@@ -236,9 +236,13 @@ def play_day(page, base, day, width, label):
     # A missing photo is expected and handled by the placeholder; a missing
     # script or data file is not. Google Fonts is excluded because this sandbox
     # blocks it at the proxy — the page falls back to system fonts here, which
-    # says nothing about a real browser.
+    # says nothing about a real browser. Wikipedia likewise: the article
+    # excerpt is fetched live, the sandbox cannot reach it, and the game is
+    # built to show nothing rather than break when it does not answer.
     def interesting(url, kind):
         if "fonts.googleapis.com" in url or "fonts.gstatic.com" in url:
+            return False
+        if "wikipedia.org" in url:
             return False
         return kind in ("script", "stylesheet", "document", "fetch", "xhr")
     page.on("requestfailed", lambda r: bad_requests.append(r.url)
@@ -1035,6 +1039,12 @@ def main():
             land = os.path.join(REPO, "data", "land.json")
             if os.path.exists(land):
                 shutil.copy(land, os.path.join(root, "data", "land.json"))
+            # Criteria and article titles are keyed by entry id, and the
+            # synthetic ids mostly do not match -- but the file has to be
+            # there, or its absence is a 404 the run reports as a failure.
+            extras = os.path.join(REPO, "data", "extras.json")
+            if os.path.exists(extras):
+                shutil.copy(extras, os.path.join(root, "data", "extras.json"))
         httpd, port = serve(root)
         base = f"http://127.0.0.1:{port}/"
 
@@ -2376,6 +2386,74 @@ def main():
                   f"{width}px: without sitting on the pitch",
                   f"marks end {[m['b'] for m in g['social']]}, pitch starts {g['pitchTop']}")
             ctx.close()
+
+        # ---- explore ----
+        # Every entry on one map, searchable, each dot opening its card -- and
+        # none of it a way to look up today's answers.
+        print("\n== explore ==")
+        ctx = browser.new_context(viewport={"width": 390, "height": 844},
+                                  is_mobile=True, has_touch=True)
+        page = ctx.new_page()
+        errs = []
+        page.on("pageerror", lambda e: errs.append(str(e)))
+        page.goto(base)
+        page.wait_for_function("typeof POOL !== 'undefined' && POOL.length > 0",
+                               timeout=20000)
+        page.evaluate("document.getElementById('fnClose')?.click()")
+        page.wait_for_timeout(200)
+        check(page.locator("#nav button").count() == 5, "explore has a tab of its own")
+        page.evaluate("showView('Explore')")
+        page.wait_for_timeout(400)
+        ex = page.evaluate("""() => ({
+            dots: exDots.length, circles: document.querySelectorAll('#exDots circle').length,
+            leak: targets.filter(t => exDots.some(e => e.id === t.id)).map(t => t.id) })""")
+        check(ex["dots"] > 0 and ex["circles"] == ex["dots"],
+              "every entry is a dot on the map", str(ex))
+        check(not ex["leak"], "and today's puzzle is not among them", str(ex["leak"]))
+        # Found by part of a name, accents and case aside.
+        want = page.evaluate("exDots[0].id")
+        name = page.evaluate("exDots[0].names.en")
+        page.fill("#exQ", name[:10].upper())
+        page.wait_for_timeout(150)
+        hits = page.evaluate("[...document.querySelectorAll('#exResults button')].map(b => b.dataset.id)")
+        check(want in hits, "search finds an entry by part of its name", f"{name!r} -> {hits}")
+        page.fill("#exQ", page.evaluate("targets[0].names.en"))
+        page.wait_for_timeout(150)
+        hits = page.evaluate("[...document.querySelectorAll('#exResults button')].map(b => b.dataset.id)")
+        check(page.evaluate("targets[0].id") not in hits,
+              "and cannot find today's answer", str(hits))
+        page.fill("#exQ", "")
+        # A tap on a dot opens that entry's card.
+        opened = page.evaluate("""() => {
+            const e = exDots[0]; exFocus(e);
+            const svg = document.getElementById('exSvg'), r = svg.getBoundingClientRect();
+            svg.dispatchEvent(new MouseEvent('click', { bubbles: true,
+              clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+            const open = document.getElementById('modalBackdrop').classList.contains('open');
+            const title = document.getElementById('modalTitle').textContent;
+            document.getElementById('modalClose').click();
+            return { open, title, want: e.names[lang] || e.names.en };
+          }""")
+        check(opened["open"] and opened["title"] == opened["want"],
+              "a tap on a dot opens its card", str(opened))
+        # The filters are real: switching traditions off removes every one.
+        page.click(".ex-chip[data-k='intangible']")
+        page.wait_for_timeout(200)
+        check(page.evaluate("exDots.length > 0 && !exDots.some(e => e.type === 'immaterial')"),
+              "the filters filter")
+        # Three over two on a phone, with no tab clipped in any language.
+        for code in ("en", "fr", "es"):
+            page.click(f".lang-btn[data-lang='{code}']")
+            page.wait_for_timeout(120)
+            rows = page.evaluate("""() => { const b = [...document.querySelectorAll('#nav button')];
+              return { rows: new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size,
+                       clipped: b.some(x => x.scrollWidth > x.clientWidth + 1),
+                       first: b.filter(x => Math.round(x.getBoundingClientRect().top)
+                                            === Math.round(b[0].getBoundingClientRect().top)).length }; }""")
+            check(rows == {"rows": 2, "clipped": False, "first": 3},
+                  f"{code.upper()}: the tabs sit three over two", str(rows))
+        check(not errs, "and exploring throws nothing", "; ".join(errs[:2]))
+        ctx.close()
 
         # ---- the mark, and the tab ----
         print("\n== the mark ==")

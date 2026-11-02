@@ -599,11 +599,72 @@
   .nav button.active{color:var(--cream);border-color:transparent;
     text-decoration:underline;text-underline-offset:5px;
     text-decoration-color:var(--gold-dim);}
+  /* Five tabs do not fit one line on a phone in any of the three languages
+     -- French needs 437px of a 362px line -- and wrapping greedily left one
+     of them alone on a second row, which reads as an afterthought. So on a
+     narrow screen they sit three over two, centred, each in a third. */
+  @media (max-width:560px){
+    .nav{display:grid;grid-template-columns:repeat(6,1fr);gap:0 2px;margin:10px 0 2px;}
+    .nav button{grid-column:span 2;padding:7px 4px;min-height:34px;letter-spacing:0.02em;}
+    .nav button:nth-child(4){grid-column:2 / span 2;}
+  }
   .view{display:none;} .view.active{display:block;}
 
   .panel-head{text-align:center;margin-bottom:14px;}
   .panel-head h2{font-family:'Playfair Display',serif;color:var(--cream);margin:0 0 4px;font-size:1.35rem;}
   .panel-head p{color:var(--ink-dim);font-size:0.8rem;margin:0;}
+
+  /* ---------- Going further ----------
+     What an entry is, past its name: the reasons UNESCO gave for inscribing
+     it, and the opening of its encyclopaedia article. Shown at the end of a
+     round and on every entry card. Empty until it has something to say, so
+     an entry with neither takes no room. */
+  .deep:empty{display:none;}
+  .deep{margin-top:14px;text-align:left;}
+  .deep-head{display:block;font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+    letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-dim);margin:0 0 6px;}
+  .deep-head small{text-transform:none;letter-spacing:0.02em;color:var(--ink-dim);opacity:0.8;}
+  .crit-list{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .crit-list li{display:flex;gap:9px;align-items:baseline;font-size:0.85rem;line-height:1.35;color:var(--ink);}
+  .crit-num{flex:none;width:2.9em;text-align:center;font-family:'JetBrains Mono',monospace;
+    font-size:0.7rem;color:var(--gold);border:1px solid var(--gold-dim);border-radius:5px;padding:1px 4px;}
+  .deep .wiki-text{font-size:0.86rem;line-height:1.5;color:var(--ink);margin:0;}
+  /* At the end of a round the article is a taste, not the meal: four lines,
+     and the link for the rest. The card shows it whole. */
+  .deep.rr-deep .wiki-text{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
+  .wiki-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-top:6px;
+    font-size:0.72rem;color:var(--ink-dim);}
+  .wiki-foot a{color:var(--gold);text-decoration:none;}
+  .wiki-foot a:hover{text-decoration:underline;}
+  .round-result .deep{border-top:1px dashed rgba(201,162,75,0.22);padding-top:12px;}
+
+  /* ---------- Explore ---------- */
+  .ex-tools{display:flex;flex-direction:column;gap:9px;margin-bottom:10px;}
+  .ex-search{position:relative;}
+  .ex-search input{width:100%;font-family:'Inter',sans-serif;font-size:16px;color:var(--cream);
+    background:var(--navy-2);border:1px solid rgba(156,166,192,0.35);border-radius:8px;padding:10px 12px;}
+  .ex-search input:focus{outline:none;border-color:var(--gold-dim);}
+  .ex-results{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;background:var(--navy-2);
+    border:1px solid var(--gold-dim);border-radius:8px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,0.35);}
+  .ex-results:empty{display:none;}
+  .ex-results button{display:block;width:100%;text-align:left;background:none;border:none;cursor:pointer;
+    padding:10px 12px;color:var(--ink);font-size:0.86rem;border-bottom:1px solid rgba(156,166,192,0.12);}
+  .ex-results button:last-child{border-bottom:none;}
+  .ex-results button:hover, .ex-results button:focus{background:rgba(201,162,75,0.12);outline:none;}
+  .ex-results small{color:var(--ink-dim);margin-left:6px;}
+  .ex-results .none{padding:10px 12px;color:var(--ink-dim);font-size:0.84rem;}
+  .ex-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .ex-chip{display:inline-flex;align-items:center;gap:6px;background:transparent;cursor:pointer;
+    border:1px solid rgba(156,166,192,0.35);color:var(--ink-dim);border-radius:999px;
+    padding:6px 11px;font-size:0.76rem;min-height:34px;}
+  .ex-chip i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .ex-chip.on{color:var(--cream);border-color:var(--gold-dim);background:rgba(201,162,75,0.10);}
+  .ex-chip:not(.on) i{opacity:0.35;}
+  .ex-map{position:relative;background:var(--navy-2);border:1px solid rgba(201,162,75,0.25);
+    border-radius:12px;padding:10px;contain:paint;}
+  #exSvg{width:100%;height:auto;display:block;border-radius:8px;touch-action:none;cursor:grab;}
+  .ex-map .map-zoom{top:16px;right:16px;}
+  .ex-note{margin-top:8px;font-size:0.76rem;color:var(--ink-dim);text-align:center;}
 
   /* ---- collection: catalogue cards with accession numbers ---- */
   .cards{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
@@ -988,6 +1049,7 @@
   <div class="view" id="viewCollection"></div>
   <div class="view" id="viewPassport"></div>
   <div class="view" id="viewArchive"></div>
+  <div class="view" id="viewExplore"></div>
 
   <!-- Outside the views, because terms and privacy are not part of today's
        puzzle: inside the game view they showed on Today alone, and on a wide
@@ -1040,6 +1102,7 @@
     <h3 id="modalTitle"></h3>
     <div class="sub" id="modalSub"></div>
     <p id="modalDesc"></p>
+    <div class="deep" id="modalDeep"></div>
     <div class="modal-section">
       <span class="label" id="modalVideoLabel"></span>
       <div class="modal-links" id="modalLinks"></div>
@@ -1275,7 +1338,7 @@ const UI = {
            ['What is stored, and where',
             'Your progress — the day in play, your collection, your distinctions, your language and the colour-blind setting — is kept in your browser\u2019s local storage, on your device. It never leaves it. I cannot read it, and I could not recover it for you if you lost it.'],
            ['Who else your browser talks to',
-            'Three parties, none of them mine. The page is hosted on GitHub Pages, which like any web host sees the request and your IP address in its own logs. Photographs are fetched directly from Wikimedia Commons, so your browser contacts Wikimedia, under their privacy policy. Fonts are fetched from Google Fonts, which means Google sees the request too — that one is a dependency I would rather remove, and intend to.'],
+            'Three parties, none of them mine. The page is hosted on GitHub Pages, which like any web host sees the request and your IP address in its own logs. Photographs are fetched directly from Wikimedia Commons, and the article excerpts from Wikipedia, so your browser contacts Wikimedia, under their privacy policy. Fonts are fetched from Google Fonts, which means Google sees the request too — that one is a dependency I would rather remove, and intend to.'],
            ['No profiling, and nothing to ask for',
             'Since no personal data is collected or held, there is nothing to access, correct, export or erase. Clearing this site\u2019s data in your browser removes everything Heritle has ever stored, immediately and completely.'],
            ['Children',
@@ -1311,6 +1374,25 @@ const UI = {
                news:'Heritage news', europeana:'Europeana collections',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Source', contact:'Get in touch' },
        linkGroups:{ explore:'Read further', project:'This project' },
+       deepCrit:'Why it is on the list', deepCritNote:'UNESCO inscription criteria',
+       crit:{ i:'A masterpiece of human creative genius',
+              ii:'An exchange of influences between cultures, seen in its architecture, art or planning',
+              iii:'A unique testimony to a culture or civilisation, living or vanished',
+              iv:'An outstanding example of a type of building or landscape from a stage of history',
+              v:'A traditional way of living on the land or the sea',
+              vi:'Directly linked to events, traditions, beliefs or works of universal significance',
+              vii:'Superlative natural phenomena or exceptional natural beauty',
+              viii:'A major record of the Earth’s history',
+              ix:'Ecological and biological processes still at work',
+              x:'Vital habitat for biodiversity and threatened species' },
+       wikiHead:'From Wikipedia', wikiMore:'Read the full article', wikiIn:{en:'in English',fr:'in French',es:'in Spanish'},
+       wikiLicence:'Text from Wikipedia, CC BY-SA 4.0',
+       navExplore:'Explore', exploreTitle:'Explore',
+       exploreSub:(n)=>`All ${n} sites and traditions, on one map. Tap a dot to read about it.`,
+       exploreSearch:'Search a name or a country', exploreNone:'Nothing matches.',
+       exploreShown:(n)=>`${n} on the map`,
+       exploreHidden:(n)=>`Today’s ${n} stay hidden until you have played them.`,
+       exploreMine:'Only my collection',
        achEarned:'Earned', achLocked:'Still to find',
        inAppNote:'You are in <b>Instagram\u2019s own browser</b>, which keeps its progress separately from your usual one. Open heritle.org there to find your collection \u2014 or copy the backup code from the Passport and paste it across.',
        secretFound:'Secret found', awardWon:'Distinction earned',
@@ -1444,7 +1526,7 @@ const UI = {
            ['Ce qui est conservé, et où',
             'Votre progression — la journée en cours, votre collection, vos distinctions, votre langue et le réglage daltonien — est gardée dans le stockage local de votre navigateur, sur votre appareil. Elle n’en sort jamais. Je ne peux pas la lire, et je ne pourrais pas la récupérer si vous la perdiez.'],
            ['Les services tiers contactés par votre navigateur',
-            'Il y en a trois, et je n’en fais pas partie. La page est hébergée par GitHub Pages, qui, comme tout hébergeur, voit la requête et votre adresse IP dans ses propres journaux. Les photographies sont chargées directement depuis Wikimedia Commons : votre navigateur contacte donc Wikimedia, sous sa politique de confidentialité. Les polices viennent de Google Fonts, ce qui signifie que Google voit aussi la requête — une dépendance dont je compte me passer.'],
+            'Il y en a trois, et je n’en fais pas partie. La page est hébergée par GitHub Pages, qui, comme tout hébergeur, voit la requête et votre adresse IP dans ses propres journaux. Les photographies sont chargées directement depuis Wikimedia Commons, et les extraits d’articles depuis Wikipédia : votre navigateur contacte donc Wikimedia, sous sa politique de confidentialité. Les polices viennent de Google Fonts, ce qui signifie que Google voit aussi la requête — une dépendance dont je compte me passer.'],
            ['Aucun profilage, et rien à demander',
             'Puisqu’aucune donnée personnelle n’est collectée ni détenue, il n’y a rien à consulter, corriger, exporter ou effacer. Effacer les données de ce site dans votre navigateur supprime tout ce que Heritle a jamais enregistré, immédiatement et entièrement.'],
            ['Les enfants',
@@ -1480,6 +1562,25 @@ const UI = {
                news:'Actualité du patrimoine', europeana:'Collections Europeana',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Code source', contact:'Nous écrire' },
        linkGroups:{ explore:'Pour aller plus loin', project:'Ce projet' },
+       deepCrit:'Pourquoi il est inscrit', deepCritNote:'Critères d’inscription de l’UNESCO',
+       crit:{ i:'Un chef-d’œuvre du génie créateur humain',
+              ii:'Un échange d’influences entre cultures, visible dans l’architecture, l’art ou l’urbanisme',
+              iii:'Un témoignage unique sur une culture ou une civilisation, vivante ou disparue',
+              iv:'Un exemple éminent d’un type de construction ou de paysage, témoin d’une période de l’histoire',
+              v:'Un mode traditionnel d’occupation de la terre ou de la mer',
+              vi:'Directement associé à des événements, traditions, croyances ou œuvres de portée universelle',
+              vii:'Des phénomènes naturels remarquables ou une beauté naturelle exceptionnelle',
+              viii:'Un témoin majeur de l’histoire de la Terre',
+              ix:'Des processus écologiques et biologiques toujours à l’œuvre',
+              x:'Un habitat essentiel pour la biodiversité et les espèces menacées' },
+       wikiHead:'Selon Wikipédia', wikiMore:'Lire l’article complet', wikiIn:{en:'en anglais',fr:'en français',es:'en espagnol'},
+       wikiLicence:'Texte de Wikipédia, CC BY-SA 4.0',
+       navExplore:'Explorer', exploreTitle:'Explorer',
+       exploreSub:(n)=>`Les ${n} sites et traditions, sur une seule carte. Touchez un point pour en savoir plus.`,
+       exploreSearch:'Chercher un nom ou un pays', exploreNone:'Aucun résultat.',
+       exploreShown:(n)=>`${n} sur la carte`,
+       exploreHidden:(n)=>`Les ${n} du jour restent cachés tant que vous ne les avez pas joués.`,
+       exploreMine:'Seulement ma collection',
        achEarned:'Obtenues', achLocked:'Encore à trouver',
        inAppNote:'Vous êtes dans le <b>navigateur interne d\u2019Instagram</b>, qui garde sa progression à part. Ouvrez heritle.org dans votre navigateur habituel pour retrouver votre collection \u2014 ou copiez le code de sauvegarde du Passeport et collez-le ici.',
        secretFound:'Secret découvert', awardWon:'Distinction obtenue',
@@ -1613,7 +1714,7 @@ const UI = {
            ['Qué se guarda, y dónde',
             'Tu progreso —la jornada en curso, tu colección, tus distinciones, tu idioma y el ajuste para daltonismo— se guarda en el almacenamiento local de tu navegador, en tu dispositivo. Nunca sale de ahí. Yo no puedo leerlo, y no podría recuperarlo si lo perdieras.'],
            ['Los servicios de terceros con los que conecta tu navegador',
-            'Son tres, y yo no soy ninguno de ellos. La página está alojada en GitHub Pages, que como cualquier alojamiento ve la petición y tu dirección IP en sus propios registros. Las fotografías se cargan directamente desde Wikimedia Commons, así que tu navegador contacta con Wikimedia, bajo su política de privacidad. Las tipografías vienen de Google Fonts, lo que significa que Google también ve la petición: una dependencia que tengo intención de eliminar.'],
+            'Son tres, y yo no soy ninguno de ellos. La página está alojada en GitHub Pages, que como cualquier alojamiento ve la petición y tu dirección IP en sus propios registros. Las fotografías se cargan directamente desde Wikimedia Commons, y los extractos de artículos desde Wikipedia, así que tu navegador contacta con Wikimedia, bajo su política de privacidad. Las tipografías vienen de Google Fonts, lo que significa que Google también ve la petición: una dependencia que tengo intención de eliminar.'],
            ['Sin perfilado, y nada que solicitar',
             'Como no se recoge ni se conserva ningún dato personal, no hay nada que consultar, corregir, exportar o borrar. Borrar los datos de este sitio en tu navegador elimina todo lo que Heritle haya guardado, de inmediato y por completo.'],
            ['Menores',
@@ -1649,6 +1750,25 @@ const UI = {
                news:'Noticias del patrimonio', europeana:'Colecciones Europeana',
                instagram:'Instagram', tiktok:'TikTok', youtube:'YouTube', source:'Código fuente', contact:'Escríbenos' },
        linkGroups:{ explore:'Para saber más', project:'Este proyecto' },
+       deepCrit:'Por qué está inscrito', deepCritNote:'Criterios de inscripción de la UNESCO',
+       crit:{ i:'Una obra maestra del genio creador humano',
+              ii:'Un intercambio de influencias entre culturas, visible en su arquitectura, arte o urbanismo',
+              iii:'Un testimonio único de una cultura o civilización, viva o desaparecida',
+              iv:'Un ejemplo eminente de un tipo de construcción o paisaje de una etapa de la historia',
+              v:'Una forma tradicional de habitar la tierra o el mar',
+              vi:'Directamente asociado a acontecimientos, tradiciones, creencias u obras de alcance universal',
+              vii:'Fenómenos naturales extraordinarios o una belleza natural excepcional',
+              viii:'Un testimonio fundamental de la historia de la Tierra',
+              ix:'Procesos ecológicos y biológicos todavía en curso',
+              x:'Un hábitat esencial para la biodiversidad y las especies amenazadas' },
+       wikiHead:'Según Wikipedia', wikiMore:'Leer el artículo completo', wikiIn:{en:'en inglés',fr:'en francés',es:'en español'},
+       wikiLicence:'Texto de Wikipedia, CC BY-SA 4.0',
+       navExplore:'Explorar', exploreTitle:'Explorar',
+       exploreSub:(n)=>`Los ${n} sitios y tradiciones, en un solo mapa. Toca un punto para saber más.`,
+       exploreSearch:'Buscar un nombre o un país', exploreNone:'Ningún resultado.',
+       exploreShown:(n)=>`${n} en el mapa`,
+       exploreHidden:(n)=>`Los ${n} de hoy siguen ocultos hasta que los juegues.`,
+       exploreMine:'Solo mi colección',
        achEarned:'Obtenidas', achLocked:'Aún por descubrir',
        inAppNote:'Estás en el <b>navegador interno de Instagram</b>, que guarda su progreso aparte. Abre heritle.org en tu navegador habitual para encontrar tu colección, o copia el código de copia de seguridad del Pasaporte y pégalo aquí.',
        secretFound:'Secreto descubierto', awardWon:'Distinción obtenida',
@@ -1771,7 +1891,7 @@ function normaliseEntry(e, countries){
     year: e.year, approx: e.approx, image: e.image,
     qid: e.qid, siteId: e.siteId, wiki: e.wiki, officialUrl: e.officialUrl,
     photos: (e.photos && e.photos.length) ? e.photos : (e.image ? [e.image] : []),
-    continentCode: e.continent,
+    continentCode: e.continent, categoryCode: e.category,
     names: e.names,
     aliases: e.aliases || [],
     countryIds: allIds,
@@ -2142,6 +2262,8 @@ async function loadLand(){
                         .filter(Boolean);
     LAND_PATH = LAND_PIECES.join('');
     buildShapeIndex();
+    // Explore may already be open on the coarse outline.
+    if(currentView === 'Explore') exDraw();
   }catch(err){
     console.warn('Heritle: detailed map unavailable, using the built-in outline —', err.message);
   }
@@ -3377,7 +3499,10 @@ function renderRoundResult(){
     <div class="share-grid">${grid}</div>
     ${pointsBlock}
     <button class="btn" id="nextBtn">${state.round + 1 >= N_ROUNDS ? T.seeResult : T.nextRound}</button>
-    <button class="btn secondary" id="learnBtn">${T.learnMore}</button>`;
+    <button class="btn secondary" id="learnBtn">${T.learnMore}</button>
+    <div class="deep rr-deep" id="rrDeep"></div>`;
+  // Below the buttons, so reading it is never in the way of moving on.
+  renderDeep(document.getElementById('rrDeep'), target);
   document.getElementById('nextBtn').onclick = ()=>{
     state.round++; photoView[state.round] = 0; saveState(); render();
   };
@@ -3740,6 +3865,87 @@ document.addEventListener('keydown', e=>{
 
    Everything here is built from fields the entry already has, so a link is
    offered only when it will actually resolve. */
+/* ---------- Going further ----------
+   A round used to end on a one-line description and three links out of the
+   game, and most players never followed them. Two things now come to the
+   player instead: why UNESCO inscribed the place, in plain words, and the
+   opening of its encyclopaedia article in the language they are reading.
+
+   Both are fetched lazily. data/extras.json (built by tools/build_extras.py)
+   holds the criteria and the article titles; it is separate from the dataset
+   because regenerating the dataset re-deals the days. The article itself is
+   asked of Wikipedia at the moment it is shown, so nothing is shipped twice
+   and the text is whatever Wikipedia says today. */
+let EXTRAS = null, extrasLoad = null;
+function loadExtras(){
+  if(!extrasLoad){
+    extrasLoad = fetch('data/extras.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => (EXTRAS = (d && d.entries) || {}))
+      .catch(() => (EXTRAS = {}));
+  }
+  return extrasLoad;
+}
+
+const WIKI_SUMMARY = new Map();
+function wikiSummary(entry){
+  // Titles the dataset build verified against the API come first; the rest
+  // are Wikidata's sitelinks, and one that no longer resolves just shows
+  // nothing.
+  const w = Object.assign({}, ((EXTRAS || {})[entry.id] || {}).w || {}, entry.wiki || {});
+  const l = w[lang] ? lang : ['en', 'fr', 'es'].find(x => w[x]);
+  if(!l) return Promise.resolve(null);
+  const key = l + ':' + w[l];
+  if(!WIKI_SUMMARY.has(key)){
+    const title = encodeURIComponent(w[l].replace(/ /g, '_'));
+    WIKI_SUMMARY.set(key,
+      fetch(`https://${l}.wikipedia.org/api/rest_v1/page/summary/${title}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => (d && d.type !== 'disambiguation' && d.extract) ? {
+            lang: l, text: d.extract,
+            url: (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page)
+                 || `https://${l}.wikipedia.org/wiki/${title}` } : null)
+        .catch(() => null));
+  }
+  return WIKI_SUMMARY.get(key);
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+
+/* Fill a box with the criteria and the article. Keyed to the entry and the
+   language, because both arrive later than the box is drawn: a player who has
+   already moved on to the next card must not have this one's text land in it. */
+function renderDeep(el, entry){
+  if(!el || !entry) return;
+  const stamp = entry.id + ':' + lang;
+  if(el.dataset.for === stamp) return;          // already drawn, or on its way
+  el.dataset.for = stamp;
+  el.innerHTML = '';
+  loadExtras().then(() => {
+    if(el.dataset.for !== stamp) return;
+    const T = t();
+    const crit = (EXTRAS[entry.id] || {}).c || [];
+    if(crit.length){
+      el.insertAdjacentHTML('beforeend',
+        `<span class="deep-head">${T.deepCrit} <small>· ${T.deepCritNote}</small></span>
+         <ul class="crit-list">${crit.map(c =>
+           `<li><span class="crit-num">${c}</span><span>${T.crit[c] || ''}</span></li>`).join('')}</ul>`);
+    }
+    return wikiSummary(entry).then(sum => {
+      if(!sum || el.dataset.for !== stamp) return;
+      const T = t();
+      const other = sum.lang !== lang ? ` <small>· ${T.wikiIn[sum.lang]}</small>` : '';
+      el.insertAdjacentHTML('beforeend',
+        `<span class="deep-head">${T.wikiHead}${other}</span>
+         <p class="wiki-text" lang="${sum.lang}">${esc(sum.text)}</p>
+         <div class="wiki-foot">
+           <a href="${esc(sum.url)}" target="_blank" rel="noopener noreferrer">${T.wikiMore} ↗</a>
+           <span>${T.wikiLicence}</span>
+         </div>`);
+    });
+  });
+}
+
 function learnLinks(entry){
   const T = t();
   const out = [];
@@ -3799,6 +4005,7 @@ function openInfoModal(entry, rec){
   renderGallery();
   document.getElementById('modalVideoLabel').textContent = T.learnLabel;
   document.getElementById('modalLinks').innerHTML = learnLinks(entry).join('');
+  renderDeep(document.getElementById('modalDeep'), entry);
   document.getElementById('modalClose').textContent = T.close;
   // Favouriting is offered wherever the entry is -- including the day it was
   // met, which is the moment a player actually wants to keep it.
@@ -4248,11 +4455,267 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
 /* ---------- Views ---------- */
 let currentView = 'Game';
 
+/* ---------- Explore ----------
+   Every entry on one map, for reading rather than guessing: a dot per site
+   or tradition, coloured by kind, and a tap opens the same card the
+   collection does -- photographs, criteria, the article, the links.
+
+   It has to keep the daily game honest. Today's four are left off the map
+   and out of the search until the day has been played, or the photograph on
+   the board could simply be looked up here. */
+const EX_KINDS = ['cultural', 'natural', 'mixed', 'intangible'];
+const EX_COLOURS = { cultural:'#C9A24B', natural:'#6FA06F', mixed:'#C98A5B', intangible:'#8FA9D6' };
+let exView = { x:0, y:0, w:MAP_W, h:MAP_H };
+let exOn = new Set(EX_KINDS), exMine = false, exQuery = '';
+let exDots = [], exR = null, exMoved = false;
+const EX_HAY = new Map();
+
+function exKind(e){
+  if(e.type === 'immaterial') return 'intangible';
+  return EX_COLOURS[e.categoryCode] ? e.categoryCode : 'cultural';
+}
+
+function exHiddenIds(){
+  if(profile.days && profile.days[todayIndex]) return new Set();
+  const ids = new Set(dealFor(todayIndex).map(e => e.id));
+  if(dayIndex === todayIndex) targets.forEach(e => ids.add(e.id));
+  return ids;
+}
+
+/* Accents off and lower case, so "Pétra", "petra" and "PETRA" all find it. */
+const exNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function exHay(e){
+  if(!EX_HAY.has(e.id)){
+    const n = e.names || {}, c = e.country || {};
+    EX_HAY.set(e.id, exNorm([n.en, n.fr, n.es, c.en, c.fr, c.es, ...(e.aliases || [])].join(' | ')));
+  }
+  return EX_HAY.get(e.id);
+}
+
+function exClamp(){
+  exView.w = Math.min(MAP_W, Math.max(MAP_W / MAX_ZOOM, exView.w));
+  exView.h = exView.w * (MAP_H / MAP_W);
+  exView.x = wrapX(exView.x);
+  exView.y = Math.min(MAP_H - exView.h, Math.max(0, exView.y));
+}
+
+/* The view, and the dots counter-scaled to stay the same size on screen at
+   every zoom -- a dot in world units would cover a country zoomed in. */
+function exApply(){
+  const svg = document.getElementById('exSvg');
+  if(!svg) return;
+  exClamp();
+  svg.setAttribute('viewBox', `${exView.x} ${exView.y} ${exView.w} ${exView.h}`);
+  const width = svg.getBoundingClientRect().width || 400;
+  const r = Math.min(4.2, Math.max(2.6, width / 160)) * exView.w / width;
+  if(r !== exR){
+    exR = r;
+    svg.querySelectorAll('#exDots circle').forEach(c => c.setAttribute('r', r));
+  }
+}
+
+function exScreenToWorld(cx, cy){
+  const r = document.getElementById('exSvg').getBoundingClientRect();
+  return { x: exView.x + ((cx - r.left) / r.width) * exView.w,
+           y: exView.y + ((cy - r.top) / r.height) * exView.h };
+}
+
+function exZoom(factor, cx, cy){
+  if(cx === undefined){ cx = exView.x + exView.w / 2; cy = exView.y + exView.h / 2; }
+  const w = exView.w / factor;
+  exView.x = cx - (cx - exView.x) * (w / exView.w);
+  exView.y = cy - (cy - exView.y) * (w / exView.w);
+  exView.w = w;
+  exApply();
+}
+
+function exDraw(){
+  const svg = document.getElementById('exSvg');
+  if(!svg) return;
+  const T = t();
+  const hidden = exHiddenIds();
+  exDots = POOL.filter(e => !hidden.has(e.id) && exOn.has(exKind(e))
+                         && (!exMine || profile.collection[e.id]));
+  const pieces = LAND_PIECES || [WORLD_LAND_PATH];
+  // Collected entries are drawn solid with a cream edge, the rest a little
+  // faded: the map doubles as a picture of how much of the world you have met.
+  const dots = exDots.map(e => {
+    const p = project(e.lat, e.lng);
+    const mine = !!profile.collection[e.id];
+    return `<circle cx="${p.x}" cy="${p.y}" r="1" fill="${EX_COLOURS[exKind(e)]}"`
+      + (mine ? ` stroke="var(--cream)" stroke-width="0.8" vector-effect="non-scaling-stroke"`
+              : ` fill-opacity="0.75"`) + `/>`;
+  }).join('');
+  svg.innerHTML =
+    `<g id="exWorld"><rect width="${MAP_W}" height="${MAP_H}" fill="var(--navy)"/>`
+    + pieces.map(d => `<path d="${d}" fill="var(--navy-3)" fill-rule="evenodd"
+         stroke="rgba(201,162,75,0.22)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`).join('')
+    + `<g id="exDots">${dots}</g></g>`
+    + `<use href="#exWorld" x="${-MAP_W}"/><use href="#exWorld" x="${MAP_W}"/>`;
+  exR = null;
+  exApply();
+  const gone = [...hidden].filter(id => BY_ID.has(id)).length;
+  document.getElementById('exNote').textContent =
+    T.exploreShown(exDots.length) + (gone ? ' · ' + T.exploreHidden(N_ROUNDS) : '');
+}
+
+/* The nearest dot to a tap, within a fingertip -- measured round the back of
+   the world too, so a dot just past the date line is still near. */
+function exPick(clientX, clientY){
+  const svg = document.getElementById('exSvg');
+  const w = exScreenToWorld(clientX, clientY);
+  const x = wrapX(w.x);
+  const limit = 16 * exView.w / (svg.getBoundingClientRect().width || 1);
+  let best = null, bestD = Infinity;
+  for(const e of exDots){
+    const p = project(e.lat, e.lng);
+    let dx = Math.abs(p.x - x); dx = Math.min(dx, MAP_W - dx);
+    const d = Math.hypot(dx, p.y - w.y);
+    if(d < bestD){ bestD = d; best = e; }
+  }
+  return bestD <= limit ? best : null;
+}
+
+function exFocus(e){
+  const p = project(e.lat, e.lng);
+  exView.w = Math.min(exView.w, MAP_W / 8);
+  exView.h = exView.w * (MAP_H / MAP_W);
+  exView.x = p.x - exView.w / 2; exView.y = p.y - exView.h / 2;
+  exApply();
+}
+
+function exSearch(){
+  const T = t();
+  const box = document.getElementById('exResults');
+  const q = exNorm(exQuery.trim());
+  if(q.length < 2){ box.innerHTML = ''; return; }
+  const hidden = exHiddenIds();
+  const hits = POOL.filter(e => !hidden.has(e.id) && exHay(e).includes(q)).slice(0, 8);
+  box.innerHTML = hits.length
+    ? hits.map(e => `<button data-id="${esc(e.id)}">${esc(e.names[lang] || e.names.en)}`
+                    + `<small>${esc((e.country && e.country[lang]) || '')}</small></button>`).join('')
+    : `<div class="none">${T.exploreNone}</div>`;
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    const e = BY_ID.get(b.dataset.id);
+    if(!e) return;
+    box.innerHTML = '';
+    exFocus(e);
+    openInfoModal(e);
+  });
+}
+
+function renderExplore(){
+  const T = t();
+  const box = document.getElementById('viewExplore');
+  box.innerHTML = `
+    <div class="panel-head"><h2>${T.exploreTitle}</h2><p>${T.exploreSub(POOL.length)}</p></div>
+    <div class="ex-tools">
+      <div class="ex-search">
+        <input id="exQ" type="search" autocomplete="off" spellcheck="false"
+               placeholder="${esc(T.exploreSearch)}" aria-label="${esc(T.exploreSearch)}" value="${esc(exQuery)}">
+        <div class="ex-results" id="exResults"></div>
+      </div>
+      <div class="ex-chips">
+        ${EX_KINDS.map(k => `<button class="ex-chip${exOn.has(k) ? ' on' : ''}" data-k="${k}"
+            aria-pressed="${exOn.has(k)}"><i style="background:${EX_COLOURS[k]}"></i>${T.categories[k]}</button>`).join('')}
+        <button class="ex-chip${exMine ? ' on' : ''}" data-mine="1" aria-pressed="${exMine}">${T.exploreMine}</button>
+      </div>
+    </div>
+    <div class="ex-map">
+      <svg id="exSvg" viewBox="0 0 ${MAP_W} ${MAP_H}"></svg>
+      <div class="map-zoom">
+        <button id="exIn" aria-label="Zoom in">+</button>
+        <button id="exOut" aria-label="Zoom out">−</button>
+        <button id="exReset" aria-label="Reset view">⤢</button>
+      </div>
+    </div>
+    <div class="ex-note" id="exNote"></div>`;
+
+  box.querySelectorAll('.ex-chip').forEach(b => b.onclick = () => {
+    if(b.dataset.mine){ exMine = !exMine; }
+    else if(exOn.has(b.dataset.k)){ exOn.delete(b.dataset.k); } else { exOn.add(b.dataset.k); }
+    renderExplore();
+  });
+  const input = document.getElementById('exQ');
+  input.oninput = () => { exQuery = input.value; exSearch(); };
+  input.onkeydown = e => {
+    if(e.key === 'Enter'){ const first = document.querySelector('#exResults button'); if(first) first.click(); }
+    if(e.key === 'Escape'){ exQuery = input.value = ''; exSearch(); }
+  };
+  document.getElementById('exIn').onclick = () => exZoom(1.6);
+  document.getElementById('exOut').onclick = () => exZoom(1 / 1.6);
+  document.getElementById('exReset').onclick = () => { exView = { x:0, y:0, w:MAP_W, h:MAP_H }; exApply(); };
+
+  // Pan and pinch, the same gestures as the game's map, on a view of its own
+  // so exploring never moves the board.
+  const svg = document.getElementById('exSvg');
+  const pointers = new Map();
+  let last = null, pinchStart = 0, startW = 0;
+  svg.addEventListener('pointerdown', e => {
+    pointers.set(e.pointerId, e);
+    exMoved = false;
+    if(pointers.size === 1) last = { x: e.clientX, y: e.clientY };
+    if(pointers.size === 2){
+      const [a, b] = [...pointers.values()];
+      pinchStart = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      startW = exView.w;
+    }
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e => {
+    if(!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, e);
+    if(pointers.size === 2 && pinchStart){
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if(dist > 0){
+        const mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
+        const before = exScreenToWorld(mx, my);
+        exView.w = startW * (pinchStart / dist);
+        exClamp();
+        const after = exScreenToWorld(mx, my);
+        exView.x += before.x - after.x; exView.y += before.y - after.y;
+        exApply();
+        exMoved = true;
+      }
+      return;
+    }
+    if(pointers.size === 1 && last){
+      const r = svg.getBoundingClientRect();
+      if(Math.abs(e.clientX - last.x) + Math.abs(e.clientY - last.y) > 3) exMoved = true;
+      exView.x -= (e.clientX - last.x) / r.width * exView.w;
+      exView.y -= (e.clientY - last.y) / r.height * exView.h;
+      exApply();
+      last = { x: e.clientX, y: e.clientY };
+    }
+  });
+  const release = e => {
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) pinchStart = 0;
+    if(!pointers.size) last = null;
+  };
+  svg.addEventListener('pointerup', release);
+  svg.addEventListener('pointercancel', release);
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const w = exScreenToWorld(e.clientX, e.clientY);
+    exZoom(e.deltaY < 0 ? 1.25 : 1 / 1.25, w.x, w.y);
+  }, { passive: false });
+  svg.addEventListener('click', e => {
+    if(exMoved) return;
+    const hit = exPick(e.clientX, e.clientY);
+    if(hit) openInfoModal(hit);
+  });
+
+  exDraw();
+  if(exQuery) exSearch();
+}
+
 function renderNav(){
   const T = t();
   const nav = document.getElementById('nav');
   nav.innerHTML = '';
-  [['Game',T.navGame],['Collection',T.navCollection],
+  [['Game',T.navGame],['Explore',T.navExplore],['Collection',T.navCollection],
    ['Passport',T.navPassport],['Archive',T.navArchive]].forEach(([id,label])=>{
     const b = document.createElement('button');
     b.textContent = label;
@@ -4264,10 +4727,11 @@ function renderNav(){
 
 function showView(id){
   currentView = id;
-  ['Game','Collection','Passport','Archive'].forEach(v=>{
+  ['Game','Explore','Collection','Passport','Archive'].forEach(v=>{
     document.getElementById('view'+v).classList.toggle('active', v===id);
   });
   renderNav();
+  if(id==='Explore')    renderExplore();
   if(id==='Collection') renderCollection();
   if(id==='Passport')   renderPassport();
   if(id==='Archive')    renderArchive();
