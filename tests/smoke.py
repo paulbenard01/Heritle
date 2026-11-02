@@ -623,6 +623,66 @@ def play_day(page, base, day, width, label):
     check(r_zoom < r_world / 4, f"{label}: pins scale with the map",
           f"world r={r_world} zoomed r={r_zoom}")
 
+    # Land the game never asks about is still land. A tap on Kosovo used to be
+    # handed to the nearest listed centroid and read "North Macedonia"; on
+    # Taiwan it read "open water".
+    named = page.evaluate("""
+      () => {
+        const svg = document.getElementById('mapSvg');
+        const out = {};
+        for (const [k, lat, lng] of [['kosovo', 42.6, 20.9], ['taiwan', 23.7, 121.0]]) {
+          const p = project(lat, lng);
+          mapView = { x: p.x - 10, y: p.y - 5, w: 20, h: 10 }; applyView();
+          const r = svg.getBoundingClientRect();
+          svg.dispatchEvent(new MouseEvent('click', { bubbles: true,
+            clientX: r.left + ((p.x - mapView.x) / mapView.w) * r.width,
+            clientY: r.top + ((p.y - mapView.y) / mapView.h) * r.height }));
+          out[k] = pendingGuess && [pendingGuess.country && pendingGuess.country.iso,
+                                    placeLabel(pendingGuess)];
+          clearPending();
+        }
+        mapView = { x:0, y:0, w:MAP_W, h:MAP_H }; applyView();
+        return out;
+      }
+    """)
+    # Read by ISO, not by name: the synthetic dataset lists both under
+    # placeholder names, the real one lists neither and the browser names them.
+    check(named.get("kosovo", [None])[0] == "XK" and named.get("taiwan", [None])[0] == "TW"
+          and all(v[1] not in ("Open water", "North Macedonia") for v in named.values()),
+          f"{label}: land off the list is named, not called open water", str(named))
+
+    # The map goes round. Past either edge the view wraps instead of stopping,
+    # and a tap on the copy of the world beside the seam lands on the country
+    # drawn there.
+    wrap = page.evaluate("""
+      () => {
+        mapView = { x: -100, y: 0, w: MAP_W, h: MAP_H }; applyView();
+        const wrapped = mapView.x;
+        // A click lands on a whole pixel, which at world zoom is wider than
+        // Andorra: pick a country with room around its centre.
+        const c = COUNTRIES.find(c => { const p = project(c.lat, c.lng);
+          return c.iso && p.x < MAP_W - 20 &&
+            [[0,0],[3,0],[-3,0],[0,3],[0,-3]].every(([dx,dy]) => isoAt(p.x+dx, p.y+dy) === c.iso); });
+        const p = project(c.lat, c.lng);
+        // The view starts ten units before the seam, so nearly everything on
+        // screen is the copy of the world to the east -- tap the country there.
+        mapView = { x: MAP_W - 10, y: 0, w: MAP_W, h: MAP_H }; applyView();
+        const svg = document.getElementById('mapSvg'), r = svg.getBoundingClientRect();
+        const sx = p.x + MAP_W - mapView.x;
+        svg.dispatchEvent(new MouseEvent('click', { bubbles: true,
+          clientX: r.left + (sx / mapView.w) * r.width,
+          clientY: r.top + ((p.y - mapView.y) / mapView.h) * r.height }));
+        const got = pendingGuess && pendingGuess.country && pendingGuess.country.iso;
+        clearPending();
+        mapView = { x:0, y:0, w:MAP_W, h:MAP_H }; applyView();
+        return { wrapped, want: c.iso, got };
+      }
+    """)
+    check(abs(wrap["wrapped"] - 340) < 1e-6, f"{label}: the map wraps sideways instead of stopping",
+          str(wrap["wrapped"]))
+    check(wrap["got"] == wrap["want"], f"{label}: and a tap on the next copy of the world lands",
+          str(wrap))
+
     # ---- every language renders ----
     # Needles from each tagline that do not appear in the other two.
     for code, needle in (("fr", "chaque jour"), ("es", "cada día"), ("en", "each day")):
