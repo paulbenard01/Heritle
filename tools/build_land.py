@@ -139,13 +139,32 @@ def ring_to_path(ring):
     return ("".join(chunks) or None), parts
 
 
+# Land Natural Earth gives no ISO code, but which sits inside a state the game
+# does know. Left uncoded, a tap on it read "open water" -- reported from a
+# pin in Hargeisa. The dataset's countries come from Wikidata, which counts
+# these as part of the state named here, so for a guess they are that state.
+# Keyed by ADM0_A3.
+ASSIGN = {
+    "SOL": "SO",   # Somaliland -> Somalia
+    "CYN": "CY",   # Northern Cyprus -> Cyprus
+    "CNM": "CY",   # the UN buffer zone in Cyprus
+    "ESB": "CY",   # Dhekelia, a UK base on the island
+    "WSB": "CY",   # Akrotiri, likewise
+    "USG": "CU",   # Guantanamo Bay, on Cuba
+}
+
+
 def iso_of(props):
     """Natural Earth's ISO code for a feature, or None.
 
     ISO_A2 is "-99" for places without one -- disputed or partially recognised
-    territories, mostly. Those are still drawn; they just cannot be guessed,
-    which matches the dataset, whose countries all come from Wikidata's P297.
+    territories, mostly. Those inside a known state are given its code (see
+    ASSIGN); the rest -- Bir Tawil, the Siachen Glacier -- stay unguessable but
+    keep their names, so a tap on them is not called open water either.
     """
+    a3 = props.get("ADM0_A3") or props.get("adm0_a3")
+    if a3 in ASSIGN:
+        return ASSIGN[a3]
     for key in ("ISO_A2_EH", "ISO_A2", "iso_a2_eh", "iso_a2"):
         v = props.get(key)
         if v and v not in ("-99", "-099") and len(v) == 2:
@@ -154,16 +173,20 @@ def iso_of(props):
 
 
 def build():
-    print(f"fetching {SOURCE}")
-    r = requests.get(SOURCE, timeout=300)
-    r.raise_for_status()
-    gj = r.json()
+    print(f"reading {SOURCE}")
+    if os.path.exists(SOURCE):
+        gj = json.load(open(SOURCE, encoding="utf-8"))
+    else:
+        r = requests.get(SOURCE, timeout=300)
+        r.raise_for_status()
+        gj = r.json()
     feats = gj.get("features", [])
     print(f"  {len(feats)} features")
 
     rings, dropped, no_iso = 0, 0, 0
     shapes = {}          # ISO -> list of rings, each a flat [x,y,x,y,...]
-    other = []           # rings with no ISO: drawn, but not guessable
+    other = []           # rings with no ISO and no name: drawn, not guessable
+    named = {}           # no ISO, but a name: drawn, named on a tap, not guessable
     for f in feats:
         geom = f.get("geometry") or {}
         kind, coords = geom.get("type"), geom.get("coordinates")
@@ -173,9 +196,17 @@ def build():
             polys = coords
         else:
             continue
-        iso = iso_of(f.get("properties") or {})
+        props = f.get("properties") or {}
+        iso = iso_of(props)
+        name = None
         if not iso:
             no_iso += 1
+            en = props.get("NAME_EN") or props.get("NAME")
+            if en:
+                name = named.setdefault(en, {
+                    "names": {"en": en, "fr": props.get("NAME_FR") or en,
+                              "es": props.get("NAME_ES") or en},
+                    "rings": []})
         for poly in polys:
             for ring in poly:          # ring 0 is the outline, the rest holes
                 _d, parts = ring_to_path(ring)
@@ -190,6 +221,8 @@ def build():
                         flat.append(round(y, DECIMALS))
                     if iso:
                         shapes.setdefault(iso, []).append(flat)
+                    elif name:
+                        name["rings"].append(flat)
                     else:
                         other.append(flat)
 
@@ -202,6 +235,7 @@ def build():
     return {
         "shapes": shapes,
         "other": other,
+        "named": [n for n in named.values() if n["rings"]],
         "width": MAP_W,
         "height": MAP_H,
         "source": SOURCE,
@@ -224,6 +258,7 @@ def main():
                     help="report the size it would write, without writing")
     ap.add_argument("--scale", default="10m", choices=["110m", "50m", "10m"],
                     help="Natural Earth resolution to build from")
+    ap.add_argument("--source", help="a local copy of the GeoJSON, instead of fetching it")
     ap.add_argument("--max-zoom", type=int, default=MAX_ZOOM,
                     help="deepest zoom the geometry must survive; sets the tolerance")
     ap.add_argument("--min-extent", type=float, default=MIN_RING_EXTENT,
@@ -233,7 +268,7 @@ def main():
     # Resolution, detail and the smallest island kept are one decision, so they
     # move together: a finer source is pointless if the simplification then
     # throws the detail away again.
-    SOURCE = re.sub(r"ne_\d+m", "ne_" + args.scale, SOURCE)
+    SOURCE = args.source or re.sub(r"ne_\d+m", "ne_" + args.scale, SOURCE)
     TOLERANCE = 0.5 / args.max_zoom
     MIN_RING_EXTENT = args.min_extent
     print(f"scale={args.scale} max_zoom={args.max_zoom} "
@@ -245,6 +280,7 @@ def main():
     kb = len(blob) / 1024
     verts = sum(len(r) for rs in data["shapes"].values() for r in rs) // 2
     verts += sum(len(r) for r in data["other"]) // 2
+    verts += sum(len(r) for n in data["named"] for r in n["rings"]) // 2
     print(f"  {verts} vertices, {kb:.0f} KB of JSON")
     # 10m at forty times zoom measures 2.4 MB, which is the deal being made:
     # roughly five times the detail for about two megabytes. Past this it is

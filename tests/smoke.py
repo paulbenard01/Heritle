@@ -634,7 +634,8 @@ def play_day(page, base, day, width, label):
       () => {
         const svg = document.getElementById('mapSvg');
         const out = {};
-        for (const [k, lat, lng] of [['kosovo', 42.6, 20.9], ['taiwan', 23.7, 121.0]]) {
+        for (const [k, lat, lng] of [['kosovo', 42.6, 20.9], ['taiwan', 23.7, 121.0],
+                                     ['hargeisa', 9.56, 44.06], ['birtawil', 21.87, 33.75]]) {
           const p = project(lat, lng);
           mapView = { x: p.x - 10, y: p.y - 5, w: 20, h: 10 }; applyView();
           const r = svg.getBoundingClientRect();
@@ -652,8 +653,15 @@ def play_day(page, base, day, width, label):
     # Read by ISO, not by name: the synthetic dataset lists both under
     # placeholder names, the real one lists neither and the browser names them.
     check(named.get("kosovo", [None])[0] == "XK" and named.get("taiwan", [None])[0] == "TW"
-          and all(v[1] not in ("Open water", "North Macedonia") for v in named.values()),
+          and all(v and v[1] not in ("Open water", "North Macedonia") for v in named.values()),
           f"{label}: land off the list is named, not called open water", str(named))
+    # Somaliland has no ISO code in Natural Earth, so a pin in Hargeisa read
+    # "open water" on a live game. It counts as Somalia, as Wikidata has it;
+    # Bir Tawil belongs to no one and keeps its own name.
+    check(named.get("hargeisa", [None])[0] == "SO", f"{label}: Somaliland counts as Somalia",
+          str(named.get("hargeisa")))
+    check((named.get("birtawil") or [None, None])[1] == "Bir Tawil",
+          f"{label}: and land no country claims is named for itself", str(named.get("birtawil")))
 
     # The map goes round. Past either edge the view wraps instead of stopping,
     # and a tap on the copy of the world beside the seam lands on the country

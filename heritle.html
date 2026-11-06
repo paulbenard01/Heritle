@@ -2239,6 +2239,7 @@ let LAND_PATH = null;          // detailed geometry, once it arrives
 let LAND_PIECES = null;        // the same geometry, one path per country
 let LAND_SHAPES = null;        // ISO -> rings, for resolving a tap to a country
 let SHAPE_BOX = null;          // ISO -> bounding box, to skip most countries
+let LAND_NAMED = [];           // land with a name but no country: Bir Tawil, Siachen
 async function loadLand(){
   try{
     const res = await fetch('data/land.json', { cache: 'no-cache' });
@@ -2257,8 +2258,10 @@ async function loadLand(){
     // renderer can only cull whole drawing objects and there is just the one;
     // split up, everything off-screen is dropped immediately, which is nearly
     // all of it once you have zoomed in. Panning got dramatically cheaper.
+    LAND_NAMED = (d.named || []).filter(n => n.rings && n.rings.length && n.names);
     LAND_PIECES = Object.values(d.shapes).map(ringsToPath)
                         .concat(d.other && d.other.length ? [ringsToPath(d.other)] : [])
+                        .concat(LAND_NAMED.map(n => ringsToPath(n.rings)))
                         .filter(Boolean);
     LAND_PATH = LAND_PIECES.join('');
     buildShapeIndex();
@@ -3624,7 +3627,20 @@ function landPlace(iso, x, y){
     }catch(e){ names = null; }
     LAND_PLACES[iso] = names;
   }
-  const names = LAND_PLACES[iso];
+  return placeAt(LAND_PLACES[iso], 'land-' + iso, iso, x, y);
+}
+
+/* Land the map source names but assigns to no country at all -- Bir Tawil,
+   the Siachen Glacier, the Southern Patagonian Ice Field. Disputed or
+   unclaimed, so never an answer, but standing on one is not open water. */
+function namedLandAt(x, y){
+  for(const n of LAND_NAMED){
+    if(pointInShape(n.rings, x, y)) return placeAt(n.names, 'land-' + n.names.en, null, x, y);
+  }
+  return null;
+}
+
+function placeAt(names, id, iso, x, y){
   if(!names) return null;
   let near = null, best = Infinity;
   for(const c of COUNTRIES){
@@ -3633,7 +3649,7 @@ function landPlace(iso, x, y){
     if(d < best){ best = d; near = c; }
   }
   const at = unproject(x, y);
-  return { id: 'land-' + iso, iso, names, lat: at.lat, lng: at.lng,
+  return { id, iso, names, lat: at.lat, lng: at.lng,
            continentCode: near ? near.continentCode : null };
 }
 
@@ -4411,7 +4427,7 @@ function handleMapTap(evt){
   // The snap is for a tap that missed every polygon -- a microstate too small
   // to draw, or a tap before the detailed map has arrived. Land that is
   // simply not on the list is named above, never handed to a neighbour.
-  if(!country && !iso) country = countryNear(w.x, w.y);
+  if(!country && !iso) country = namedLandAt(w.x, w.y) || countryNear(w.x, w.y);
   showPending({ lat: here.lat, lng: here.lng, country: country || null });
   renderMapForRound();                        // draw the provisional pin
 }
